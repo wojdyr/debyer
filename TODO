@@ -1,0 +1,16 @@
+
+configure option to build only debyer
+
+multiple input files -- only when options -dfile and -o are not given
+
+instrumental broadening - U, V, W, Gaussian/Lorentzian/Pseudo-Voigt
+	       or instrumental pattern from file (like DIFFaX or PowderCell)
+
+use link-cell algorithm without PBC if r_cut < r_max/4 
+
+optimize (id -> pattern) phase (FFT)
+
+--continue option for id calculation (in case the previous job was interrupted)
+
+calculate automatically ro from data by fitting 4*pi*ro*x^2 to RDF
+

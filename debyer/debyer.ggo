@@ -1,0 +1,73 @@
+#  debyer -- program for calculation of diffration patterns
+#  Copyright (C) 2006 Marcin Wojdyr
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  $Id: debyer.ggo 112 2009-04-14 00:44:25Z wojdyr $
+
+#gengetopt 2.22
+package "debyer"
+
+option  "quiet" q "silent mode" optional
+option  "verbose" v "increase verbosity level (can be used twice)" optional multiple
+
+section "calculation of input ID (internal RDF)"
+option  "cutoff" r "cut-off distance for ID calculation" float optional
+option  "quanta" - "interatomic distance discretization quanta" float default="0.001" optional
+option "pbc-a" a "PBC box length in x direction" float optional
+option "pbc-b" b "PBC box length in y direction" float optional
+option "pbc-c" c "PBC box length in z direction" float optional
+option "sample" - "calculate ID by random sampling n atoms" int optional
+option "id-file" d "file in which input ID is to be stored, if any" string typestr="FILENAME" optional argoptional
+
+section "file format conversion; write atom positions to..."
+text " (if FILENAME is not given, it will be generated based on the input filename)"
+option "write-xyz" - "XMOL .xyz file" string typestr="FILENAME" optional argoptional
+option "write-cfg" - "AtomEye extended .cfg file" string typestr="FILENAME" optional argoptional
+option "write-dlpoly" - "DL_POLY CONFIG file" string typestr="FILENAME" optional argoptional
+option "write-dlpoly-s" - "same, but sort atoms using symbols " string typestr="FILENAME" optional argoptional
+option "write-lammps-data" - "LAMMPS data file" string typestr="FILENAME" optional argoptional
+option "write-pdb" - "PDB file" string typestr="FILENAME" optional argoptional
+option "write-xyza" - "TSV format: x y z atom" string typestr="FILENAME" optional argoptional
+
+section "calculation of the final result from ID" 
+defgroup "output" groupdesc="only one of the following options can be selected"
+groupoption "xray" x "x-ray powder pattern" group="output"
+groupoption "neutron" n "neutron powder pattern" group="output"
+groupoption "sf" S "scattering factor (a.k.a total scattering structure function)" group="output"
+groupoption "RDF" R "radial distribution function (RDF)" group="output"
+groupoption "PDF" g "pair distribution function (PDF)" group="output"
+groupoption "rPDF" G "reduced PDF" group="output"
+text ""
+
+option "from" f "start of calculated pattern" float optional
+option "to" t "end of calculated pattern" float optional
+option "step" s "step of calculated pattern" float optional
+option "lambda" l "wavelength for diffraction pattern. If not given, output in Q" float optional
+option "ro" - "numeric density, required for PDF and rPDF calculation" float optional
+option "weight" w "how to weight RDF/PDF - using _x_-ray f(0) or _n_eutron b factor" values="x","n","1" default="1" optional
+
+option "output" o "output filename. If not given, will be auto-generated." string typestr="FILENAME" optional
+
+section "cutting, i.e. calculation only for sub-system"
+option "x-gt" - "minimum in x direction" float optional
+option "x-lt" - "maximum in x direction" float optional
+option "y-gt" - "minimum in y direction" float optional
+option "y-lt" - "maximum in y direction" float optional
+option "z-gt" - "minimum in z direction" float optional
+option "z-lt" - "maximum in z direction" float optional
+
+section "benchmarks"
+option "ben1" - "calculate ID for SiC pseudo-grain with ATOM-COUNT atoms." int typestr="ATOM-COUNT" optional
+
+
+#FILES          files with atoms. If none given, use standard input.
+
