@@ -31,10 +31,10 @@ class StdDev
 public:
     StdDev() : n(0), mean(0.), S(0.) {}
 
-    void add_x(double x) 
-    { 
-        ++n; 
-        double delta = x - mean; 
+    void add_x(double x)
+    {
+        ++n;
+        double delta = x - mean;
         mean += delta / n;
         S += delta * (x - mean);
     }

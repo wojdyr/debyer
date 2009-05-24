@@ -44,7 +44,7 @@ void calculate_irdf_innerloop(int n, int nbins, dbr_real rquanta,
 {
     int j, bin;
     for (j = 0; j != n; ++j) {
-        bin = (int) (SQRT(get_sq_dist(xyz1, c2->atoms[j])) / rquanta); 
+        bin = (int) (SQRT(get_sq_dist(xyz1, c2->atoms[j])) / rquanta);
         if (bin < nbins)
             ++t[bin];
         /*
@@ -63,7 +63,7 @@ void calculate_irdf_innerloop2(int n, int nbins, dbr_real rquanta,
         dbr_real d2 = get_sq_dist(xyz1, c2->atoms[j]);
         if (d2 > rcut2)
             continue;
-        bin = (int) (SQRT(d2) / rquanta); 
+        bin = (int) (SQRT(d2) / rquanta);
         if (bin < nbins) /* TODO this check should not be neccessary */
             ++t[bin];
     }

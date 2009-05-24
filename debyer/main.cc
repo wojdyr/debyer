@@ -13,7 +13,7 @@
 //
 //  $Id: main.cc 112 2009-04-14 00:44:25Z wojdyr $
 //
-//  Main loop of debyer program. Parses command-line arguments (using 
+//  Main loop of debyer program. Parses command-line arguments (using
 //  gengetopt and debyer.ggo) and uses libdebyer for actual computations.
 
 #include <iostream>
@@ -31,23 +31,23 @@ using namespace std;
 
 #define mcerr \
     if (dbr_nid == 0) \
-        cerr 
+        cerr
 
 output_kind get_output_from_args (gengetopt_args_info const& args)
 {
-    if (args.RDF_given) 
+    if (args.RDF_given)
         return output_rdf;
-    else if (args.PDF_given) 
+    else if (args.PDF_given)
         return output_pdf;
-    else if (args.rPDF_given) 
+    else if (args.rPDF_given)
         return output_rpdf;
-    else if (args.neutron_given) 
+    else if (args.neutron_given)
         return output_neutron;
-    else if (args.xray_given) 
+    else if (args.xray_given)
         return output_xray;
-    else if (args.sf_given) 
+    else if (args.sf_given)
         return output_sf;
-    else 
+    else
         return output_none;
 }
 
@@ -77,7 +77,7 @@ string default_fn(gengetopt_args_info const& args, const char* ext)
 
 void print_irdfs_statistics(irdfs rdfs)
 {
-    // show i-rdf statistics 
+    // show i-rdf statistics
 #ifdef __STRICT_ANSI__
     typedef long t_verylong; //may be insufficient
 #else
@@ -89,11 +89,11 @@ void print_irdfs_statistics(irdfs rdfs)
             sum += rdfs.data[i].nn[j];
     }
     t_verylong ac = 0;
-    for (int i = 0; i < rdfs.symbol_count; ++i) 
+    for (int i = 0; i < rdfs.symbol_count; ++i)
         ac += rdfs.atom_counts[i];
     if (dbr_verbosity >= 0)
         mcerr << sum << " of " << ac * (ac-1) / 2
-            << " pairs included in internal PDF.\n"; 
+            << " pairs included in internal PDF.\n";
 }
 
 void print_min_dist_info(irdfs const& rdfs)
@@ -132,13 +132,13 @@ const char* get_id_out_fn(gengetopt_args_info const& args)
 dbr_picker prepare_picker(gengetopt_args_info const& args, int n_atoms)
 {
     dbr_picker picker;
-    picker.probab = args.sample_given ? (dbr_real)args.sample_arg / n_atoms 
+    picker.probab = args.sample_given ? (dbr_real)args.sample_arg / n_atoms
                                       : 0.;
     if (args.x_gt_given || args.x_lt_given
             || args.y_gt_given || args.y_lt_given
-            || args.z_gt_given || args.z_lt_given) 
+            || args.z_gt_given || args.z_lt_given)
         picker.cut = 1;
-    else 
+    else
         picker.cut = 0;
     picker.x_min = args.x_gt_given ? args.x_gt_arg : -DBL_MAX;
     picker.x_max = args.x_lt_given ? args.x_lt_arg : +DBL_MAX;
@@ -150,43 +150,43 @@ dbr_picker prepare_picker(gengetopt_args_info const& args, int n_atoms)
     return picker;
 }
 
-void write_atoms_to_file(dbr_aconf const& aconf, 
+void write_atoms_to_file(dbr_aconf const& aconf,
                          gengetopt_args_info const& args)
 {
     // format conversion
-    if (args.write_xyz_given) 
-        write_atoms_to_xyz_file(aconf, args.write_xyz_arg 
-                                       ? args.write_xyz_arg 
+    if (args.write_xyz_given)
+        write_atoms_to_xyz_file(aconf, args.write_xyz_arg
+                                       ? args.write_xyz_arg
                                        : default_fn(args, "xyz"));
-    if (args.write_cfg_given) 
+    if (args.write_cfg_given)
         write_atoms_to_atomeye_file(aconf, args.write_cfg_arg
                                            ? args.write_cfg_arg
                                            : default_fn(args, "cfg"));
-    if (args.write_dlpoly_given) 
+    if (args.write_dlpoly_given)
         write_dlpoly_file(aconf, args.write_dlpoly_arg
                                  ? args.write_dlpoly_arg
-                                 : default_fn(args, "dlpoly"), 
+                                 : default_fn(args, "dlpoly"),
                           false);
-    if (args.write_dlpoly_s_given) 
+    if (args.write_dlpoly_s_given)
         write_dlpoly_file(aconf, args.write_dlpoly_s_arg
                                  ? args.write_dlpoly_s_arg
                                  : default_fn(args, "dlpoly"),
                           true);
-    if (args.write_lammps_data_given) 
+    if (args.write_lammps_data_given)
         write_lammps_data(aconf, args.write_lammps_data_arg
                                  ? args.write_lammps_data_arg
-                                 : default_fn(args, "lammps")); 
-    if (args.write_pdb_given) 
+                                 : default_fn(args, "lammps"));
+    if (args.write_pdb_given)
         write_pdb(aconf, args.write_pdb_arg
                          ? args.write_pdb_arg
-                         : default_fn(args, "pdb")); 
-    if (args.write_xyza_given) 
+                         : default_fn(args, "pdb"));
+    if (args.write_xyza_given)
         write_xyza(aconf, args.write_xyza_arg
                          ? args.write_xyza_arg
-                         : default_fn(args, "xyza")); 
+                         : default_fn(args, "xyza"));
 
     // is that all to do?
-    if (args.output_group_counter == 0 && !args.id_file_given) 
+    if (args.output_group_counter == 0 && !args.id_file_given)
         dbr_abort(EXIT_SUCCESS);
 }
 
@@ -215,7 +215,7 @@ irdfs calculate_id_from_datafile(dbr_aconf &aconf, dbr_picker const& picker,
     delete [] aconf.atoms;
 
     if (dbr_verbosity > 0)
-        mcerr << "Elapsed " << dbr_get_elapsed() <<" s. Atoms were sorted." 
+        mcerr << "Elapsed " << dbr_get_elapsed() <<" s. Atoms were sorted."
             << endl;
     if (dbr_verbosity >= 0) {
         mcerr << "Atom statistics:";
@@ -224,7 +224,7 @@ irdfs calculate_id_from_datafile(dbr_aconf &aconf, dbr_picker const& picker,
         mcerr << endl;
     }
 
-    // if we calculate RDF or (r)PDF, quanta and cutoff don't need to be given 
+    // if we calculate RDF or (r)PDF, quanta and cutoff don't need to be given
     // explicitely
     bool is_direct = dbr_is_direct(get_output_from_args(args));
 
@@ -235,7 +235,7 @@ irdfs calculate_id_from_datafile(dbr_aconf &aconf, dbr_picker const& picker,
             mcerr << "Option `quanta' set to " << quanta << endl;
     }
 
-    dbr_real cutoff = args.cutoff_given ? args.cutoff_arg : 0.; 
+    dbr_real cutoff = args.cutoff_given ? args.cutoff_arg : 0.;
     if (!args.cutoff_given && is_direct && args.to_given) {
         cutoff = args.to_arg;
         if (dbr_verbosity > 0)
@@ -254,7 +254,7 @@ int do_benchmark1(int count)
 {
     srand(12345);
     if (dbr_verbosity >= 0)
-        mcerr << "Performing ID calculation benchmark with " << count 
+        mcerr << "Performing ID calculation benchmark with " << count
             << " atoms." << endl;
     xyz_name* coords = new xyz_name[count];
     dbr_real a = pow(count / 0.095, 1./3.);
@@ -283,10 +283,10 @@ int do_benchmark1(int count)
 
 string get_output_filename(gengetopt_args_info const& args)
 {
-    if (args.output_given) 
+    if (args.output_given)
         return strcmp(args.output_arg, "stdout") != 0 ? args.output_arg : "";
     output_kind kind = get_output_from_args(args);
-    if (kind == output_none) 
+    if (kind == output_none)
         return "";
 
     const char *ext = 0;
@@ -325,21 +325,21 @@ int main(int argc, char **argv)
         return do_benchmark1(args.ben1_arg);
     }
     //if (args.inputs_num > 1) {
-    //    mcerr << "Only one input file can be given."; 
+    //    mcerr << "Only one input file can be given.";
     if (args.inputs_num != 1) {
-        mcerr << "Exactly one input file should be given." << endl; 
+        mcerr << "Exactly one input file should be given." << endl;
         dbr_abort(EXIT_FAILURE);
     }
-    bool output_atoms = (args.write_xyz_given || args.write_cfg_given 
+    bool output_atoms = (args.write_xyz_given || args.write_cfg_given
             || args.write_dlpoly_given || args.write_dlpoly_s_given
             || args.write_lammps_data_given || args.write_pdb_given
             || args.write_xyza_given);
     if (args.output_group_counter == 0 && !args.id_file_given && !output_atoms){
-        mcerr << "No output format specified, nothing to do." << endl; 
+        mcerr << "No output format specified, nothing to do." << endl;
         dbr_abort(EXIT_SUCCESS);
     }
     if (args.inputs_num == 0) {
-        mcerr << "Reading from stdin .... TODO" << endl; 
+        mcerr << "Reading from stdin .... TODO" << endl;
         dbr_abort(EXIT_FAILURE);
     }
 
@@ -368,7 +368,7 @@ int main(int argc, char **argv)
             dbr_abort(EXIT_FAILURE);
         }
         if (output_atoms) {
-            mcerr << "Error. Can't deduce atom coordinates from ID file." 
+            mcerr << "Error. Can't deduce atom coordinates from ID file."
                 << endl;
             dbr_abort(EXIT_FAILURE);
         }
@@ -376,7 +376,7 @@ int main(int argc, char **argv)
         if (!rdfs.data)
             dbr_abort(EXIT_FAILURE);
         if (args.id_file_given) {
-            mcerr << "Refusing to write ID file when input is also ID file. " 
+            mcerr << "Refusing to write ID file when input is also ID file. "
                      "Just copy the file." << endl;
             //write_irdfs_to_file(rdfs, get_id_out_fn(args));
         }
@@ -387,7 +387,7 @@ int main(int argc, char **argv)
 
         if (output_atoms) {
             if (picker.cut) {
-                // write to file only selected atoms 
+                // write to file only selected atoms
                 xyz_name *all = aconf.atoms;
                 xyz_name *sel = new xyz_name[aconf.n];
                 int n_all = aconf.n;
@@ -434,30 +434,30 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    if (dbr_is_inverse(kind) && args.cutoff_given 
+    if (dbr_is_inverse(kind) && args.cutoff_given
             && !(args.ro_given || rdfs.density > 0))
         if (dbr_verbosity >= 0)
             mcerr << "No number density - no cut-off correction.\n";
     if (dbr_verbosity >= 0)
         mcerr << "Writing " << type_desc << " to file " << ofname << " ... ";
     if (dbr_is_direct(kind))
-        r = write_pdfkind_to_file(kind, 
+        r = write_pdfkind_to_file(kind,
                                   rdfs,
-                                  args.from_given ? args.from_arg : 0., 
+                                  args.from_given ? args.from_arg : 0.,
                                   args.to_given ? args.to_arg : 0.,
                                   args.step_given ? args.step_arg : 0.,
                                   args.ro_given ? args.ro_arg : 0.,
                                   args.weight_arg[0],
                                   ofname.c_str());
     else {
-        r = write_diffraction_to_file(kind, 
+        r = write_diffraction_to_file(kind,
                                       rdfs,
-                                      args.from_given ? args.from_arg : 0., 
+                                      args.from_given ? args.from_arg : 0.,
                                       args.to_given ? args.to_arg : 0.,
                                       args.step_given ? args.step_arg : 0.,
                                       args.lambda_given ? args.lambda_arg : 0.,
                                       args.ro_given ? args.ro_arg : 0.,
-                                      args.cutoff_given ? args.cutoff_arg : 0., 
+                                      args.cutoff_given ? args.cutoff_arg : 0.,
                                       ofname.c_str());
     }
     free_irdfs(&rdfs);

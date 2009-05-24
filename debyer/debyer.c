@@ -33,7 +33,7 @@
 #endif
 
 #ifndef M_PI
-# define M_PI    3.1415926535897932384626433832795029  
+# define M_PI    3.1415926535897932384626433832795029
 #endif
 
 int dbr_nid; /* rank of process (0 if serial) */
@@ -45,7 +45,7 @@ static void* xmalloc (size_t size)
 {
     void *value = malloc(size);
     if (value == 0) {
-        dbr_mesg("Error: virtual memory exhausted (%i bytes requested).\n", 
+        dbr_mesg("Error: virtual memory exhausted (%i bytes requested).\n",
                  size);
         dbr_abort(2);
     }
@@ -56,7 +56,7 @@ static void* xrealloc (void *ptr, size_t size)
 {
     void *value = realloc(ptr, size);
     if (value == 0) {
-        dbr_mesg("Error: virtual memory exhausted  (%i bytes requested).\n", 
+        dbr_mesg("Error: virtual memory exhausted  (%i bytes requested).\n",
                  size);
         dbr_abort(2);
     }
@@ -85,7 +85,7 @@ int dbr_get_elapsed()
     return (int) difftime(now, dbr_starttime);
 }
 
-/* The same as Python % operator. In ANSI C a%b for a<0 has 
+/* The same as Python % operator. In ANSI C a%b for a<0 has
  * implementation-defined sign, it is negative in popular implementations */
 static int mod(int a, int b)
 {
@@ -128,12 +128,12 @@ dbr_real get_neutron_scattering_factor(const char* at)
 int has_scattering_factor(const char* at, int neutron)
 {
     int found = 0;
-    if (neutron) 
+    if (neutron)
         found = find_in_nn92(at) ? 1 : 0;
-    else 
+    else
         found = find_in_it92(at) ? 1 : 0;
     if (!found)
-        dbr_mesg("Error: %s scattering factor not found for atom: %s\n", 
+        dbr_mesg("Error: %s scattering factor not found for atom: %s\n",
                  neutron ? "Neutron" : "X-ray", at);
     return found;
 }
@@ -176,9 +176,9 @@ void dbr_abort(int err_code)
 }
 
 
-/* group atoms by name and store in `result', 
+/* group atoms by name and store in `result',
  * return number of different names */
-int dbr_get_atoms(int n, xyz_name* coords, dbr_atoms** result, 
+int dbr_get_atoms(int n, xyz_name* coords, dbr_atoms** result,
                   int store_indices)
 {
     int i, j;
@@ -192,10 +192,10 @@ int dbr_get_atoms(int n, xyz_name* coords, dbr_atoms** result,
             if (!strncmp(name, a->name, 8)) {
                 if (a->count == a->asize) {
                     a->asize *= 2;
-                    a->xyz = (dbr_xyz*) xrealloc(a->xyz, 
+                    a->xyz = (dbr_xyz*) xrealloc(a->xyz,
                                                  a->asize * sizeof(dbr_xyz));
                     if (store_indices)
-                        a->indices = (int*) xrealloc(a->indices, 
+                        a->indices = (int*) xrealloc(a->indices,
                                                  a->asize * sizeof(int));
                 }
                 memcpy(a->xyz[a->count], coords[i].xyz, sizeof(dbr_xyz));
@@ -208,7 +208,7 @@ int dbr_get_atoms(int n, xyz_name* coords, dbr_atoms** result,
         if (j == type_count) { /* new atom type */
             dbr_atoms *a = NULL;
             ++type_count;
-            atoms = *result = (dbr_atoms*) 
+            atoms = *result = (dbr_atoms*)
                               xrealloc(*result, type_count*sizeof(dbr_atoms));
             a = &atoms[type_count-1];
             strncpy(a->name, name, 8);
@@ -226,11 +226,11 @@ int dbr_get_atoms(int n, xyz_name* coords, dbr_atoms** result,
     i = 0;
     for (j = 0; j < type_count; ++j) {
         atoms[j].asize = atoms[j].count;
-        atoms[j].xyz = (dbr_xyz*) xrealloc(atoms[j].xyz, 
+        atoms[j].xyz = (dbr_xyz*) xrealloc(atoms[j].xyz,
                                             atoms[j].asize * sizeof(dbr_xyz));
         i += atoms[j].asize * sizeof(dbr_xyz);
         if (store_indices) {
-            atoms[j].indices = (int*) xrealloc(atoms[j].indices, 
+            atoms[j].indices = (int*) xrealloc(atoms[j].indices,
                                                 atoms[j].asize * sizeof(int));
             i += atoms[j].asize * sizeof(int);
         }
@@ -246,14 +246,14 @@ void free_dbr_atoms(dbr_atoms* xa)
     free(xa->xyz);
 }
 
-static 
+static
 int get_number_of_bins(dbr_real rcut, dbr_real rquanta)
 {
     return (int) ceil(rcut / rquanta);
 }
 
 /* open id file and write header */
-static 
+static
 FILE* write_header_of_id_file(irdfs rdfs, const char *filename)
 {
     FILE *f;
@@ -269,7 +269,7 @@ FILE* write_header_of_id_file(irdfs rdfs, const char *filename)
     fprintf(f, "debyer-id 1\n");
     fprintf(f, "# by debyer ver. " VERSION "\n");
     fprintf(f, "system");
-    for (i = 0; i < rdfs.symbol_count; ++i) 
+    for (i = 0; i < rdfs.symbol_count; ++i)
         fprintf(f, " %s %i", rdfs.atom_symbols[i], rdfs.atom_counts[i]);
     fprintf(f, "\n");
     fprintf(f, "step %g\n", rdfs.step);
@@ -279,7 +279,7 @@ FILE* write_header_of_id_file(irdfs rdfs, const char *filename)
 }
 
 /* return 0 on success */
-static 
+static
 int append_pair_data_to_id_file(const irdf *p, int rdf_bins, FILE* f)
 {
     int j, r;
@@ -298,7 +298,7 @@ int append_pair_data_to_id_file(const irdf *p, int rdf_bins, FILE* f)
 }
 
 /* O(n^2) TODO optimize - perhaps finding diagonal of containing */
-dbr_real find_largest_distance(int n, const dbr_atoms* xa) 
+dbr_real find_largest_distance(int n, const dbr_atoms* xa)
 {
     int i, j, k, m;
     dbr_real max_sq_dist=0;
@@ -335,7 +335,7 @@ char* pick_items(const dbr_picker* picker, const dbr_cell *c1)
     char *t = (char*) xmalloc(c1->count);
     for (i = 0; i < c1->count; ++i)
         t[i] = (picker->probab == 0. ? 1. : 0.);
-    if (picker->probab == 0. || limit == 0) 
+    if (picker->probab == 0. || limit == 0)
         ;
     else if (picker->probab < 0.5) { /*small sample*/
         for (i = 0; i < n; ) {
@@ -352,7 +352,7 @@ char* pick_items(const dbr_picker* picker, const dbr_cell *c1)
         }
     }
     if (picker->cut) {
-        for (i = dbr_nid; i < c1->count; i += dbr_noprocs) 
+        for (i = dbr_nid; i < c1->count; i += dbr_noprocs)
             if (!dbr_is_atom_in_sector(c1->atoms[i], picker))
                 t[i] = 0;
     }
@@ -362,7 +362,7 @@ char* pick_items(const dbr_picker* picker, const dbr_cell *c1)
 /* calculate irdf.nn using cell method
  * O(n), O(rcut^3) */
 static
-int calculate_irdf_cm(const dbr_picker* picker, 
+int calculate_irdf_cm(const dbr_picker* picker,
                       const dbr_cells cc1, const dbr_cells cc2,
                       dbr_real rcut, dbr_real rquanta, int nbins, int *t)
 {
@@ -378,12 +378,12 @@ int calculate_irdf_cm(const dbr_picker* picker,
         if (!c1->real)
             continue;
         if (!picker->all) {
-            picked = pick_items(picker, c1); 
-            for (k = dbr_nid; k < c1->count; k += dbr_noprocs) 
+            picked = pick_items(picker, c1);
+            for (k = dbr_nid; k < c1->count; k += dbr_noprocs)
                 if (picked[k])
                     sampled++;
         }
-        for (j = 0; j < (same && picker->all ? 14 : 27); ++j) { 
+        for (j = 0; j < (same && picker->all ? 14 : 27); ++j) {
             const dbr_cell *c2;
             int nn = c1->neighbours[j];
             if (nn == -1)
@@ -391,23 +391,23 @@ int calculate_irdf_cm(const dbr_picker* picker,
             c2 = &cc2.data[nn];
 
             if (picker->all) {
-                /* Get complete data -- calculate irdf.nn using simple 
+                /* Get complete data -- calculate irdf.nn using simple
                  * itaration (two loops) over all atoms.
                  */
                 for (k = dbr_nid; k < c1->count; k += dbr_noprocs) {
                     if (rcut2 != 0.)
                         /* We check (r2 < rcut2) before calculating sqrt.
                          */
-                        calculate_irdf_innerloop2(c1 == c2 ? k : c2->count, 
-                                                  nbins, rquanta, 
+                        calculate_irdf_innerloop2(c1 == c2 ? k : c2->count,
+                                                  nbins, rquanta,
                                                   c1->atoms[k], c2, t, rcut2);
                     else
                         /* We don't check (r2 < rcut2) before calculating sqrt.
-                         * It's optimized for the case when most of 
-                         * the distances are <rcut 
+                         * It's optimized for the case when most of
+                         * the distances are <rcut
                          */
-                        calculate_irdf_innerloop(c1 == c2 ? k : c2->count, 
-                                                 nbins, rquanta, 
+                        calculate_irdf_innerloop(c1 == c2 ? k : c2->count,
+                                                 nbins, rquanta,
                                                  c1->atoms[k], c2, t);
                 }
             }
@@ -418,10 +418,10 @@ int calculate_irdf_cm(const dbr_picker* picker,
                     if (!picked[k])
                         continue;
                     if (rcut2 != 0.)
-                        calculate_irdf_innerloop2(c2->count, nbins, rquanta, 
+                        calculate_irdf_innerloop2(c2->count, nbins, rquanta,
                                                   c1->atoms[k], c2, t, rcut2);
                     else
-                        calculate_irdf_innerloop(c2->count, nbins, rquanta, 
+                        calculate_irdf_innerloop(c2->count, nbins, rquanta,
                                                  c1->atoms[k], c2, t);
                 }
             }
@@ -429,33 +429,33 @@ int calculate_irdf_cm(const dbr_picker* picker,
         }
         free(picked);
     }
-    if (same && !picker->all) // removing distance 0 
+    if (same && !picker->all) // removing distance 0
         t[0] -= sampled;
     return sampled;
 }
 
 
-static double len3(double a, double b, double c) 
+static double len3(double a, double b, double c)
 {
-    return sqrt(a*a + b*b + c*c); 
+    return sqrt(a*a + b*b + c*c);
 }
 
-static double len3v(double *a) 
-{ 
-    return sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]); 
+static double len3v(double *a)
+{
+    return sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]);
 }
 
 void dbr_inverse_3x3_matrix(const dbr_pbc a, double b[3][3])
 {
     int i, j;
-    b[0][0] =  (a.v11 * a.v22 - a.v12 * a.v21); 
-    b[0][1] = -(a.v01 * a.v22 - a.v02 * a.v21);  
+    b[0][0] =  (a.v11 * a.v22 - a.v12 * a.v21);
+    b[0][1] = -(a.v01 * a.v22 - a.v02 * a.v21);
     b[0][2] =  (a.v01 * a.v12 - a.v02 * a.v11);
-    b[1][0] = -(a.v10 * a.v22 - a.v12 * a.v20);  
-    b[1][1] =  (a.v00 * a.v22 - a.v02 * a.v20); 
+    b[1][0] = -(a.v10 * a.v22 - a.v12 * a.v20);
+    b[1][1] =  (a.v00 * a.v22 - a.v02 * a.v20);
     b[1][2] = -(a.v00 * a.v12 - a.v02 * a.v10);
-    b[2][0] =  (a.v10 * a.v21 - a.v11 * a.v20); 
-    b[2][1] = -(a.v00 * a.v21 - a.v01 * a.v20);  
+    b[2][0] =  (a.v10 * a.v21 - a.v11 * a.v20);
+    b[2][1] = -(a.v00 * a.v21 - a.v01 * a.v20);
     b[2][2] =  (a.v00 * a.v11 - a.v01 * a.v10);
 
     dbr_real s = 1. / (a.v00 * b[0][0] + a.v01 * b[1][0] + a.v02 * b[2][0]);
@@ -475,11 +475,11 @@ dbr_pbc_prop get_pbc_properties(dbr_pbc pbc)
     p.lengths[1] = len3(pbc.v10, pbc.v11, pbc.v12);
     p.lengths[2] = len3(pbc.v20, pbc.v21, pbc.v22);
 
-    p.cosines[0] = (pbc.v00*pbc.v10 + pbc.v01*pbc.v11 + pbc.v02*pbc.v12) 
+    p.cosines[0] = (pbc.v00*pbc.v10 + pbc.v01*pbc.v11 + pbc.v02*pbc.v12)
                     / (p.lengths[0]*p.lengths[1]);
-    p.cosines[1] = (pbc.v00*pbc.v20 + pbc.v01*pbc.v21 + pbc.v02*pbc.v22) 
+    p.cosines[1] = (pbc.v00*pbc.v20 + pbc.v01*pbc.v21 + pbc.v02*pbc.v22)
                     / (p.lengths[0]*p.lengths[2]);
-    p.cosines[2] = (pbc.v10*pbc.v20 + pbc.v11*pbc.v21 + pbc.v12*pbc.v22) 
+    p.cosines[2] = (pbc.v10*pbc.v20 + pbc.v11*pbc.v21 + pbc.v12*pbc.v22)
                     / (p.lengths[1]*p.lengths[2]);
 
     /* vector products of cell vectors */
@@ -505,10 +505,10 @@ dbr_pbc_prop get_pbc_properties(dbr_pbc pbc)
 
 /* it free()'s dbr_atoms xa[] (in prepare_cells()) */
 irdfs calculate_irdfs(int n, dbr_atoms* xa, dbr_real rcut, dbr_real rquanta,
-                      dbr_pbc pbc, const dbr_picker* picker, 
+                      dbr_pbc pbc, const dbr_picker* picker,
                       const char* id_filename)
 {
-    int i, j, k, counter=0, all_atom_count=0; 
+    int i, j, k, counter=0, all_atom_count=0;
     dbr_real max_r;
     irdfs rdfs;
     dbr_cells *cells = NULL;
@@ -548,7 +548,7 @@ irdfs calculate_irdfs(int n, dbr_atoms* xa, dbr_real rcut, dbr_real rquanta,
     if (id_filename) {
         if (dbr_verbosity > 0)
             dbr_mesg("ID will be written to file: %s.\n", id_filename);
-        id = write_header_of_id_file(rdfs, id_filename); 
+        id = write_header_of_id_file(rdfs, id_filename);
         //if (id && dbr_nid == 0)
         //    write_comments(id, );
         if (id && dbr_nid == 0 && rdfs.density > 0)
@@ -568,24 +568,24 @@ irdfs calculate_irdfs(int n, dbr_atoms* xa, dbr_real rcut, dbr_real rquanta,
     for (i = 0; i < n; ++i) { /* first atom type */
         for (j = 0; j <= i; ++j) { /* second atom type */
             irdf *p = &rdfs.data[counter++];
-            strncpy(p->at1, cells[i].name, 8); 
+            strncpy(p->at1, cells[i].name, 8);
             p->c1 = cells[i].atom_count;
-            strncpy(p->at2, cells[j].name, 8); 
+            strncpy(p->at2, cells[j].name, 8);
             p->c2 = cells[j].atom_count;
             p->nn = (int*) xmalloc(rdfs.rdf_bins * sizeof(int));
             for (k = 0; k < rdfs.rdf_bins; ++k)
                 p->nn[k] = 0;
-            p->sample = calculate_irdf_cm(picker, cells[i], cells[j], 
+            p->sample = calculate_irdf_cm(picker, cells[i], cells[j],
                                           rcut, rquanta, rdfs.rdf_bins, p->nn);
 
             /* if we are only sampling, we also need to swap i and j */
             if (i != j && !picker->all) {
-                p->sample += calculate_irdf_cm(picker, cells[j], cells[i], 
+                p->sample += calculate_irdf_cm(picker, cells[j], cells[i],
                                           rcut, rquanta, rdfs.rdf_bins, p->nn);
             }
 
 #ifdef USE_MPI
-            MPI_Reduce(p->nn, tmp_nn, rdfs.rdf_bins, MPI_INT, MPI_SUM, 
+            MPI_Reduce(p->nn, tmp_nn, rdfs.rdf_bins, MPI_INT, MPI_SUM,
                        0, MPI_COMM_WORLD);
             MPI_Reduce(&p->sample, &k, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
             if (dbr_nid == 0)
@@ -593,23 +593,23 @@ irdfs calculate_irdfs(int n, dbr_atoms* xa, dbr_real rcut, dbr_real rquanta,
             p->sample = k;
 #endif /*USE_MPI*/
             if (!picker->all) {
-                if (i != j) 
+                if (i != j)
                     p->sample /= 2;
                 for (k = 0; k < rdfs.rdf_bins; ++k) {
                     // rounding errors may change the bin
                     // if p->nn[k] is odd, round either up or down
                     if (p->nn[k] % 2 != 0 && k % 2)
-                        p->nn[k]++; 
-                    p->nn[k] /= 2; 
+                        p->nn[k]++;
+                    p->nn[k] /= 2;
                 }
             }
             if (id) { /*executed only for dbr_nid == 0 */
                 int r = append_pair_data_to_id_file(p, rdfs.rdf_bins, id);
-                if (r != 0) 
+                if (r != 0)
                     dbr_mesg("Error: can not write to file: %s\n", id_filename);
             }
             if (dbr_verbosity > 0) {
-                dbr_mesg("Elapsed %i s. %s-%s ID calculated", 
+                dbr_mesg("Elapsed %i s. %s-%s ID calculated",
                          dbr_get_elapsed(), p->at1, p->at2);
                 if (picker->probab)
                     dbr_mesg(" (sampled %i %s atoms)", p->sample, p->at1);
@@ -640,8 +640,8 @@ dbr_cells* prepare_cells_all(dbr_pbc pbc, dbr_real rcut, dbr_atoms* xa, int n)
     }
     free(xa);
     if (dbr_verbosity > 0) {
-        if (cells[0].count > 1) 
-            dbr_mesg("... %i x %i x %i cells.\n", 
+        if (cells[0].count > 1)
+            dbr_mesg("... %i x %i x %i cells.\n",
                      cells[0].n[0], cells[0].n[1], cells[0].n[2]);
         else
             dbr_mesg("... space _not_ divided into cells\n");
@@ -652,12 +652,12 @@ dbr_cells* prepare_cells_all(dbr_pbc pbc, dbr_real rcut, dbr_atoms* xa, int n)
 }
 
 
-        
+
 void free_cells_all(dbr_cells *cells, int n)
 {
     int i;
     if (cells) {
-        for (i = 0; i < n; ++i) 
+        for (i = 0; i < n; ++i)
             free_cells(cells[i]);
         free(cells);
     }
@@ -666,7 +666,7 @@ void free_cells_all(dbr_cells *cells, int n)
 void write_irdfs_to_file(irdfs rdfs, const char *filename)
 {
     int i, counter=0;
-    FILE *id = write_header_of_id_file(rdfs, filename); 
+    FILE *id = write_header_of_id_file(rdfs, filename);
     for (i = 0; i < rdfs.pair_count; ++i) { /* first atom type */
         irdf *p = &rdfs.data[counter];
         append_pair_data_to_id_file(p, rdfs.rdf_bins, id);
@@ -675,7 +675,7 @@ void write_irdfs_to_file(irdfs rdfs, const char *filename)
     fclose(id);
 }
 
-static 
+static
 void skip_to_next_line(FILE *f)
 {
     int r;
@@ -687,7 +687,7 @@ void skip_to_next_line(FILE *f)
         r = fgetc(f);
         if (r == EOF)
             break;
-        if (r != '#') { 
+        if (r != '#') {
             ungetc(r, f);
             break;
         }
@@ -695,7 +695,7 @@ void skip_to_next_line(FILE *f)
 }
 
 /* return next character */
-static 
+static
 int skip_blanks(FILE *f)
 {
     while(1) {
@@ -711,7 +711,7 @@ int skip_blanks(FILE *f)
 
 irdfs read_irdfs_from_file(const char *filename)
 {
-    FILE *f; 
+    FILE *f;
     irdfs rdfs;
     irdf *p = 0;
     int i, j, k, r, sn, version, count, next;
@@ -739,7 +739,7 @@ irdfs read_irdfs_from_file(const char *filename)
     /* read system */
     sn = fscanf(f, " system %7s %i", name, &count);
     if (sn != 2) {
-        dbr_mesg("Error: `system' line not found in id file: %s\n", 
+        dbr_mesg("Error: `system' line not found in id file: %s\n",
                         filename);
         return rdfs;
     }
@@ -751,7 +751,7 @@ irdfs read_irdfs_from_file(const char *filename)
     next = skip_blanks(f);
     while (next != '\n' && fscanf(f, "%7s %i", name, &count) == 2) {
         ++i;
-        rdfs.atom_symbols = (dbr_symbol*) xrealloc(rdfs.atom_symbols, 
+        rdfs.atom_symbols = (dbr_symbol*) xrealloc(rdfs.atom_symbols,
                                                    i * sizeof(dbr_symbol));
         rdfs.atom_counts = (int*) xrealloc(rdfs.atom_counts, i * sizeof(int));
         strncpy(rdfs.atom_symbols[i-1], name, 8);
@@ -762,7 +762,7 @@ irdfs read_irdfs_from_file(const char *filename)
     /* read step */
     sn = fscanf(f, " step " DBR_F, &rdfs.step);
     if (sn != 1) {
-        dbr_mesg("Error: `step' line not found in id file: %s\n", 
+        dbr_mesg("Error: `step' line not found in id file: %s\n",
                         filename);
         return rdfs;
     }
@@ -770,7 +770,7 @@ irdfs read_irdfs_from_file(const char *filename)
     /* read bins */
     sn = fscanf(f, " bins %i", &rdfs.rdf_bins);
     if (sn != 1) {
-        dbr_mesg("Error: `bins' line not found in id file: %s\n", 
+        dbr_mesg("Error: `bins' line not found in id file: %s\n",
                         filename);
         return rdfs;
     }
@@ -785,7 +785,7 @@ irdfs read_irdfs_from_file(const char *filename)
         r = fgetc(f);
         if (r == 'a') {
             ++rdfs.pair_count;
-            rdfs.data = 
+            rdfs.data =
                 (irdf*) xrealloc(rdfs.data, rdfs.pair_count*sizeof(irdf));
             p = &rdfs.data[rdfs.pair_count-1];
             p->nn = (int*) xmalloc(rdfs.rdf_bins * sizeof(int));
@@ -800,9 +800,9 @@ irdfs read_irdfs_from_file(const char *filename)
             }
             p->sample = 0;
             for (i = 0; i < rdfs.symbol_count; ++i) {
-                if (!strncmp(p->at1, rdfs.atom_symbols[i], 8)) 
+                if (!strncmp(p->at1, rdfs.atom_symbols[i], 8))
                     p->c1 = rdfs.atom_counts[i];
-                if (!strncmp(p->at2, rdfs.atom_symbols[i], 8)) 
+                if (!strncmp(p->at2, rdfs.atom_symbols[i], 8))
                     p->c2 = rdfs.atom_counts[i];
             }
             sn = fscanf(f, " sample %i", &p->sample); /* optional "sample" */
@@ -826,7 +826,7 @@ irdfs read_irdfs_from_file(const char *filename)
                 dbr_mesg("Error: unexpected format of id file: %s\n", filename);
                 return rdfs;
             }
-            if (j >= rdfs.rdf_bins) { 
+            if (j >= rdfs.rdf_bins) {
                 free_irdfs(&rdfs);
                 dbr_mesg("Error: unexpected bin %i in id file: %s\n",
                          j, filename);
@@ -835,7 +835,7 @@ irdfs read_irdfs_from_file(const char *filename)
             p->nn[j] = k;
         }
     }
- 
+
     fclose(f);
     return rdfs;
 }
@@ -880,13 +880,13 @@ static
 dbr_real count_all_atoms(const irdfs* rdfs)
 {
     int i, count = 0;
-    for (i = 0; i < rdfs->symbol_count; ++i) 
+    for (i = 0; i < rdfs->symbol_count; ++i)
         count += rdfs->atom_counts[i];
     return count;
 }
 
 dbr_real* dbr_get_RDF(const irdfs* rdfs, char weight,
-                      dbr_real pattern_from, dbr_real pattern_to, 
+                      dbr_real pattern_from, dbr_real pattern_to,
                       dbr_real pattern_step)
 {
     dbr_real *pattern;
@@ -908,24 +908,24 @@ dbr_real* dbr_get_RDF(const irdfs* rdfs, char weight,
         /* prepare weighting factor... */
         dbr_real w = 1.;
         irdf *rdf = &rdfs->data[i];
-        dbr_real sampled_fraction = (rdf->sample > 0 ? 
+        dbr_real sampled_fraction = (rdf->sample > 0 ?
                                          (dbr_real) rdf->sample / rdf->c1 : 1.);
         if (weight == 'x')
-            w = get_xray_scattering_factor(rdf->at1, 0) 
+            w = get_xray_scattering_factor(rdf->at1, 0)
                   * get_xray_scattering_factor(rdf->at2, 0) / (avg * avg);
         else if (weight == 'n')
-            w = get_neutron_scattering_factor(rdf->at1) 
+            w = get_neutron_scattering_factor(rdf->at1)
                 * get_neutron_scattering_factor(rdf->at2) / (avg * avg);
         /* ...and calculate RDF */
         for (j = first_ibin; j < end_ibin; ++j) {
             m = (int) (((j + 0.5) * rdfs->step - pattern_from) / pattern_step);
             assert(m >= 0 && m < n);
             /* take twice every pair distance (i,j and j,i) */
-            pattern[m] += 2 * w * rdf->nn[j] / sampled_fraction; 
+            pattern[m] += 2 * w * rdf->nn[j] / sampled_fraction;
         }
     }
     for (i = 0; i < n; ++i)
-        pattern[i] /= (pattern_step * all_count); 
+        pattern[i] /= (pattern_step * all_count);
     return pattern;
 }
 
@@ -938,12 +938,12 @@ dbr_real get_density(dbr_real given_density, dbr_real auto_density)
 
         return given_density;
     }
-    else 
+    else
         return auto_density;
 }
 
 double* get_pattern(const irdfs* rdfs, output_kind c, dbr_real lambda,
-                    dbr_real pattern_from, dbr_real pattern_to, 
+                    dbr_real pattern_from, dbr_real pattern_to,
                     dbr_real pattern_step,
                     dbr_real ro, dbr_real cutoff)
 {
@@ -958,8 +958,8 @@ double* get_pattern(const irdfs* rdfs, output_kind c, dbr_real lambda,
     assert(cutoff > 0.);
     for (i = 0; i < rdfs->pair_count; ++i) {
         at = rdfs->data[i].at1;
-        if (!has_scattering_factor(rdfs->data[i].at1, c==output_neutron) 
-            || !has_scattering_factor(rdfs->data[i].at2, c==output_neutron)) 
+        if (!has_scattering_factor(rdfs->data[i].at1, c==output_neutron)
+            || !has_scattering_factor(rdfs->data[i].at2, c==output_neutron))
             return 0;
     }
 
@@ -970,7 +970,7 @@ double* get_pattern(const irdfs* rdfs, output_kind c, dbr_real lambda,
     for (i = 0; i < rdfs->pair_count; ++i) {
         p = &rdfs->data[i];
         if (c == output_neutron) {
-            ff = get_neutron_scattering_factor(p->at1) 
+            ff = get_neutron_scattering_factor(p->at1)
                                 * get_neutron_scattering_factor(p->at2);
         }
         for (j = 0; j < n; ++j) {
@@ -978,7 +978,7 @@ double* get_pattern(const irdfs* rdfs, output_kind c, dbr_real lambda,
             dbr_real x = pattern_from + (j+0.5) * pattern_step;
             dbr_real q = lambda <= 0. ? x : 4*M_PI*sin(M_PI/180.*x/2)/lambda;
             if (c == output_xray)
-                ff = get_xray_scattering_factor(p->at1, q) 
+                ff = get_xray_scattering_factor(p->at1, q)
                                     * get_xray_scattering_factor(p->at2, q);
             t = 2 * ff / q / all_count;
             for (k = 0; k < rdfs->rdf_bins; ++k) {
@@ -1032,7 +1032,7 @@ FILE* start_pattern_output(const char *ofname)
 }
 
 static
-int process_output_step(dbr_real pattern_from, dbr_real pattern_to, 
+int process_output_step(dbr_real pattern_from, dbr_real pattern_to,
                         dbr_real pattern_step, FILE* f)
 {
     int n = (pattern_to - pattern_from) / pattern_step;
@@ -1046,12 +1046,12 @@ int process_output_step(dbr_real pattern_from, dbr_real pattern_to,
 }
 
 /* returns non-zero on failure */
-int write_diffraction_to_file(output_kind c, irdfs rdfs, 
-                              dbr_real pattern_from, dbr_real pattern_to, 
+int write_diffraction_to_file(output_kind c, irdfs rdfs,
+                              dbr_real pattern_from, dbr_real pattern_to,
                               dbr_real pattern_step,
-                              dbr_real lambda, 
+                              dbr_real lambda,
                               dbr_real ro,
-                              dbr_real cutoff, 
+                              dbr_real cutoff,
                               const char *ofname)
 {
     FILE *f;
@@ -1084,13 +1084,13 @@ int write_diffraction_to_file(output_kind c, irdfs rdfs,
             dbr_mesg("WARNING: can't set cut-off larger than %g\n", cutoff);
         }
     }
-    fprintf(f, " cut-off=%g", cutoff); 
+    fprintf(f, " cut-off=%g", cutoff);
     if (pattern_from <= 0.)
         pattern_from = lambda <= 0. ? 0.5 : 5;
     if (pattern_to <= 0.)
         pattern_to = lambda <= 0. ? 10 : 170;
     if (pattern_step <= 0.) {/*TODO Nyquist */
-        pattern_step = lambda <= 0. ? 0.01 : 0.1; 
+        pattern_step = lambda <= 0. ? 0.01 : 0.1;
     }
 
     n = process_output_step(pattern_from, pattern_to, pattern_step, f);
@@ -1107,10 +1107,10 @@ int write_diffraction_to_file(output_kind c, irdfs rdfs,
 }
 
 /* returns non-zero on failure */
-int write_pdfkind_to_file(output_kind c, irdfs rdfs, 
-                          dbr_real pattern_from, dbr_real pattern_to, 
+int write_pdfkind_to_file(output_kind c, irdfs rdfs,
+                          dbr_real pattern_from, dbr_real pattern_to,
                           dbr_real pattern_step,
-                          dbr_real ro, 
+                          dbr_real ro,
                           char weight,
                           const char *ofname)
 {
@@ -1136,20 +1136,20 @@ int write_pdfkind_to_file(output_kind c, irdfs rdfs,
             dbr_mesg("Error: Unknown value of density (ro).\n");
             dbr_abort(1);
         }
-        fprintf(f, " ro=%g", ro); 
+        fprintf(f, " ro=%g", ro);
     }
 
-    fprintf(f, " weight=%c", weight); 
+    fprintf(f, " weight=%c", weight);
 
     if (pattern_from <= 0.)
         pattern_from = 0.;
-    if (pattern_to <= 0.) 
+    if (pattern_to <= 0.)
         pattern_to = irdf_max;
     else if (pattern_to > irdf_max) {
         dbr_mesg("WARNING: ID is calculated only to: %g\n", irdf_max);
         pattern_to = irdf_max;
     }
-    if (pattern_step <= 0.) 
+    if (pattern_step <= 0.)
         pattern_step = rdfs.step;
 
     n = process_output_step(pattern_from, pattern_to, pattern_step, f);
@@ -1174,7 +1174,7 @@ int write_pdfkind_to_file(output_kind c, irdfs rdfs,
 }
 
 /* virtual cells are (if any) with a = 0, a = cells->n[0], etc */
-static 
+static
 int get_cell_nr(int a, int b, int c, dbr_cells *cells)
 {
     a += cells->v[0];
@@ -1190,7 +1190,7 @@ dbr_cell* get_cell(int a, int b, int c, dbr_cells *cells)
 }
 
 /* a,b,c point to absolute cell position, ie. a=0 can give virtual cell */
-static 
+static
 dbr_cell* get_abs_cell(int a, int b, int c, dbr_cells *cells)
 {
     int pos = (a * cells->a[1] + b) * cells->a[2] + c;
@@ -1198,7 +1198,7 @@ dbr_cell* get_abs_cell(int a, int b, int c, dbr_cells *cells)
 }
 
 static
-void make_virtual_cell(dbr_cell *dest, dbr_cell *src, 
+void make_virtual_cell(dbr_cell *dest, dbr_cell *src,
                        dbr_real dx, dbr_real dy, dbr_real dz)
 {
     int i;
@@ -1220,10 +1220,10 @@ void make_virtual_cell(dbr_cell *dest, dbr_cell *src,
 static
 void set_neighbours(int a, int b, int c, dbr_cells *cells)
 {
-    dbr_cell *cell = get_cell(a, b, c, cells); 
+    dbr_cell *cell = get_cell(a, b, c, cells);
     int i, j, k, counter = 0;
-    for (i = a-1; i <= a+1; ++i) 
-        for (j = b-1; j <= b+1; ++j) 
+    for (i = a-1; i <= a+1; ++i)
+        for (j = b-1; j <= b+1; ++j)
             for (k = c-1; k <= c+1; ++k) {
                 if ((!cells->v[0] && (i == -1 || i == cells->n[0]))
                         || (!cells->v[1] && (j == -1 || j == cells->n[1]))
@@ -1252,7 +1252,7 @@ void print_cells_memory(dbr_cells cells)
                 rc_at += cell->asize;
                 vc_at += ((int)(i == 0) + (int)(i == cells.n[0] - 1)
                         + (int)(j == 0) + (int)(j == cells.n[1] - 1)
-                        + (int)(k == 0) + (int)(k == cells.n[2] - 1)) 
+                        + (int)(k == 0) + (int)(k == cells.n[2] - 1))
                                                             * cell->asize;
             }
         }
@@ -1260,9 +1260,9 @@ void print_cells_memory(dbr_cells cells)
     if (count_empty > 0)
         dbr_mesg("\n");
     dbr_mesg("Memory for atoms in %s cells: %i + %i = %i kb\n",
-             cells.name, 
-             rc_at * sizeof(dbr_xyz) / 1024, 
-             vc_at * sizeof(dbr_xyz) / 1024, 
+             cells.name,
+             rc_at * sizeof(dbr_xyz) / 1024,
+             vc_at * sizeof(dbr_xyz) / 1024,
              (rc_at + vc_at) * sizeof(dbr_xyz) / 1024);
 }
 
@@ -1275,7 +1275,7 @@ dbr_cells prepare_cells(dbr_pbc pbc, dbr_real rcut, dbr_atoms* xa)
     dbr_pbc_prop pbc_prop = get_pbc_properties(pbc);
     rcut += 1e-3;
 
-    /* virtual cells are used in PBC systems, as images of the first and last 
+    /* virtual cells are used in PBC systems, as images of the first and last
      * cells, only in periodic directions */
     cells.v[0] = (pbc.v00 == 0. ? 0 : 1);
     cells.v[1] = (pbc.v11 == 0. ? 0 : 1);
@@ -1286,7 +1286,7 @@ dbr_cells prepare_cells(dbr_pbc pbc, dbr_real rcut, dbr_atoms* xa)
         if (cells.v[i] == 0)  /* no pbc, put all in one cell */
             cells.n[i] = 1;
         else /* cell dimension must be smaller than rcut */
-            cells.n[i] = (int) floor(pbc_prop.widths[i] / rcut); 
+            cells.n[i] = (int) floor(pbc_prop.widths[i] / rcut);
     }
     cells.vectors.v00 = pbc.v00 / cells.n[0];
     cells.vectors.v01 = pbc.v01 / cells.n[0];
@@ -1299,14 +1299,14 @@ dbr_cells prepare_cells(dbr_pbc pbc, dbr_real rcut, dbr_atoms* xa)
     cells.vectors.v22 = pbc.v22 / cells.n[2];
 
     /* calculate the number of all cells (real + virtual) */
-    for (i = 0; i < 3; ++i) 
+    for (i = 0; i < 3; ++i)
         cells.a[i] = cells.n[i] + 2 * cells.v[i];
     cells.count = cells.a[0] * cells.a[1] * cells.a[2];
 
     /* initialize cells */
     cells.data = (dbr_cell*) xmalloc(cells.count * sizeof(dbr_cell));
     for (i = 0; i < cells.count; ++i) {
-        strncpy(cells.name, xa->name, 8); 
+        strncpy(cells.name, xa->name, 8);
         cells.atom_count = xa->count;
         for (j = 0; j < 27; ++j)
             cells.data[i].neighbours[j] = -1;
@@ -1314,7 +1314,7 @@ dbr_cells prepare_cells(dbr_pbc pbc, dbr_real rcut, dbr_atoms* xa)
     }
 
     /* special case, single cell */
-    if (cells.count == 1) { 
+    if (cells.count == 1) {
         cells.data[0].neighbours[13] = 0;
         cells.data[0].asize = xa->asize;
         cells.data[0].count = xa->count;
@@ -1328,13 +1328,13 @@ dbr_cells prepare_cells(dbr_pbc pbc, dbr_real rcut, dbr_atoms* xa)
     }
 
     /* real cells initializations */
-    ini_size = xa->count / (cells.n[0] * cells.n[1] * cells.n[2]); 
+    ini_size = xa->count / (cells.n[0] * cells.n[1] * cells.n[2]);
     if (ini_size < 4)
         ini_size = 4;
     for (i = 0; i < cells.n[0]; ++i) {
         for (j = 0; j < cells.n[1]; ++j) {
             for (k = 0; k < cells.n[2]; ++k) {
-                dbr_cell *cell = get_cell(i, j, k, &cells); 
+                dbr_cell *cell = get_cell(i, j, k, &cells);
                 cell->asize = ini_size;
                 cell->count = 0;
                 cell->atoms = (dbr_xyz*) xmalloc(ini_size * sizeof(dbr_xyz));
@@ -1356,8 +1356,8 @@ dbr_cells prepare_cells(dbr_pbc pbc, dbr_real rcut, dbr_atoms* xa)
 
     /* put atoms into real cells */
     for (i = 0; i < xa->count; ++i) {
-        dbr_cell *cell; 
-        double vec[3][3] = { 
+        dbr_cell *cell;
+        double vec[3][3] = {
             { cells.vectors.v00, cells.vectors.v01, cells.vectors.v02 },
             { cells.vectors.v10, cells.vectors.v11, cells.vectors.v12 },
             { cells.vectors.v20, cells.vectors.v21, cells.vectors.v22 } };
@@ -1387,7 +1387,7 @@ dbr_cells prepare_cells(dbr_pbc pbc, dbr_real rcut, dbr_atoms* xa)
                 cell->indices = (int*) xrealloc(cell->indices,
                                               cell->asize * sizeof(int));
         }
-        memcpy(cell->atoms[cell->count], xa->xyz[i], sizeof(dbr_xyz)); 
+        memcpy(cell->atoms[cell->count], xa->xyz[i], sizeof(dbr_xyz));
         if (xa->indices)
             cell->indices[cell->count] = xa->indices[i];
         cell->count++;
@@ -1422,7 +1422,7 @@ dbr_cells prepare_cells(dbr_pbc pbc, dbr_real rcut, dbr_atoms* xa)
                         || k == 0 || k == cells.n[2] + 1) {
                     /* find original cell indices */
                     dbr_real d[3];
-                    n[0] = i; 
+                    n[0] = i;
                     n[1] = j;
                     n[2] = k;
                     for (m = 0; m < 3; ++m) {
@@ -1431,17 +1431,17 @@ dbr_cells prepare_cells(dbr_pbc pbc, dbr_real rcut, dbr_atoms* xa)
                         else if (n[m] == cells.n[m] + 1)
                             n[m] = 1;
                     }
-    
-                    d[0] = (i - n[0]) * cells.vectors.v00  
-                         + (j - n[1]) * cells.vectors.v10 
+
+                    d[0] = (i - n[0]) * cells.vectors.v00
+                         + (j - n[1]) * cells.vectors.v10
                          + (k - n[2]) * cells.vectors.v20;
-                    d[1] = (i - n[0]) * cells.vectors.v01  
-                         + (j - n[1]) * cells.vectors.v11 
+                    d[1] = (i - n[0]) * cells.vectors.v01
+                         + (j - n[1]) * cells.vectors.v11
                          + (k - n[2]) * cells.vectors.v21;
-                    d[2] = (i - n[0]) * cells.vectors.v02  
-                         + (j - n[1]) * cells.vectors.v12 
+                    d[2] = (i - n[0]) * cells.vectors.v02
+                         + (j - n[1]) * cells.vectors.v12
                          + (k - n[2]) * cells.vectors.v22;
-                    make_virtual_cell(get_abs_cell(i, j, k, &cells), 
+                    make_virtual_cell(get_abs_cell(i, j, k, &cells),
                                       get_abs_cell(n[0], n[1], n[2], &cells),
                                       d[0], d[1], d[2]);
                 }
@@ -1454,7 +1454,7 @@ dbr_cells prepare_cells(dbr_pbc pbc, dbr_real rcut, dbr_atoms* xa)
 void free_cells(dbr_cells cells)
 {
     int i;
-    for (i = 0; i < cells.count; ++i) 
+    for (i = 0; i < cells.count; ++i)
         free(cells.data[i].atoms);
     free(cells.data);
 }
@@ -1464,7 +1464,7 @@ void dbr_print_version()
 {
     if (dbr_nid != 0)
         return;
-    printf("debyer %s (%s, %s precision%s%s)\n", 
+    printf("debyer %s (%s, %s precision%s%s)\n",
            VERSION,
 #ifdef USE_MPI
           "MPI",

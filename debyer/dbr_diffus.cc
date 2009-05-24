@@ -1,4 +1,4 @@
-// Tool to calculate diffusion and make .aux files with displacement 
+// Tool to calculate diffusion and make .aux files with displacement
 // for a sequance of .cfg files
 // .cfg and .aux files are used by AtomEye visualization program
 
@@ -14,20 +14,20 @@
 
 using namespace std;
 
-// define SPLIT_DIFFUSION to calculate diffusion separately for multiple 
-// categories of atoms. 
-// Category for atoms is taken from file atoms.cat. Each line in this file 
-// corresponds to one atom, and should contain integer number from 0 to 
+// define SPLIT_DIFFUSION to calculate diffusion separately for multiple
+// categories of atoms.
+// Category for atoms is taken from file atoms.cat. Each line in this file
+// corresponds to one atom, and should contain integer number from 0 to
 // (SPLIT_DIFFUSION - 1).
 
 #define SPLIT_DIFFUSION 2
 
-void write_displacement_aux(ofstream& f, int n, 
+void write_displacement_aux(ofstream& f, int n,
                             xyz_name const* c1, xyz_name const* c2,
                             dbr_pbc const& pbc,
                             vector<string> const& old_lines)
 {
-    StdDev diffus; 
+    StdDev diffus;
 #ifdef SPLIT_DIFFUSION
     vector<StdDev> cat_diffus(SPLIT_DIFFUSION);
     vector<int> cat;
@@ -67,7 +67,7 @@ void write_displacement_aux(ofstream& f, int n,
 #endif
         if (old_lines.size() == (size_t) n)
             f << old_lines[i] << " ";
-        f <<  displ2 << " " << sqrt(displ2) << " " 
+        f <<  displ2 << " " << sqrt(displ2) << " "
             << r[0] << " " << r[1] << " " << r[2] << endl;
     }
     cerr << "Diffusion: " << diffus.str() << endl;
@@ -75,7 +75,7 @@ void write_displacement_aux(ofstream& f, int n,
     if (!cat.empty()) {
         for (int i = 0; i < SPLIT_DIFFUSION; ++i)
             if (cat_diffus[i].get_n() > 100)
-                cerr << "Diffusion of cat. " << i << ": " 
+                cerr << "Diffusion of cat. " << i << ": "
                      << cat_diffus[i].str() << endl;
     }
 #endif

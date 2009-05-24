@@ -23,9 +23,9 @@
 #include <string>
 #include <cstdio>
 
-#if HAVE_CONFIG_H   
-#  include <config.h>  
-#endif 
+#if HAVE_CONFIG_H
+#  include <config.h>
+#endif
 
 #ifdef HAVE_ZLIB
 #  include <zlib.h>
@@ -37,7 +37,7 @@
 
 
 // Line-oriented (fgets()-based) API for reading files.
-// Provides random access to the first 1kb of the file (which is buffered), 
+// Provides random access to the first 1kb of the file (which is buffered),
 // to allow guess file format.
 // Can handle normal files, stdin, gzipped and bzip2-ed files.
 class LineInput
@@ -57,7 +57,7 @@ public:
 
     const char* get_error() { return buffer; }
 
-    // returns pointer to 0-terminated array (without a new line character). 
+    // returns pointer to 0-terminated array (without a new line character).
     // The string can be changed.
     const char* get_line();
 

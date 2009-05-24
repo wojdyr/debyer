@@ -151,7 +151,7 @@ const t_pse *find_in_pse(const char *label)
     if (strlen(label) > 1 && isalpha(label[1]))
         buf[1] = tolower(label[1]);
 
-    for (it = pse_table; it->Z != 0; it++) 
+    for (it = pse_table; it->Z != 0; it++)
         if (strcmp(it->symbol, label) == 0)
             return it;
     return NULL;
@@ -873,12 +873,12 @@ const t_it92_coeff *find_in_it92(const char *label)
     strncpy(buf, label, 14);
     alpha_len = fix_label(buf);
 
-    for (p = it92_table; p->symbol != NULL; p++) 
+    for (p = it92_table; p->symbol != NULL; p++)
         if (strcmp(buf, p->symbol) == 0)
             return p;
     /* try again, comparing only alpha characters */
     if (alpha_len != strlen(buf))
-        for (p = it92_table; p->symbol != NULL; p++) 
+        for (p = it92_table; p->symbol != NULL; p++)
             if (strncmp(buf, p->symbol, alpha_len) == 0)
                 return p;
     return NULL;
@@ -1000,7 +1000,7 @@ const t_nn92_record *find_in_nn92(const char *label)
     if (strlen(label) > 1 && isalpha(label[1]))
         buf[1] = tolower(label[1]);
 
-    for (it = nn92_table; it->symbol != NULL; it++) 
+    for (it = nn92_table; it->symbol != NULL; it++)
         if (strcmp(it->symbol, label) == 0)
             return it;
     return NULL;

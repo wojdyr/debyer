@@ -42,13 +42,13 @@ void free_atoms(xyz_name *atoms);
 #include <vector>
 #include "lineio.h"
 
-// atomistic configuration 
+// atomistic configuration
 struct dbr_aconf
 {
     int n; // number of atoms
     xyz_name *atoms; // coordinates of atoms
     dbr_pbc pbc; // PBC, zeroed if not applicable
-    std::string orig_filename; 
+    std::string orig_filename;
     std::vector<std::string> comments;  // no newlines here
 };
 
@@ -65,7 +65,7 @@ void read_plain(LineInput& in, dbr_aconf *aconf);
 void read_lammps_data(LineInput& in, dbr_aconf *aconf);
 
 /// write atomistic configuration aconf to file in XMOL XYZ format
-void write_atoms_to_xyz_file(dbr_aconf const& aconf, 
+void write_atoms_to_xyz_file(dbr_aconf const& aconf,
                              std::string const& filename);
 /// write atomistic configuration aconf to file in AtomEye CFG format
 void write_atoms_to_atomeye_file(dbr_aconf const& aconf,
@@ -80,7 +80,7 @@ void write_lammps_data(dbr_aconf const& aconf, std::string const& filename);
 /// write atomistic configuration aconf to file in PDB format
 void write_pdb(dbr_aconf const& aconf, std::string const& filename);
 
-/// write atomistic configuration aconf to file in plain TSV format: 
+/// write atomistic configuration aconf to file in plain TSV format:
 /// x y z atom-symbol
 void write_xyza(dbr_aconf const& aconf, std::string const& filename);
 
@@ -111,20 +111,20 @@ int open_atoms_file(const char* fn, xyz_name **coords, dbr_pbc& pbc,
 
 
 // r = xyz * m
-inline 
+inline
 void dbr_vec3_mult_pbc(dbr_xyz const xyz, dbr_pbc const& m, dbr_xyz r)
 {
-    //for (int j = 0; j < 3; ++j) 
+    //for (int j = 0; j < 3; ++j)
     //    r[j] = xyz[0] * m[0][j] + xyz[1] * m[1][j] + xyz[2] * m[2][j];
     r[0] = xyz[0] * m.v00 + xyz[1] * m.v10 + xyz[2] * m.v20;
     r[1] = xyz[0] * m.v01 + xyz[1] * m.v11 + xyz[2] * m.v21;
     r[2] = xyz[0] * m.v02 + xyz[1] * m.v12 + xyz[2] * m.v22;
 }
 
-inline 
+inline
 void dbr_vec3_mult_mat3x3(dbr_xyz const xyz, double const m[3][3], dbr_xyz r)
 {
-    for (int j = 0; j < 3; ++j) 
+    for (int j = 0; j < 3; ++j)
         r[j] = xyz[0] * m[0][j] + xyz[1] * m[1][j] + xyz[2] * m[2][j];
 }
 

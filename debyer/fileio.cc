@@ -33,7 +33,7 @@ using namespace std;
 
 #define mcerr \
     if (dbr_nid == 0) \
-        cerr 
+        cerr
 
 // if true, store coordinates in <0,1) range (relative to PBC box).
 // Not all functions respect this variable. Don't change the variable
@@ -91,19 +91,19 @@ void read_xyz(LineInput& in, dbr_aconf *aconf)
     aconf->n = strtol(line, 0, 10);
 
     line = in.get_line(); //2nd line
-    if (dbr_verbosity >= 0) 
+    if (dbr_verbosity >= 0)
         mcerr << aconf->n << " atoms, title: " << line << endl;
 
     aconf->atoms = new xyz_name[aconf->n];
     for (int i = 0; i < aconf->n; ++i) {
         xyz_name& atom = aconf->atoms[i];
-        line = in.get_line(); 
+        line = in.get_line();
         if (!line) {
             mcerr << "Error: Reading line " << i+3 << " failed." << endl;
             mcerr << in.get_error() << endl;
             dbr_abort(EXIT_FAILURE);
         }
-        if (sscanf(line, "%7s "DBR_F" "DBR_F" "DBR_F, atom.name, &atom.xyz[0], 
+        if (sscanf(line, "%7s "DBR_F" "DBR_F" "DBR_F, atom.name, &atom.xyz[0],
                     &atom.xyz[1], &atom.xyz[2]) != 4) {
             mcerr << "Format error in line " << i+3 << ":" << endl
                   << line << endl;
@@ -139,7 +139,7 @@ void read_plain(LineInput& in, dbr_aconf *aconf)
     aconf->atoms = new xyz_name[atoms_size];
     const char *line;
     while ((line = in.get_line())) {
-        if (counter == atoms_size) 
+        if (counter == atoms_size)
             resize_atoms(atoms_size, &aconf->atoms);
         xyz_name& atom = aconf->atoms[counter];
         ++counter;
@@ -149,11 +149,11 @@ void read_plain(LineInput& in, dbr_aconf *aconf)
         string name;
         int r = 0;
         if (isalpha(*ptr)) { //name, x, y, z
-            r = sscanf(line, "%7s "DBR_F" "DBR_F" "DBR_F, 
+            r = sscanf(line, "%7s "DBR_F" "DBR_F" "DBR_F,
                         atom.name, &atom.xyz[0], &atom.xyz[1], &atom.xyz[2]);
         }
         else if (*ptr) {//x, y, z, name
-            r = sscanf(line, DBR_F" "DBR_F" "DBR_F" %7s", 
+            r = sscanf(line, DBR_F" "DBR_F" "DBR_F" %7s",
                         &atom.xyz[0], &atom.xyz[1], &atom.xyz[2], atom.name);
         }
         if (!r) {
@@ -178,8 +178,8 @@ void write_atoms_to_xyz_file(dbr_aconf const& aconf, string const& filename)
     f << aconf.n << "\nconverted by debyer\n";
     for (int i = 0; i < aconf.n; ++i) {
         xyz_name const& atom = aconf.atoms[i];
-        f << atom.name << " " 
-          << atom.xyz[0] << " " << atom.xyz[1] << " " << atom.xyz[2] << endl; 
+        f << atom.name << " "
+          << atom.xyz[0] << " " << atom.xyz[1] << " " << atom.xyz[2] << endl;
     }
     f.close();
 }
@@ -208,13 +208,13 @@ dbr_aconf read_atoms_from_file(LineInput &in, bool relative_coords)
             mcerr << "Detected AtomEye CFG format" << endl;
         read_atomeye(in, &aconf);
     }
-    else if (endswith(in.get_orig_filename(), "CONFIG") 
+    else if (endswith(in.get_orig_filename(), "CONFIG")
              || endswith(in.get_orig_filename(), "REVCON")) {
         if (dbr_verbosity >= 0)
             mcerr << "DL_POLY CONFIG format" << endl;
         read_dlpoly_config(in, &aconf);
     }
-    else if (endswith(in.get_orig_filename(), ".lammps") 
+    else if (endswith(in.get_orig_filename(), ".lammps")
              || endswith(in.get_orig_filename(), ".lmps")) {
         if (dbr_verbosity >= 0)
             mcerr << "LAMMPS data input format" << endl;
@@ -235,7 +235,7 @@ dbr_aconf read_atoms_from_file(LineInput &in, bool relative_coords)
         dbr_abort(EXIT_FAILURE);
     }
     if (dbr_verbosity > 0)
-        mcerr << "Elapsed " << dbr_get_elapsed() << " s. Atoms were read." 
+        mcerr << "Elapsed " << dbr_get_elapsed() << " s. Atoms were read."
             << endl;
     aconf.orig_filename = in.get_filename();
     return aconf;
@@ -245,14 +245,14 @@ void write_file_with_atoms(dbr_aconf const& aconf, string const& filename)
 {
     if (endswith(filename, ".cfg"))
         write_atoms_to_atomeye_file(aconf, filename);
-    else if (endswith(filename, ".lammps") || endswith(filename, ".lmps")) 
+    else if (endswith(filename, ".lammps") || endswith(filename, ".lmps"))
         write_lammps_data(aconf, filename);
     else if (endswith(filename, ".xyz"))
         write_atoms_to_xyz_file(aconf, filename);
     else if (endswith(filename, ".pdb"))
         write_pdb(aconf, filename);
     else {
-        mcerr << "Can't guess filetype of atoms output file from filename" 
+        mcerr << "Can't guess filetype of atoms output file from filename"
             << endl;
         dbr_abort(EXIT_FAILURE);
     }
@@ -270,7 +270,7 @@ void read_atomeye(LineInput& in, dbr_aconf *aconf)
     const char* line = in.get_line();
     assert(!strncmp(line, cfg_magic, magic_len));
     sscanf(line + magic_len, "%i", &aconf->n);
-    if (dbr_verbosity >= 0) 
+    if (dbr_verbosity >= 0)
         mcerr << aconf->n << " atoms." << endl;
     aconf->atoms = new xyz_name[aconf->n];
     int counter = 0;
@@ -283,16 +283,16 @@ void read_atomeye(LineInput& in, dbr_aconf *aconf)
             ++nonblank;
 
         // PBC line, H0(...) = ...
-        if (nonblank[0] == 'H' && nonblank[1] == '0') {     
-            char const* t = strchr(line, '('); 
+        if (nonblank[0] == 'H' && nonblank[1] == '0') {
+            char const* t = strchr(line, '(');
             char *end;
             int a1 = strtol(++t, &end, 10);
             assert (a1 >= 1 && a1 <= 3);
 
-            t = strchr(end, ','); 
+            t = strchr(end, ',');
             int a2 = strtol(++t, &end, 10);
             assert (a2 >= 1 && a2 <= 3);
-            t = strchr(end, '='); 
+            t = strchr(end, '=');
             H[a1-1][a2-1] = strtod(++t, 0);
         }
 
@@ -303,8 +303,8 @@ void read_atomeye(LineInput& in, dbr_aconf *aconf)
             int n;
             int r = sscanf(eq+1, "%i", &n);
             ASSERT_FORMAT(r == 1);
-            if (dbr_verbosity > 0) 
-                mcerr << "Extended CFG format with " << n 
+            if (dbr_verbosity > 0)
+                mcerr << "Extended CFG format with " << n
                     << " entries per atom." << endl;
             extended = true;
         }
@@ -316,7 +316,7 @@ void read_atomeye(LineInput& in, dbr_aconf *aconf)
             if (extended) {
                 int r = sscanf(nonblank, DBR_F " " DBR_F " " DBR_F, &x, &y, &z);
                 if (r == 1) {
-                    line = in.get_line(); 
+                    line = in.get_line();
                     sscanf(line, "%7s", ext_name);
                     continue;
                 }
@@ -330,7 +330,7 @@ void read_atomeye(LineInput& in, dbr_aconf *aconf)
             }
             else {
                 dbr_real mass;
-                int r = sscanf(nonblank, DBR_F" %7s "DBR_F" "DBR_F" "DBR_F, 
+                int r = sscanf(nonblank, DBR_F" %7s "DBR_F" "DBR_F" "DBR_F,
                                          &mass, atom.name, &x, &y, &z);
                 assert(r == 5);
             }
@@ -398,7 +398,7 @@ void write_atoms_to_atomeye_file(dbr_aconf const& aconf, string const& filename)
     if (dbr_nid != 0)
         return;
     if (dbr_verbosity >= 0)
-        mcerr << "Writing atoms to AtomEye extended cfg file: " 
+        mcerr << "Writing atoms to AtomEye extended cfg file: "
               << filename << endl;
     ofstream f(filename.c_str(), ios::out|ios::binary);
     if (!f) {
@@ -431,7 +431,7 @@ void write_atoms_to_atomeye_file(dbr_aconf const& aconf, string const& filename)
             f << atom.name << "\n";
         }
         if (dbr_f_store_relative_coords) {
-            f << atom.xyz[0] << " " << atom.xyz[1] 
+            f << atom.xyz[0] << " " << atom.xyz[1]
                 << " " << atom.xyz[2] << "\n";
         }
         else {
@@ -449,7 +449,7 @@ void write_atoms_to_atomeye_file(dbr_aconf const& aconf, string const& filename)
 /* checks if "atom" is a shell in core-shell model */
 static bool is_shell(const char *name)
 {
-    static const char* postfixes[] = { "-shell", "_shell", "-shel", "_shel", 
+    static const char* postfixes[] = { "-shell", "_shell", "-shel", "_shel",
                                         "-shl", "_shl", "-sh", "_sh" };
     const int n = sizeof(postfixes) / sizeof(postfixes[0]);
     for (int i = 0; i < n; ++i) {
@@ -466,9 +466,9 @@ void read_dlpoly_config(LineInput& in, dbr_aconf *aconf)
     const char* line = in.get_line(); // first line is a title
     line = in.get_line(); // second line - levcfg and imcon
     int levcfg, imcon;
-    int r = sscanf(line, " %d %d", &levcfg, &imcon); 
+    int r = sscanf(line, " %d %d", &levcfg, &imcon);
     ASSERT_FORMAT(r == 2);
-    //  imcon -- periodic boundary key: 
+    //  imcon -- periodic boundary key:
     //      imcon       meaning
     //      0   no periodic boundaries
     //      1   cubic boundary conditions
@@ -479,12 +479,12 @@ void read_dlpoly_config(LineInput& in, dbr_aconf *aconf)
     //      6   x-y parallelogram boundary conditions with
     //          no periodicity in the z direction
     //      7   hexagonal prism boundary conditions
-    //  
+    //
     // Possible values of levcfg: 0 - only coordinates in file
     //                            1 - coordinates and velocities
-    //                            2 - coordinates, velocities and forces 
+    //                            2 - coordinates, velocities and forces
 
-    // read boundary conditions 
+    // read boundary conditions
     if (imcon == 0)
         ; //no PBC
     else if (imcon == 1 || imcon == 2 || imcon == 3) {
@@ -503,7 +503,7 @@ void read_dlpoly_config(LineInput& in, dbr_aconf *aconf)
         mcerr << "Error. imcon=" << imcon << " is not supported." << endl;
         dbr_abort(EXIT_FAILURE);
     }
-    
+
     // read atoms
     size_t counter = 0;
     size_t atoms_size = 1024;
@@ -515,7 +515,7 @@ void read_dlpoly_config(LineInput& in, dbr_aconf *aconf)
         if (!(line = in.get_line()))
             break;
         ++counter;
-        if (counter == atoms_size) 
+        if (counter == atoms_size)
             resize_atoms(atoms_size, &aconf->atoms);
         xyz_name& atom = aconf->atoms[counter-1];
 
@@ -541,7 +541,7 @@ void read_dlpoly_config(LineInput& in, dbr_aconf *aconf)
             strncpy(atom.name, atom_name, 7);
             line = in.get_line();
             ASSERT_FORMAT(line);
-            int r = sscanf(line, " " DBR_F " " DBR_F " " DBR_F, 
+            int r = sscanf(line, " " DBR_F " " DBR_F " " DBR_F,
                                  &atom.xyz[0], &atom.xyz[1], &atom.xyz[2]);
             ASSERT_FORMAT(r == 3);
             for (int i = 1; i < levcfg+1; ++i)
@@ -576,13 +576,13 @@ vector<T1> get_sorted_keys(map<T1,T2> const& m)
 }
 
 
-void write_dlpoly_file(dbr_aconf const& aconf, 
+void write_dlpoly_file(dbr_aconf const& aconf,
                        string const& filename, bool sorted)
 {
     if (dbr_nid != 0)
         return;
     if (dbr_verbosity >= 0)
-        mcerr << "Writing atoms to DL_POLY CONFIG cfg file: " 
+        mcerr << "Writing atoms to DL_POLY CONFIG cfg file: "
               << filename << endl;
     // printf formatting is more useful here
     FILE *f = fopen(filename.c_str(), "wb");
@@ -611,7 +611,7 @@ void write_dlpoly_file(dbr_aconf const& aconf,
         map<string,int> m = get_symbol_map(aconf);
         vector<string> keys = get_sorted_keys(m);
         mcerr << "Atoms in " << filename << " are in order:";
-        for (vector<string>::const_iterator k = keys.begin(); 
+        for (vector<string>::const_iterator k = keys.begin();
                                                         k != keys.end(); ++k) {
             mcerr << "  " << *k << ": " << m[*k];
             //it may be inefficient for many atom species
@@ -619,7 +619,7 @@ void write_dlpoly_file(dbr_aconf const& aconf,
                 xyz_name const& a = aconf.atoms[i];
                 if (strcmp(k->c_str(), a.name) == 0) {
                     fprintf(f, "%s\n", a.name);
-                    fprintf(f, "%20.8f%20.8f%20.8f\n", a.xyz[0], a.xyz[1], 
+                    fprintf(f, "%20.8f%20.8f%20.8f\n", a.xyz[0], a.xyz[1],
                                                                 a.xyz[2]);
                 }
             }
@@ -649,14 +649,14 @@ vector<string> split_string(const char* s) {
     }
     return v;
 }
- 
+
 // This file format doesn't contain atom names, only numbers of atom types.
 // The names corresponding to the numbers are in separate lammps file.
-// Here we assume that names of the types follow the line "n atom types" 
+// Here we assume that names of the types follow the line "n atom types"
 // as comments, e.g.: "2 atom types # C Si", or use fake names.
-void read_lammps_data(LineInput& in, dbr_aconf* aconf) 
+void read_lammps_data(LineInput& in, dbr_aconf* aconf)
 {
-    // read header 
+    // read header
     vector<string> symbols;
     const char* line = NULL;
     int counter = 0;
@@ -733,7 +733,7 @@ void read_lammps_data(LineInput& in, dbr_aconf* aconf)
             break;
         }
         else {
-            mcerr << "Warning: ignoring line " << counter << ":\n" << line 
+            mcerr << "Warning: ignoring line " << counter << ":\n" << line
                 << endl;
         }
     }
@@ -742,7 +742,7 @@ void read_lammps_data(LineInput& in, dbr_aconf* aconf)
         mcerr << "Error: line with number of atoms not found.\n";
         dbr_abort(EXIT_FAILURE);
     }
-    // read data 
+    // read data
     aconf->atoms = new xyz_name[aconf->n];
     for (int i = 0; i < aconf->n; ++i)
         aconf->atoms[i].name[0] = 0;
@@ -753,7 +753,7 @@ void read_lammps_data(LineInput& in, dbr_aconf* aconf)
         while (isspace(*nonblank))
             ++nonblank;
         if (*nonblank == 0) // blank line
-            continue; 
+            continue;
         int number, symbol_nr;
         double ax, ay, az;
         if (sscanf(line, "%d %d %lf %lf %lf",
@@ -800,7 +800,7 @@ void write_lammps_data(dbr_aconf const& aconf, string const& filename)
 {
     if (dbr_nid != 0)
         return;
-    if (aconf.pbc.v01 != 0 || aconf.pbc.v02 != 0 
+    if (aconf.pbc.v01 != 0 || aconf.pbc.v02 != 0
           || aconf.pbc.v10 != 0 || aconf.pbc.v12 != 0
           || aconf.pbc.v20 != 0 || aconf.pbc.v21 != 0) {
         mcerr << "Sorry, LAMMPS files with non-orthorhombic PBC "
@@ -824,15 +824,15 @@ void write_lammps_data(dbr_aconf const& aconf, string const& filename)
     vector<string> keys = get_sorted_keys(m);
     for (size_t i = 0; i != keys.size(); ++i) {
         const t_pse *pse = find_in_pse(keys[i].c_str());
-        f << "#mass            " << i+1 << " "; 
+        f << "#mass            " << i+1 << " ";
         if (pse)
             f << pse->mass;
         else
-            f << "?"; 
+            f << "?";
         f << "  #" << keys[i] << endl;
     }
     f << "\n" << aconf.n << "\tatoms\n";
-    f << keys.size() << " atom types #"; 
+    f << keys.size() << " atom types #";
     for (size_t i = 0; i != keys.size(); ++i) {
         f << " " << keys[i];
         m[keys[i]] = i+1;
@@ -844,8 +844,8 @@ void write_lammps_data(dbr_aconf const& aconf, string const& filename)
     f << "\nAtoms\n\n";
     for (int i = 0; i < aconf.n; ++i) {
         xyz_name const& a = aconf.atoms[i];
-        f << i+1 << "\t" << m[a.name] << "\t" 
-          << a.xyz[0] << "\t" << a.xyz[1] << "\t" << a.xyz[2] << "\n"; 
+        f << i+1 << "\t" << m[a.name] << "\t"
+          << a.xyz[0] << "\t" << a.xyz[1] << "\t" << a.xyz[2] << "\n";
     }
     f.close();
 }
@@ -865,8 +865,8 @@ void write_pdb(dbr_aconf const& aconf, string const& filename)
 
     f << "HEADER    converted by debyer; " << aconf.n << " atoms\n";
 
-    // "The CRYST1 record presents the unit cell parameters, space group, 
-    // and Z value. If the structure was not determined by crystallographic 
+    // "The CRYST1 record presents the unit cell parameters, space group,
+    // and Z value. If the structure was not determined by crystallographic
     // means, CRYST1 simply defines a unit cube."
     //
     // COLUMNS       DATA TYPE      FIELD         DEFINITION
@@ -885,7 +885,7 @@ void write_pdb(dbr_aconf const& aconf, string const& filename)
     dbr_pbc_prop p = get_pbc_properties(aconf.pbc);
     f << "CRYST1" << fixed;
     for (int i = 0; i < 3; ++i)
-        f << setw(9) << setprecision(3) << p.lengths[i]; 
+        f << setw(9) << setprecision(3) << p.lengths[i];
     for (int i = 0; i < 3; ++i)
         f << setw(7) << setprecision(2) << acos(p.cosines[i]) * 180 / M_PI;
     f << " P 1       " << "   1\n";
@@ -910,8 +910,8 @@ void write_pdb(dbr_aconf const& aconf, string const& filename)
     // 77-78    LString(2)     element     Element symbol, right-justified.
     // 79-80    LString(2)     charge      Charge on the atom.
     for (int i = 0; i < aconf.n; ++i) {
-        f << "ATOM  " << setw(5) << i+1 
-            << " " << setw(3) << left << aconf.atoms[i].name 
+        f << "ATOM  " << setw(5) << i+1
+            << " " << setw(3) << left << aconf.atoms[i].name
             <<  "          1    " << right;
         for (int j = 0; j < 3; ++j)
             f  << setw(8) << setprecision(3) << fixed << aconf.atoms[i].xyz[j];
@@ -932,14 +932,14 @@ void write_xyza(dbr_aconf const& aconf, string const& filename)
         return;
     }
     if (aconf.pbc.v00 != 0)
-        mcerr << "Warning: PBC is not stored in the file.\n" 
-                  "PBC: " << aconf.pbc.v00 << " x " << aconf.pbc.v11 
+        mcerr << "Warning: PBC is not stored in the file.\n"
+                  "PBC: " << aconf.pbc.v00 << " x " << aconf.pbc.v11
                   << " x " << aconf.pbc.v22 << endl;
 
     for (int i = 0; i < aconf.n; ++i) {
         xyz_name const& atom = aconf.atoms[i];
         f << atom.xyz[0] << "\t" << atom.xyz[1] << "\t" << atom.xyz[2] << "\t"
-            << atom.name << "\t" << endl; 
+            << atom.name << "\t" << endl;
     }
     f.close();
 }

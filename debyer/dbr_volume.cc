@@ -16,7 +16,7 @@ static const char* usage =
 "Usage:\n"
 "       dbr_volume [-m N] FILENAME A [AMAX ASTEP]\n"
 "   N = min. number of empty cells that make void\n"
-"   A = size of cubic cell\n" 
+"   A = size of cubic cell\n"
 "   if AMAX and ASTEP are given, a = A, A+ASTEP, ... AMAX.\n";
 
 int main(int argc, char **argv)
@@ -37,7 +37,7 @@ int main(int argc, char **argv)
         return -1;
     }
     double a0 = strtod(argv[first_param + 1], 0);
-    double astep = 0, 
+    double astep = 0,
            amax = 0;
     if (first_param + 4 != argc) {
         amax = strtod(argv[first_param + 2], 0);
@@ -54,7 +54,7 @@ int main(int argc, char **argv)
     int nx = iround(pbc.v00 / a);
     int ny = iround(pbc.v11 / a);
     int nz = iround(pbc.v22 / a);
-    vector<vector<vector<int> > > 
+    vector<vector<vector<int> > >
         boxes(nx, vector<vector<int> >(ny, vector<int>(nz, 0)));
     for (int i = 0; i < n; ++i) {
        int jx = int(coords[i].xyz[0] * nx) % nx;
@@ -71,8 +71,8 @@ int main(int argc, char **argv)
                     empty++;
     int voids = 0;
     cout << "# dx  dy  dz  nboxes  empty  V[%]  voids\n";
-    cout << "# " << pbc.v00 / nx << " " << pbc.v11 / ny << " " 
-         << pbc.v22 / nz  << " " << all << " " << empty << " " 
+    cout << "# " << pbc.v00 / nx << " " << pbc.v11 / ny << " "
+         << pbc.v22 / nz  << " " << all << " " << empty << " "
          << 100. * empty / all << " " << voids << endl;
 
     delete [] coords;

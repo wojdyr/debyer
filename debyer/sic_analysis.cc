@@ -1,5 +1,5 @@
 
-/// utility to calculate coordination numbers of atoms, 
+/// utility to calculate coordination numbers of atoms,
 /// so-called ring distribution and other things
 /// in SiC structure
 
@@ -55,11 +55,11 @@ class NeighbourStats
 public:
     vector<vector<double> > angles;
 
-    NeighbourStats(dbr_cells *cells_) 
+    NeighbourStats(dbr_cells *cells_)
         : cells(cells_), coord_array(0)
         { initialize(); }
 
-    void find_neigbours(NeighbourStats &other, dbr_real rcut, 
+    void find_neigbours(NeighbourStats &other, dbr_real rcut,
                         vector<int> *angle_distrib, bool set_n2=true);
     void add_self_to_n1(dbr_real rcut);
 
@@ -102,13 +102,13 @@ private:
     dbr_real *coord_array;
     vector<int> indices;
 
-    void initialize(); 
+    void initialize();
 };
 
 vector<int> NeighbourStats::get_n1_histogram() const
 {
     vector<int> v(256, 0);
-    for (vector<unsigned char>::const_iterator i = n1_count.begin(); 
+    for (vector<unsigned char>::const_iterator i = n1_count.begin();
             i != n1_count.end(); ++i)
         ++v[*i];
     return v;
@@ -125,7 +125,7 @@ string print_n1_stats(NeighbourStats const& a, NeighbourStats const& b)
     for (size_t i = 0; i < va.size(); ++i)
         if (va[i] || vb[i]) {
             // CN#2 | Si 2382 1.35% | C 5682 3.2% | all 8064 2.1%
-            s << "CN#" << i 
+            s << "CN#" << i
                 << " | " << a.get_name() << " " << setw(8) << va[i] << "  "
                 << setprecision(4) << va[i] * 100. / suma << "%"
                 << " | " << b.get_name() << " " << setw(8) << vb[i] << "  "
@@ -167,7 +167,7 @@ struct cell_ordering: public binary_function<int, int, bool>
 };
 
 
-void NeighbourStats::find_neigbours(NeighbourStats &other, dbr_real rcut, 
+void NeighbourStats::find_neigbours(NeighbourStats &other, dbr_real rcut,
                                     vector<int> *angle_distrib,
                                     bool set_n2/*=true*/)
 {
@@ -184,7 +184,7 @@ void NeighbourStats::find_neigbours(NeighbourStats &other, dbr_real rcut,
         const dbr_cell *c1 = &other.cells->data[i];
         if (!c1->real)
             continue;
-        for (int j = 0; j < 27; ++j)  
+        for (int j = 0; j < 27; ++j)
             c1_nabes[j] = c1->neighbours[j];
         sort(c1_nabes.begin(), c1_nabes.end(), cell_ordering(cells));
         for (int k = 0; k < c1->count; k++) {
@@ -193,7 +193,7 @@ void NeighbourStats::find_neigbours(NeighbourStats &other, dbr_real rcut,
             neigh.clear();
             neigh_a.clear();
 
-            for (int j = 0; j < 27; ++j) { 
+            for (int j = 0; j < 27; ++j) {
                 int c2_n = c1_nabes[j];
                 const dbr_cell *c2 = &cells->data[c2_n];
                 for (int m = 0; m != c2->count; ++m) {
@@ -209,7 +209,7 @@ void NeighbourStats::find_neigbours(NeighbourStats &other, dbr_real rcut,
                                                        first_at, c2->atoms[m]);
                                     int bin = int((angle / M_PI) * nbins + 0.5);
                                     if (bin < nbins) //n'th bin -> n*180/nbins.
-                                        ++(*angle_distrib)[bin]; 
+                                        ++(*angle_distrib)[bin];
                                     other.angles[on].push_back(angle);
                                 }
                             }
@@ -224,7 +224,7 @@ void NeighbourStats::find_neigbours(NeighbourStats &other, dbr_real rcut,
         }
     }
     find_neigh_other = &other;
-} 
+}
 
 // TODO: optimize, don't loop over all atoms in all neighbour cell
 void NeighbourStats::add_self_to_n1(dbr_real rcut)
@@ -237,14 +237,14 @@ void NeighbourStats::add_self_to_n1(dbr_real rcut)
         const dbr_cell *c1 = &this->cells->data[i];
         if (!c1->real)
             continue;
-        for (int j = 0; j < 27; ++j)  
+        for (int j = 0; j < 27; ++j)
             c1_nabes[j] = c1->neighbours[j];
         sort(c1_nabes.begin(), c1_nabes.end(), cell_ordering(cells));
         for (int k = 0; k < c1->count; k++) {
             int on = this->get_atom_number(i, k);
             dbr_real const* first_at = c1->atoms[k];
 
-            for (int j = 0; j < 27; ++j) { 
+            for (int j = 0; j < 27; ++j) {
                 int c2_n = c1_nabes[j];
                 const dbr_cell *c2 = &cells->data[c2_n];
                 for (int m = 0; m != c2->count; ++m) {
@@ -256,7 +256,7 @@ void NeighbourStats::add_self_to_n1(dbr_real rcut)
             }
         }
     }
-} 
+}
 
 
 void NeighbourStats::find_rings()
@@ -297,15 +297,15 @@ string NeighbourStats::get_ring_stats(bool full) const
 {
     vector<int> v(256, 0);
     int ring3_sum = 0;
-    for (vector<unsigned char>::const_iterator i = ring3_count.begin(); 
+    for (vector<unsigned char>::const_iterator i = ring3_count.begin();
             i != ring3_count.end(); ++i) {
         ring3_sum += *i;
         ++v[*i];
     }
-    string s = get_name() + ": " + S(ring2_count) + " 2-fold rings, " 
+    string s = get_name() + ": " + S(ring2_count) + " 2-fold rings, "
                 + S(ring3_sum / 3) + " 3-fold rings";
     if (full)
-        s += "\n" + get_name() + " 3-fold ring statistics:\n" 
+        s += "\n" + get_name() + " 3-fold ring statistics:\n"
             + do_format_stats(v);
     else
         s += "  " + get_name() + " w/ 12 rings: " + S(v[12])
@@ -313,10 +313,10 @@ string NeighbourStats::get_ring_stats(bool full) const
     return s;
 }
 
-int NeighbourStats::get_wrong_bonds(double rcut) 
+int NeighbourStats::get_wrong_bonds(double rcut)
 {
     find_neigbours(*this, rcut, NULL, false);
-    int n = n1_count.size(); // atom number 
+    int n = n1_count.size(); // atom number
     // the stats contain also n bugus "self" bonds (atom "bonded" with itself)
     return (accumulate(n1_count.begin(), n1_count.end(), 0) - n) / 2;
 }
@@ -338,7 +338,7 @@ void NeighbourStats::store_indices()
 }
 
 bool mark_neigbours(NeighbourStats const& ns, NeighbourStats const& ns2,
-                    vector<int>& id, 
+                    vector<int>& id,
                     int k, int grain)
 {
     int t = ns.get_index(k);
@@ -346,7 +346,7 @@ bool mark_neigbours(NeighbourStats const& ns, NeighbourStats const& ns2,
         if (ns.get_ring3(k) == 12) { // ordered
             id[t] = grain;
             vector<pair<int,int> > const& neigh = ns.get_neigh(k);
-            for (vector<pair<int,int> >::const_iterator i = neigh.begin(); 
+            for (vector<pair<int,int> >::const_iterator i = neigh.begin();
                                                        i != neigh.end(); ++i) {
                 if (ns2.get_ring3(i->first) == 12) {
                     id[ns2.get_index(k)] = grain;
@@ -364,12 +364,12 @@ bool mark_neigbours(NeighbourStats const& ns, NeighbourStats const& ns2,
 }
 
 // the algorithm doesn't work, i.e. grains are not separated
-void generate_grain_ids(vector<NeighbourStats> const&nstats, 
+void generate_grain_ids(vector<NeighbourStats> const&nstats,
                         string const& grain_id_file)
 {
     assert (nstats.size() == 2);
     cerr << "Autogenerated grain IDs -> " << grain_id_file << endl;
-    vector<int> id(nstats[0].size() + nstats[1].size(), -2); 
+    vector<int> id(nstats[0].size() + nstats[1].size(), -2);
     int grain = 0;
     for (int k = 0; k < nstats[0].size(); ++k) {
         if (mark_neigbours(nstats[0], nstats[1], id, k, grain)) {
@@ -407,15 +407,15 @@ int main(int argc, char **argv)
             grain_id_file = argv[option_idx + 1];
             option_idx += 2;
         }
-        else 
+        else
             break;
     }
 
     if (option_idx != argc) {
         cerr << "Usage:\n" << argv[0] << " filename max_bondlength [OPTIONS]"
             "\n options: \n    [-a angle_distrib_file]"
-                        "\n    [-r ring_dump_file]" 
-                        "\n    [-g grain_id_file]" 
+                        "\n    [-r ring_dump_file]"
+                        "\n    [-g grain_id_file]"
                 << endl;
         dbr_abort(EXIT_SUCCESS);
     }
@@ -436,13 +436,13 @@ int main(int argc, char **argv)
     dbr_aconf aconf = read_atoms_from_file(in, false);
     dbr_pbc_prop pbc_prop = get_pbc_properties(aconf.pbc);
     cerr << "Numeric density: " << aconf.n / pbc_prop.volume << endl;
-    
+
     // separete different atom types (xyz_name[] -> dbr_atoms[])
     dbr_atoms *xa = 0;
     int tc = dbr_get_atoms(aconf.n, aconf.atoms, &xa, 1);
     delete [] aconf.atoms;
     if (dbr_verbosity > 0)
-        cerr << "Elapsed " << dbr_get_elapsed() <<" s. Atoms were sorted." 
+        cerr << "Elapsed " << dbr_get_elapsed() <<" s. Atoms were sorted."
             << endl;
     if (dbr_verbosity >= 0) {
         cerr << "Atom statistics:";
@@ -458,7 +458,7 @@ int main(int argc, char **argv)
     for (int i = 0; i < tc; ++i)
         nstats.push_back(NeighbourStats(&cells[i]));
     if (dbr_verbosity > 0)
-        cerr << "Elapsed " << dbr_get_elapsed() 
+        cerr << "Elapsed " << dbr_get_elapsed()
             <<" s. Memory for neighbours reserved." << endl;
     assert(tc == 2);
     if (dbr_verbosity > 0)
@@ -468,27 +468,27 @@ int main(int argc, char **argv)
     vector<int> ang1(nbins, 0);
     vector<int> ang2(nbins, 0);
 
-    cerr << "Looking for second neighbours in..." << flush;  
+    cerr << "Looking for second neighbours in..." << flush;
     cerr << "  " << nstats[0].get_name() << flush;
     nstats[0].find_neigbours(nstats[1], rcut, &ang1);
     cerr << "  " << nstats[1].get_name() << flush;
     nstats[1].find_neigbours(nstats[0], rcut, &ang2);
     cerr << " ...Done." << endl;
 
-    //for (int i = 0; i < 2; ++i) 
+    //for (int i = 0; i < 2; ++i)
     //    cerr << nstats[i].get_n1_stats() << endl;
-    cerr << print_n1_stats(nstats[0], nstats[1]) << endl; 
-    for (int i = 0; i < 2; ++i) 
+    cerr << print_n1_stats(nstats[0], nstats[1]) << endl;
+    for (int i = 0; i < 2; ++i)
         cerr << nstats[i].get_n2_stats() << endl;
 
-    cerr << "Looking for rings in...";  
+    cerr << "Looking for rings in...";
     for (int i = 0; i < 2; ++i)  {
         cerr << "  " << nstats[i].get_name() << flush;
         nstats[i].find_rings();
     }
     cerr << " ...Done." << endl;
 
-    for (int i = 0; i < 2; ++i) 
+    for (int i = 0; i < 2; ++i)
         cerr << nstats[i].get_ring_stats(full_ring_stats) << endl;
 
     if (!ring_dump.empty()) {
@@ -500,7 +500,7 @@ int main(int argc, char **argv)
         if (!angle_distrib.empty())
             aa.resize(aconf.n);
         const double angle0 = acos(-1./3);
-        for (vector<NeighbourStats>::iterator i = nstats.begin(); 
+        for (vector<NeighbourStats>::iterator i = nstats.begin();
                                                     i != nstats.end(); ++i) {
             i->store_indices();
             for (int j = 0; j < i->size(); ++j) {
@@ -525,13 +525,13 @@ int main(int argc, char **argv)
     }
 
     if (!angle_distrib.empty()) {
-        cerr << "Angle distrib (" << nbins << " bins) -> " 
+        cerr << "Angle distrib (" << nbins << " bins) -> "
             << angle_distrib << endl;
         ofstream f(angle_distrib.c_str());
-        f << "#angle\t" << nstats[0].get_name() << "\t" << nstats[1].get_name() 
+        f << "#angle\t" << nstats[0].get_name() << "\t" << nstats[1].get_name()
             << "\tsum" << endl;
-        for (int j = 0; j != nbins; ++j) 
-            f << j * 180./nbins << "\t" << ang1[j] << "\t" << ang2[j] << "\t" 
+        for (int j = 0; j != nbins; ++j)
+            f << j * 180./nbins << "\t" << ang1[j] << "\t" << ang2[j] << "\t"
                 << ang1[j] + ang2[j] << endl;
         f.close();
     }
@@ -561,7 +561,7 @@ int main(int argc, char **argv)
 
     // Wrong bonds: C-C:41 Si-Si:471
     cerr << "Wrong bonds: ";
-    for (int i = 0; i < 2; ++i) 
+    for (int i = 0; i < 2; ++i)
         cerr << nstats[i].get_name() << "-" << nstats[i].get_name() << flush
             << ":" << nstats[i].get_wrong_bonds(rcut) << " ";
     cerr << endl;

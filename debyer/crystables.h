@@ -37,8 +37,8 @@ typedef struct
 }
 t_pse;
 
-/* Finds element with the symbol that matches `label' in periodic table. 
- * Match is case insensitive. Trailing non-alpha characters in label are 
+/* Finds element with the symbol that matches `label' in periodic table.
+ * Match is case insensitive. Trailing non-alpha characters in label are
  * ignored.
  * Returns NULL if not found.
  */
@@ -48,7 +48,7 @@ const t_pse *find_in_pse(const char *label);
 
 /* Coefficients for approximation to the scattering factor called IT92.
  * AFAIR the data was taken from ObjCryst. It can be also found
- * in cctbx and in old atominfo program, and originaly comes from the paper 
+ * in cctbx and in old atominfo program, and originaly comes from the paper
  * publication cited below.
  */
 /*
@@ -81,7 +81,7 @@ t_it92_coeff;
 const t_it92_coeff *find_in_it92(const char *label);
 
 /* Calculate scattering factor using coefficients p.
- * stol2 = (sin(theta)/lambda)^2 
+ * stol2 = (sin(theta)/lambda)^2
  */
 double calculate_it92_factor(const t_it92_coeff *p, double stol2);
 

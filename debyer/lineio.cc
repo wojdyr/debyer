@@ -32,7 +32,7 @@ LineInput::LineInput()
 
 LineInput::~LineInput()
 {
-    if (stream && stream != stdin) 
+    if (stream && stream != stdin)
         fclose(stream);
 #ifdef HAVE_ZLIB
     if (gz_stream)
@@ -142,8 +142,8 @@ const char* LineInput::get_line()
     }
 
     char *p = strchr(next_line, '\n');
-    
-    if (p) { 
+
+    if (p) {
     // full next line was found in buffer
         *p = 0;
         ++line_number;
@@ -163,7 +163,7 @@ const char* LineInput::get_line()
         ++line_number;
         const char* line = next_line;
         next_line = NULL;
-        return line; 
+        return line;
     }
 
     // need to refill buffer
@@ -171,7 +171,7 @@ const char* LineInput::get_line()
     int n = fill_buffer(len);
     if (n < 0) { // error
         sprintf(buffer, "File reading error.\n");
-        return NULL; 
+        return NULL;
     }
 
     p = strchr(buffer+len, '\n');

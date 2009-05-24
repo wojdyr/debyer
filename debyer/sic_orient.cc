@@ -1,5 +1,5 @@
 
-// Tool to find crystal (zinc-blende structure) orientation changes 
+// Tool to find crystal (zinc-blende structure) orientation changes
 // as a function of position and/or time
 
 #include <cassert>
@@ -33,7 +33,7 @@ bool CutSlice::check(xyz_name const& atom, dbr_pbc const& /*pbc*/) const
     //TODO use pbc
     assert (axis >= 0 && axis < 3);
     double v = atom.xyz[axis];
-    if (from < to) 
+    if (from < to)
         return from < v && v < to;
     else
         return v < from || v > to;
@@ -44,18 +44,18 @@ vector<int> find_atoms(vector<CutSlice> const& cut,
                        vector<int> const& grain_indices, int idx,
                        int n, xyz_name const* coords, dbr_pbc const& pbc)
 {
-    // select atoms 
+    // select atoms
     vector<int> slice_atoms;
     for (int i = 0; i < n; ++i) {
         bool ok = true;
-        for (vector<CutSlice>::const_iterator j = cut.begin(); 
+        for (vector<CutSlice>::const_iterator j = cut.begin();
                                                       j != cut.end(); ++j) {
             if (!j->check(coords[i], pbc)) {
                 ok = false;
                 break;
             }
         }
-        if (!grain_indices.empty()) 
+        if (!grain_indices.empty())
             if (grain_indices[i] != idx)
                 ok = false;
         if (ok)
@@ -66,7 +66,7 @@ vector<int> find_atoms(vector<CutSlice> const& cut,
 }
 
 
-xyz_name find_center(vector<int> const& slice_atoms, 
+xyz_name find_center(vector<int> const& slice_atoms,
                      xyz_name const* coords)
 {
     xyz_name r;
@@ -75,7 +75,7 @@ xyz_name find_center(vector<int> const& slice_atoms,
     dbr_real cur;
     for (int i = 0; i < 3; ++i)
         r.xyz[i] = 0;
-    for (vector<int>::const_iterator a = slice_atoms.begin(); 
+    for (vector<int>::const_iterator a = slice_atoms.begin();
                                                   a != slice_atoms.end(); ++a)
         for (int i = 0; i < 3; ++i) {
             cur = coords[*a].xyz[i];
@@ -124,7 +124,7 @@ void get_diff_in_pbc(const dbr_real* a, const dbr_real* b, dbr_pbc const& pbc,
 
 // input: two points in reduced coordinates and PBC
 // output: distance^2 in real (not reduced) coordinates
-double get_sq_dist_in_pbc(const dbr_real* a, const dbr_real* b, 
+double get_sq_dist_in_pbc(const dbr_real* a, const dbr_real* b,
                           dbr_pbc const& pbc)
 {
     dbr_xyz dreal;
@@ -154,11 +154,11 @@ int main(int argc, char **argv)
         if (strlen(argv[p]) == 1) {
             CutSlice c;
             if (argv[p][0] == 'x')
-                c.axis = 0; 
+                c.axis = 0;
             else if (argv[p][0] == 'y')
-                c.axis = 1; 
+                c.axis = 1;
             else if (argv[p][0] == 'z')
-                c.axis = 2; 
+                c.axis = 2;
             else
                 break;
            c.from = strtod(argv[p+1], 0);
@@ -175,11 +175,11 @@ int main(int argc, char **argv)
            idx = strtol(argv[p+2], 0, 10);
            p += 3;
         }
-        else if (argv[p] == string("-m")) { 
+        else if (argv[p] == string("-m")) {
             max_disp = strtod(argv[p+1], 0);
             p += 2;
         }
-        else if (argv[p] == string("-r")) { 
+        else if (argv[p] == string("-r")) {
             max_ctr_dist = strtod(argv[p+1], 0);
             p += 2;
         }
@@ -188,7 +188,7 @@ int main(int argc, char **argv)
             break;
         }
     }
-    if (p != argc - 1) 
+    if (p != argc - 1)
         print_usage_and_exit();
     const char* infn2 = argv[p];
 
@@ -202,7 +202,7 @@ int main(int argc, char **argv)
     xyz_name center = find_center(slice_atoms, coords);
     dbr_xyz ctr_angstr;
     dbr_vec3_mult_pbc(center.xyz, pbc, ctr_angstr);
-    cerr << "Center: (" << ctr_angstr[0] << ", " << ctr_angstr[1] 
+    cerr << "Center: (" << ctr_angstr[0] << ", " << ctr_angstr[1]
          << ", " << ctr_angstr[2] << ")\n";
 
     // read atoms
@@ -212,22 +212,22 @@ int main(int argc, char **argv)
     assert (n2 == n);
     xyz_name center2 = find_center(slice_atoms, coords2);
 
-    cerr << "Center move: " 
+    cerr << "Center move: "
          << sqrt(get_sq_dist_in_pbc(center.xyz, center2.xyz, pbc)) << endl;
 
     StdDev x_rot_sd, y_rot_sd, z_rot_sd;
     vector<double> colors(n, -1.);
-    for (vector<int>::const_iterator a = slice_atoms.begin(); 
+    for (vector<int>::const_iterator a = slice_atoms.begin();
                                             a != slice_atoms.end(); ++a) {
         dbr_real* at1 = coords[*a].xyz;
         dbr_real* at2 = coords2[*a].xyz;
         double ctr_sq_dist1 = get_sq_dist_in_pbc(center.xyz, at1, pbc);
-        if (get_sq_dist_in_pbc(at1, at2, pbc) < max_disp * max_disp 
+        if (get_sq_dist_in_pbc(at1, at2, pbc) < max_disp * max_disp
                 && ctr_sq_dist1 < max_ctr_dist * max_ctr_dist
                 && ctr_sq_dist1 > 1 * 1) {
-            dbr_xyz r1; 
+            dbr_xyz r1;
             get_diff_in_pbc(at1, center.xyz, pbc, r1);
-            dbr_xyz r2; 
+            dbr_xyz r2;
             get_diff_in_pbc(at2, center2.xyz, pbc, r2);
 
             double x_rot = calc_angle_around_axis(r1, r2, 0);

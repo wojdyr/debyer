@@ -22,9 +22,9 @@
 #include <math.h>
 #include <time.h> /* time_t */
 
-#if HAVE_CONFIG_H   
-#  include <config.h>  
-#endif 
+#if HAVE_CONFIG_H
+#  include <config.h>
+#endif
 
 #ifdef USE_MPI
 # include "mpi.h"
@@ -55,9 +55,9 @@ typedef struct dbr_pbc_prop dbr_pbc_prop;
 typedef struct dbr_picker dbr_picker;
 
 
-typedef enum output_kind { 
-    output_xray, 
-    output_neutron, 
+typedef enum output_kind {
+    output_xray,
+    output_neutron,
     output_sf, /*scattering factor, a.k.a. total scattering structure function*/
     output_rdf, /* RDF, R(r) */
     output_pdf,  /* PDF, g(r) */
@@ -91,8 +91,8 @@ struct irdf
     int* nn; /* pair correlation function */
 };
 
-/* used for storing internal PDF (data ID), which is than used for 
- * calcuation of x-ray/neutron patterns and PDFs. 
+/* used for storing internal PDF (data ID), which is than used for
+ * calcuation of x-ray/neutron patterns and PDFs.
  */
 struct irdfs
 {
@@ -132,7 +132,7 @@ struct dbr_cell
     int asize; /* allocated capacity of indices */
     int count; /* number of atoms in cell */
     int real; /* is cell real (1) or virtual, ie. mirror (0) */
-    int original; /* -1 if cell is real, otherwise (virtual cell) index 
+    int original; /* -1 if cell is real, otherwise (virtual cell) index
                     of corresponding real cell */
     dbr_xyz *atoms;
     int *indices; /* indices (IDs) of atoms from original file */
@@ -171,29 +171,29 @@ void dbr_init(int *argc, char ***argv);
 void dbr_finalize();
 void dbr_abort(int err_code);
 void dbr_mesg(char *fmt, ...);
-int dbr_get_elapsed(); 
+int dbr_get_elapsed();
 
-int dbr_get_atoms(int n, xyz_name* coords, dbr_atoms** result, 
+int dbr_get_atoms(int n, xyz_name* coords, dbr_atoms** result,
                   int store_indices);
 void free_dbr_atoms(dbr_atoms* xa);
 irdfs calculate_irdfs(int n, dbr_atoms* xa, dbr_real rcut, dbr_real rquanta,
-                      dbr_pbc pbc, const dbr_picker* picker, 
+                      dbr_pbc pbc, const dbr_picker* picker,
                       const char* id_filename);
 void free_irdfs(irdfs *rdfs);
 void write_irdfs_to_file(irdfs rdfs, const char *filename);
 
-int write_diffraction_to_file(output_kind c, irdfs rdfs, 
-                              dbr_real pattern_from, dbr_real pattern_to, 
+int write_diffraction_to_file(output_kind c, irdfs rdfs,
+                              dbr_real pattern_from, dbr_real pattern_to,
                               dbr_real pattern_step,
-                              dbr_real lambda, 
-                              dbr_real ro, 
-                              dbr_real cutoff, 
+                              dbr_real lambda,
+                              dbr_real ro,
+                              dbr_real cutoff,
                               const char *ofname);
 
-int write_pdfkind_to_file(output_kind c, irdfs rdfs, 
-                          dbr_real pattern_from, dbr_real pattern_to, 
+int write_pdfkind_to_file(output_kind c, irdfs rdfs,
+                          dbr_real pattern_from, dbr_real pattern_to,
                           dbr_real pattern_step,
-                          dbr_real ro, 
+                          dbr_real ro,
                           char weight,
                           const char *ofname);
 
@@ -218,24 +218,24 @@ int dbr_is_atom_in_sector(const dbr_real *xyz, const dbr_picker* picker);
 
 
 #ifdef __cplusplus
-inline int dbr_cell_original(const dbr_cell *a) 
+inline int dbr_cell_original(const dbr_cell *a)
   { return a->original >= 0 ? a->original : a->neighbours[13]; }
 
-inline  
+inline
 void dbr_diff3(const dbr_real *a, const dbr_real *b, dbr_real *r)
 {
     int i;
-    for (i = 0; i < 3; ++i) 
+    for (i = 0; i < 3; ++i)
         r[i] = a[i] - b[i];
 }
 
-inline  
+inline
 dbr_real dbr_dot3(const dbr_real *a, const dbr_real *b)
     { return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]; }
 
 inline
-dbr_real dbr_get_angle(const dbr_real *xyz1, 
-                       const dbr_real *xyz2, 
+dbr_real dbr_get_angle(const dbr_real *xyz1,
+                       const dbr_real *xyz2,
                        const dbr_real *xyz3)
 {
     int i;
@@ -246,7 +246,7 @@ dbr_real dbr_get_angle(const dbr_real *xyz1,
         b[i] = xyz3[i] - xyz2[i];
     }
     t = dbr_dot3(a,b) / sqrt(dbr_dot3(a,a) * dbr_dot3(b,b));
-    // it happens (very rarely) that due to rounding errors |t| > 1 
+    // it happens (very rarely) that due to rounding errors |t| > 1
     return fabs(t) < 1 ? acos(t) : 0.;
 }
 #endif /* __cplusplus */

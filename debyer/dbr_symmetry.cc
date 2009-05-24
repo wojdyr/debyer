@@ -182,14 +182,14 @@ public:
         return -1;
     }
 
-    dbr_real dist_lt(dbr_real const* x1, dbr_real const* x2, 
+    dbr_real dist_lt(dbr_real const* x1, dbr_real const* x2,
                      dbr_real const* pbc,
                      dbr_real epsilon) const
     {
         dbr_real d[3];
         for (int k = 0; k < 3; ++k) {
             d[k] = wrapped_dist(x1[k], x2[k]);
-            if (d[k] * scaling[k] > 0.5) 
+            if (d[k] * scaling[k] > 0.5)
                 d[k] = 1./scaling[k] - d[k];
             assert(d[k] * scaling[k] >= 0);
             assert(d[k] * scaling[k] <= 0.5);
@@ -671,7 +671,7 @@ int count_atoms(vector<int>::const_iterator begin,
 }
 
 void get_primitive(xyz_name const* coords, CyclicVectorInt const& sel, int pos,
-                   int dir, dbr_real dmax1, int dir2, dbr_real dmax2, 
+                   int dir, dbr_real dmax1, int dir2, dbr_real dmax2,
                    vector<int> &primitive)
 {
     primitive.clear();
@@ -740,14 +740,14 @@ void find_lowest_energy(char axis, int nparts,
         pbc[i] = get_pbc_length(aconf.pbc, i);
         prim_box[i] = pbc[i] / scale[i];
     }
-    Cells prim_cells(prim_box[0], prim_box[1], prim_box[2], min_dist, 
+    Cells prim_cells(prim_box[0], prim_box[1], prim_box[2], min_dist,
                      aconf.atoms);
     prim_cells.set_scale(scale[0], scale[1], scale[2]);
 
     vector<int> pr(ac);
     for (size_t i = 0; i != sel.size(); ++i) {
         get_primitive(coords, sel, i,
-                      dir, 1./nparts, dir2, 1./nparts2, 
+                      dir, 1./nparts, dir2, 1./nparts2,
                       pr);
 
         if ((int) pr.size() != ac)
@@ -759,7 +759,7 @@ void find_lowest_energy(char axis, int nparts,
         // we are interested only in minimal energy
         if (slice_e >= min_e)
             continue;
-        
+
         // stoichiometry in slice should be the same as total stoichiometry
         int slice_n0 = count_atoms(pr.begin(), pr.end(), coords, name0);
         if (slice_n0 * nparts * nparts2 != an0)
@@ -801,10 +801,10 @@ void find_lowest_energy(char axis, int nparts,
 
     cerr << "E min/avg: " << min_e/ac << "  " << avg_e << endl;
 
-    get_primitive(coords, sel, min_pos, 
-                  dir, 1./nparts, dir2, 1./nparts2, 
+    get_primitive(coords, sel, min_pos,
+                  dir, 1./nparts, dir2, 1./nparts2,
                   pr);
-    cerr << "min slice starts at " 
+    cerr << "min slice starts at "
          << dir2axis(dir) << "=" << coords[sel[min_pos]].xyz[dir];
     if (dir2 >= 0)
         cerr << ", " << dir2axis(dir2) << "=" << coords[sel[min_pos]].xyz[dir2];
