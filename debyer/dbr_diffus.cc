@@ -23,7 +23,7 @@ using namespace std;
 #define SPLIT_DIFFUSION 2
 
 void write_displacement_aux(ofstream& f, int n,
-                            xyz_name const* c1, xyz_name const* c2,
+                            dbr_atom const* c1, dbr_atom const* c2,
                             dbr_pbc const& pbc,
                             vector<string> const& old_lines)
 {
@@ -94,7 +94,7 @@ void read_lines(string const& filename, vector<string>& old_lines)
 
 int main(int argc, char **argv)
 {
-    xyz_name *coords = 0, *coords2 = 0;
+    dbr_atom *coords = 0, *coords2 = 0;
     dbr_pbc pbc;
     int old_n;
     int f_start = 1;

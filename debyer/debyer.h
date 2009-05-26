@@ -44,7 +44,7 @@ extern "C" {
 
 typedef dbr_real dbr_xyz[3];
 typedef char dbr_symbol[8];
-typedef struct xyz_name xyz_name;
+typedef struct dbr_atom dbr_atom;
 typedef struct dbr_atoms dbr_atoms;
 typedef struct irdf irdf;
 typedef struct irdfs irdfs;
@@ -66,7 +66,7 @@ typedef enum output_kind {
 } output_kind;
 
 /* structure used for passing atom name and coordinates */
-struct xyz_name
+struct dbr_atom
 {
     dbr_xyz xyz;
     dbr_symbol name;
@@ -173,7 +173,7 @@ void dbr_abort(int err_code);
 void dbr_mesg(char *fmt, ...);
 int dbr_get_elapsed();
 
-int dbr_get_atoms(int n, xyz_name* coords, dbr_atoms** result,
+int dbr_get_atoms(int n, dbr_atom* coords, dbr_atoms** result,
                   int store_indices);
 void free_dbr_atoms(dbr_atoms* xa);
 irdfs calculate_irdfs(int n, dbr_atoms* xa, dbr_real rcut, dbr_real rquanta,

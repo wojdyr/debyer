@@ -44,7 +44,7 @@ int main(int argc, char **argv)
         astep = strtod(argv[first_param + 3], 0);
     }
 
-    xyz_name *coords = 0;
+    dbr_atom *coords = 0;
     dbr_pbc pbc;
     int n = open_atoms_file(argv[first_param], &coords, pbc);
     int has_pbc = (pbc.v00 != 0.);

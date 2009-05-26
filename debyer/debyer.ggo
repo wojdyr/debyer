@@ -15,6 +15,7 @@
 
 #gengetopt 2.22
 package "debyer"
+args "-uFILE --no-handle-version"
 
 option  "quiet" q "silent mode" optional
 option  "verbose" v "increase verbosity level (can be used twice)" optional multiple
@@ -38,7 +39,7 @@ option "write-lammps-data" - "LAMMPS data file" string typestr="FILENAME" option
 option "write-pdb" - "PDB file" string typestr="FILENAME" optional argoptional
 option "write-xyza" - "TSV format: x y z atom" string typestr="FILENAME" optional argoptional
 
-section "calculation of the final result from ID" 
+section "calculation of the final result from ID"
 defgroup "output" groupdesc="only one of the following options can be selected"
 groupoption "xray" x "x-ray powder pattern" group="output"
 groupoption "neutron" n "neutron powder pattern" group="output"

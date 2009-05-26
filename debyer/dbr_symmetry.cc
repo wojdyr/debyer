@@ -79,7 +79,7 @@ bool contains_element(std::vector<dbr_real> const& vec, dbr_real t, dbr_real eps
 
 dbr_real wrapped_diff(dbr_real x2, dbr_real x1)
 {
-    double d = x2 - x1;
+    dbr_real d = x2 - x1;
     if (d < 0)
         d += 1.;
     assert (d >= 0.);
@@ -141,7 +141,7 @@ public:
     Cells(int n0, int n1, int n2) : coords(NULL) { init(n0, n1, n2); }
 
     Cells(dbr_real a0, dbr_real a1, dbr_real a2, dbr_real max_cell_size,
-          xyz_name const* coords_, int coords_size=0)
+          dbr_atom const* coords_, int coords_size=0)
     {
         init( (int) ceil(a0 / max_cell_size),
               (int) ceil(a1 / max_cell_size),
@@ -163,7 +163,7 @@ public:
         cout << "[Cells] " << n0 << " x " << n1 << " x " << n2 << endl;
     }
 
-    void set_coords(xyz_name const* coords_) { coords = coords_; }
+    void set_coords(dbr_atom const* coords_) { coords = coords_; }
 
     void clear_data() { fill(data.begin(), data.end(), -1); }
 
@@ -232,7 +232,7 @@ public:
 protected:
     int ncells[3];
     vector<int> data;
-    xyz_name const *coords;
+    dbr_atom const *coords;
     // scaling is used only to cut rectangular from the system and make
     // it periodic
     int scaling[3];
@@ -264,7 +264,7 @@ protected:
 };
 
 
-void normalize_coordinates(int n, xyz_name *coords)
+void normalize_coordinates(int n, dbr_atom *coords)
 {
     for (int i = 0; i < n; ++i)
         for (int j = 0; j < 3; ++j) {
@@ -322,7 +322,7 @@ void check_symmetry(const char *filename)
     dbr_aconf aconf = read_atoms_from_file(filename, true);
     //normalize_coordinates(aconf.n, aconf.atoms);
     assert_coordinates_normalized(aconf);
-    xyz_name *coords = aconf.atoms;
+    dbr_atom *coords = aconf.atoms;
 
     dbr_real pbc[] = { get_pbc_length(aconf.pbc, 0),
                        get_pbc_length(aconf.pbc, 1),
@@ -397,11 +397,11 @@ void check_symmetry(const char *filename)
 }
 
 struct atom_idx_sorter {
-    atom_idx_sorter(xyz_name *coords_, int t_) : coords(coords_), t(t_) {}
+    atom_idx_sorter(dbr_atom *coords_, int t_) : coords(coords_), t(t_) {}
     bool operator() (int i, int j)
         { return coords[i].xyz[t] < coords[j].xyz[t]; }
 
-    xyz_name *coords;
+    dbr_atom *coords;
     int t;
 };
 
@@ -603,21 +603,21 @@ bool check_distances(dbr_aconf const&aconf, int dir, Cells const* cells,
 }
 */
 
-void copy_atom(xyz_name const& source, xyz_name& dest)
+void copy_atom(dbr_atom const& source, dbr_atom& dest)
 {
     strcpy(dest.name, source.name);
     for (int k = 0; k < 3; ++k)
         dest.xyz[k] = source.xyz[k];
 }
 
-void copy_atom(xyz_name *coords, int source_pos, int dest_pos)
+void copy_atom(dbr_atom *coords, int source_pos, int dest_pos)
 {
     copy_atom(coords[source_pos], coords[dest_pos]);
 }
 
 // Atoms from the slice with the lowest energy are duplicated to other slices.
 // Only atoms that were selected (i.e. that are in `sel') are changed.
-void multiply_selected_atoms(xyz_name *coords, int dir,
+void multiply_selected_atoms(dbr_atom *coords, int dir,
                              CyclicVectorInt const& sel,
                              int min_pos, int nparts)
 {
@@ -661,7 +661,7 @@ char dir2axis(int dir)
 
 int count_atoms(vector<int>::const_iterator begin,
                 vector<int>::const_iterator end,
-                xyz_name const* coords, const char *name0)
+                dbr_atom const* coords, const char *name0)
 {
     int n = 0;
     for (vector<int>::const_iterator i = begin; i != end; ++i)
@@ -670,7 +670,7 @@ int count_atoms(vector<int>::const_iterator begin,
     return n;
 }
 
-void get_primitive(xyz_name const* coords, CyclicVectorInt const& sel, int pos,
+void get_primitive(dbr_atom const* coords, CyclicVectorInt const& sel, int pos,
                    int dir, dbr_real dmax1, int dir2, dbr_real dmax2,
                    vector<int> &primitive)
 {
@@ -697,7 +697,7 @@ void find_lowest_energy(char axis, int nparts,
 
     dbr_aconf aconf = read_atoms_from_file(input_file, true);
     assert_coordinates_normalized(aconf);
-    xyz_name *coords = aconf.atoms;
+    dbr_atom *coords = aconf.atoms;
     //normalize_coordinates(n, coords);
 
     // energies from aux file
@@ -812,7 +812,7 @@ void find_lowest_energy(char axis, int nparts,
 
     if (output_file) {
         // store atoms from primitive cell with the lowest E in new array
-        vector<xyz_name> aprim(ac);
+        vector<dbr_atom> aprim(ac);
         assert((int) pr.size() == ac);
         for (int i = 0; i < ac; ++i)
             aprim[i] = aconf.atoms[pr[i]];
@@ -823,7 +823,7 @@ void find_lowest_energy(char axis, int nparts,
             for (int j = 0; j < nparts2; ++j)
                 for (int k = 0; k < ac; ++k) {
                     assert (counter == (i * nparts2 + j) * ac + k);
-                    xyz_name &copy = coords[sel[(i * nparts2 + j) * ac + k]];
+                    dbr_atom &copy = coords[sel[(i * nparts2 + j) * ac + k]];
                     copy_atom(aprim[k], copy);
                     copy.xyz[dir]
                         = wrapped_sum(copy.xyz[dir], double(i) / nparts);

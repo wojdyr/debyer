@@ -25,10 +25,10 @@ public:
     int axis; // 0=x, 1=y, 2=z
     double from, to;
 
-    bool check(xyz_name const& atom, dbr_pbc const& pbc) const;
+    bool check(dbr_atom const& atom, dbr_pbc const& pbc) const;
 };
 
-bool CutSlice::check(xyz_name const& atom, dbr_pbc const& /*pbc*/) const
+bool CutSlice::check(dbr_atom const& atom, dbr_pbc const& /*pbc*/) const
 {
     //TODO use pbc
     assert (axis >= 0 && axis < 3);
@@ -42,7 +42,7 @@ bool CutSlice::check(xyz_name const& atom, dbr_pbc const& /*pbc*/) const
 
 vector<int> find_atoms(vector<CutSlice> const& cut,
                        vector<int> const& grain_indices, int idx,
-                       int n, xyz_name const* coords, dbr_pbc const& pbc)
+                       int n, dbr_atom const* coords, dbr_pbc const& pbc)
 {
     // select atoms
     vector<int> slice_atoms;
@@ -66,10 +66,10 @@ vector<int> find_atoms(vector<CutSlice> const& cut,
 }
 
 
-xyz_name find_center(vector<int> const& slice_atoms,
-                     xyz_name const* coords)
+dbr_atom find_center(vector<int> const& slice_atoms,
+                     dbr_atom const* coords)
 {
-    xyz_name r;
+    dbr_atom r;
     strcpy(r.name, "center");
     dbr_real const* first = coords[*slice_atoms.begin()].xyz;
     dbr_real cur;
@@ -192,14 +192,14 @@ int main(int argc, char **argv)
         print_usage_and_exit();
     const char* infn2 = argv[p];
 
-    xyz_name *coords = 0;
+    dbr_atom *coords = 0;
     dbr_pbc pbc;
     int n = open_atoms_file(infn, &coords, pbc);
     vector<int> slice_atoms = find_atoms(cut, grain_indices, idx,
                                          n, coords, pbc);
 
     cerr << slice_atoms.size() << " atoms selected.\n";
-    xyz_name center = find_center(slice_atoms, coords);
+    dbr_atom center = find_center(slice_atoms, coords);
     dbr_xyz ctr_angstr;
     dbr_vec3_mult_pbc(center.xyz, pbc, ctr_angstr);
     cerr << "Center: (" << ctr_angstr[0] << ", " << ctr_angstr[1]
@@ -207,10 +207,10 @@ int main(int argc, char **argv)
 
     // read atoms
     dbr_pbc pbc2;
-    xyz_name *coords2 = 0;
+    dbr_atom *coords2 = 0;
     int n2 = open_atoms_file(infn2, &coords2, pbc2);
     assert (n2 == n);
-    xyz_name center2 = find_center(slice_atoms, coords2);
+    dbr_atom center2 = find_center(slice_atoms, coords2);
 
     cerr << "Center move: "
          << sqrt(get_sq_dist_in_pbc(center.xyz, center2.xyz, pbc)) << endl;

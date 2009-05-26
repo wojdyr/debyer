@@ -35,10 +35,10 @@ using namespace std;
     if (dbr_nid == 0) \
         cerr
 
-// if true, store coordinates in <0,1) range (relative to PBC box).
+// if true, store reduced coordinates in <0,1) range (relative to PBC box).
 // Not all functions respect this variable. Don't change the variable
 // between reading and writing data.
-int dbr_f_store_relative_coords = 0;
+int dbr_f_store_reduced_coords = 0;
 
 bool is_xyz_format(char const* buffer)
 {
@@ -94,9 +94,9 @@ void read_xyz(LineInput& in, dbr_aconf *aconf)
     if (dbr_verbosity >= 0)
         mcerr << aconf->n << " atoms, title: " << line << endl;
 
-    aconf->atoms = new xyz_name[aconf->n];
+    aconf->atoms = new dbr_atom[aconf->n];
     for (int i = 0; i < aconf->n; ++i) {
-        xyz_name& atom = aconf->atoms[i];
+        dbr_atom& atom = aconf->atoms[i];
         line = in.get_line();
         if (!line) {
             mcerr << "Error: Reading line " << i+3 << " failed." << endl;
@@ -121,9 +121,9 @@ void read_xyz(LineInput& in, dbr_aconf *aconf)
 
 
 static
-void resize_atoms(size_t& atoms_size, xyz_name** atoms)
+void resize_atoms(size_t& atoms_size, dbr_atom** atoms)
 {
-    xyz_name *new_atoms = new xyz_name[atoms_size*2];
+    dbr_atom *new_atoms = new dbr_atom[atoms_size*2];
     for (size_t i = 0; i < atoms_size; ++i)
         new_atoms[i] = (*atoms)[i];
     atoms_size *= 2;
@@ -136,12 +136,12 @@ void read_plain(LineInput& in, dbr_aconf *aconf)
     size_t atoms_size = 1024;
 
     size_t counter = 0;
-    aconf->atoms = new xyz_name[atoms_size];
+    aconf->atoms = new dbr_atom[atoms_size];
     const char *line;
     while ((line = in.get_line())) {
         if (counter == atoms_size)
             resize_atoms(atoms_size, &aconf->atoms);
-        xyz_name& atom = aconf->atoms[counter];
+        dbr_atom& atom = aconf->atoms[counter];
         ++counter;
         const char *ptr = line;
         while (isspace(*ptr))
@@ -177,7 +177,7 @@ void write_atoms_to_xyz_file(dbr_aconf const& aconf, string const& filename)
     }
     f << aconf.n << "\nconverted by debyer\n";
     for (int i = 0; i < aconf.n; ++i) {
-        xyz_name const& atom = aconf.atoms[i];
+        dbr_atom const& atom = aconf.atoms[i];
         f << atom.name << " "
           << atom.xyz[0] << " " << atom.xyz[1] << " " << atom.xyz[2] << endl;
     }
@@ -191,9 +191,9 @@ static bool endswith(string const& s, char const* e)
     return slen >= elen && strcmp(s.c_str() + slen - elen, e) == 0;
 }
 
-dbr_aconf read_atoms_from_file(LineInput &in, bool relative_coords)
+dbr_aconf read_atoms_from_file(LineInput &in, bool reduced_coords)
 {
-    dbr_f_store_relative_coords = relative_coords;
+    dbr_f_store_reduced_coords = reduced_coords;
     dbr_aconf aconf;
     // initialize dbr_aconf
     aconf.n = 0;
@@ -272,7 +272,7 @@ void read_atomeye(LineInput& in, dbr_aconf *aconf)
     sscanf(line + magic_len, "%i", &aconf->n);
     if (dbr_verbosity >= 0)
         mcerr << aconf->n << " atoms." << endl;
-    aconf->atoms = new xyz_name[aconf->n];
+    aconf->atoms = new dbr_atom[aconf->n];
     int counter = 0;
     bool extended = false;
     char ext_name[8] = {0, 0, 0, 0, 0, 0, 0, 0};
@@ -311,7 +311,7 @@ void read_atomeye(LineInput& in, dbr_aconf *aconf)
 
         // either atom mass or coordinates line
         else if (nonblank[0] == '-' || isdigit(nonblank[0])) {
-            xyz_name& atom = aconf->atoms[counter];
+            dbr_atom& atom = aconf->atoms[counter];
             dbr_real x=0, y=0, z=0;
             if (extended) {
                 int r = sscanf(nonblank, DBR_F " " DBR_F " " DBR_F, &x, &y, &z);
@@ -338,7 +338,7 @@ void read_atomeye(LineInput& in, dbr_aconf *aconf)
             x -= floor(x);
             y -= floor(y);
             z -= floor(z);
-            if (dbr_f_store_relative_coords) {
+            if (dbr_f_store_reduced_coords) {
                 atom.xyz[0] = x;
                 atom.xyz[1] = y;
                 atom.xyz[2] = z;
@@ -424,13 +424,13 @@ void write_atoms_to_atomeye_file(dbr_aconf const& aconf, string const& filename)
     double H_1[3][3]; //inverse of pbc matrix
     dbr_inverse_3x3_matrix(aconf.pbc, H_1);
     for (int i = 0; i < aconf.n; ++i) {
-        xyz_name const& atom = aconf.atoms[i];
+        dbr_atom const& atom = aconf.atoms[i];
         if (i == 0 || strcmp(atom.name, aconf.atoms[i-1].name) != 0) {
             const t_pse *pse = find_in_pse(atom.name);
             f << (pse ? pse->mass : 1.0) << "\n";
             f << atom.name << "\n";
         }
-        if (dbr_f_store_relative_coords) {
+        if (dbr_f_store_reduced_coords) {
             f << atom.xyz[0] << " " << atom.xyz[1]
                 << " " << atom.xyz[2] << "\n";
         }
@@ -507,7 +507,7 @@ void read_dlpoly_config(LineInput& in, dbr_aconf *aconf)
     // read atoms
     size_t counter = 0;
     size_t atoms_size = 1024;
-    aconf->atoms = new xyz_name[atoms_size];
+    aconf->atoms = new dbr_atom[atoms_size];
     if (levcfg > 2)
         levcfg = 2;
 
@@ -517,7 +517,7 @@ void read_dlpoly_config(LineInput& in, dbr_aconf *aconf)
         ++counter;
         if (counter == atoms_size)
             resize_atoms(atoms_size, &aconf->atoms);
-        xyz_name& atom = aconf->atoms[counter-1];
+        dbr_atom& atom = aconf->atoms[counter-1];
 
         const char* nonblank = line;
         while (isspace(*nonblank))
@@ -616,7 +616,7 @@ void write_dlpoly_file(dbr_aconf const& aconf,
             mcerr << "  " << *k << ": " << m[*k];
             //it may be inefficient for many atom species
             for (int i = 0; i < aconf.n; ++i) {
-                xyz_name const& a = aconf.atoms[i];
+                dbr_atom const& a = aconf.atoms[i];
                 if (strcmp(k->c_str(), a.name) == 0) {
                     fprintf(f, "%s\n", a.name);
                     fprintf(f, "%20.8f%20.8f%20.8f\n", a.xyz[0], a.xyz[1],
@@ -628,7 +628,7 @@ void write_dlpoly_file(dbr_aconf const& aconf,
     }
     else
         for (int i = 0; i < aconf.n; ++i) {
-            xyz_name const& a = aconf.atoms[i];
+            dbr_atom const& a = aconf.atoms[i];
             fprintf(f, "%s\n", a.name);
             fprintf(f, "%20.8f%20.8f%20.8f\n", a.xyz[0], a.xyz[1], a.xyz[2]);
         }
@@ -743,7 +743,7 @@ void read_lammps_data(LineInput& in, dbr_aconf* aconf)
         dbr_abort(EXIT_FAILURE);
     }
     // read data
-    aconf->atoms = new xyz_name[aconf->n];
+    aconf->atoms = new dbr_atom[aconf->n];
     for (int i = 0; i < aconf->n; ++i)
         aconf->atoms[i].name[0] = 0;
 
@@ -769,13 +769,13 @@ void read_lammps_data(LineInput& in, dbr_aconf* aconf)
             mcerr << "Wrong type number in line:\n" << line << endl;
             dbr_abort(EXIT_FAILURE);
         }
-        xyz_name *a = &aconf->atoms[number-1];
+        dbr_atom *a = &aconf->atoms[number-1];
         if (a->name[0] != 0) {
             mcerr << "Atom number " << number << " was duplicated.\n";
             dbr_abort(EXIT_FAILURE);
         }
         strncpy(a->name, symbols[symbol_nr-1].c_str(), 7);
-        if (dbr_f_store_relative_coords) {
+        if (dbr_f_store_reduced_coords) {
             ax /= aconf->pbc.v00;
             ay /= aconf->pbc.v11;
             az /= aconf->pbc.v22;
@@ -843,7 +843,7 @@ void write_lammps_data(dbr_aconf const& aconf, string const& filename)
     f << 0 << " " << setprecision(12) << aconf.pbc.v22 << " zlo zhi\n";
     f << "\nAtoms\n\n";
     for (int i = 0; i < aconf.n; ++i) {
-        xyz_name const& a = aconf.atoms[i];
+        dbr_atom const& a = aconf.atoms[i];
         f << i+1 << "\t" << m[a.name] << "\t"
           << a.xyz[0] << "\t" << a.xyz[1] << "\t" << a.xyz[2] << "\n";
     }
@@ -937,7 +937,7 @@ void write_xyza(dbr_aconf const& aconf, string const& filename)
                   << " x " << aconf.pbc.v22 << endl;
 
     for (int i = 0; i < aconf.n; ++i) {
-        xyz_name const& atom = aconf.atoms[i];
+        dbr_atom const& atom = aconf.atoms[i];
         f << atom.xyz[0] << "\t" << atom.xyz[1] << "\t" << atom.xyz[2] << "\t"
             << atom.name << "\t" << endl;
     }
@@ -945,8 +945,8 @@ void write_xyza(dbr_aconf const& aconf, string const& filename)
 }
 
 // for using in C programs
-int read_atoms_c(const char* filename, xyz_name **atoms, dbr_pbc *pbc,
-                 int relative)
+int read_atoms_c(const char* filename, dbr_atom **atoms, dbr_pbc *pbc,
+                 int reduced)
 {
     LineInput in;
     bool r = in.init(filename);
@@ -954,13 +954,13 @@ int read_atoms_c(const char* filename, xyz_name **atoms, dbr_pbc *pbc,
         mcerr << in.get_error();
         dbr_abort(EXIT_FAILURE);
     }
-    dbr_aconf aconf = read_atoms_from_file(in, (bool)relative);
+    dbr_aconf aconf = read_atoms_from_file(in, (bool)reduced);
     *atoms = aconf.atoms;
     *pbc = aconf.pbc;
     return aconf.n;
 }
 
-void free_atoms(xyz_name *atoms)
+void free_atoms(dbr_atom *atoms)
 {
     delete[] atoms;
 }

@@ -209,7 +209,7 @@ irdfs calculate_id_from_datafile(dbr_aconf &aconf, dbr_picker const& picker,
 {
     // read atoms
     irdfs rdfs;
-    // separete different atom types (xyz_name[] -> dbr_atoms[])
+    // separete different atom types (dbr_atom[] -> dbr_atoms[])
     dbr_atoms *xa = 0;
     int tc = dbr_get_atoms(aconf.n, aconf.atoms, &xa, 0);
     delete [] aconf.atoms;
@@ -256,7 +256,7 @@ int do_benchmark1(int count)
     if (dbr_verbosity >= 0)
         mcerr << "Performing ID calculation benchmark with " << count
             << " atoms." << endl;
-    xyz_name* coords = new xyz_name[count];
+    dbr_atom* coords = new dbr_atom[count];
     dbr_real a = pow(count / 0.095, 1./3.);
     for (int i = 0; i < count; ++i) {
         strcpy(coords[i].name, i % 2 ? "Si" : "C");
@@ -388,13 +388,13 @@ int main(int argc, char **argv)
         if (output_atoms) {
             if (picker.cut) {
                 // write to file only selected atoms
-                xyz_name *all = aconf.atoms;
-                xyz_name *sel = new xyz_name[aconf.n];
+                dbr_atom *all = aconf.atoms;
+                dbr_atom *sel = new dbr_atom[aconf.n];
                 int n_all = aconf.n;
                 int j = 0;
                 for (int i = 0; i < n_all; ++i)
                     if (dbr_is_atom_in_sector(aconf.atoms[i].xyz, &picker)) {
-                        memcpy(&sel[j], &all[i], sizeof(xyz_name));
+                        memcpy(&sel[j], &all[i], sizeof(dbr_atom));
                         ++j;
                     }
                 aconf.atoms = sel;

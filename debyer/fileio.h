@@ -20,7 +20,7 @@
 #ifndef DEBYER_FILEIO_H_
 #define DEBYER_FILEIO_H_
 
-#include "debyer.h" /* for dbr_pbc and xyz_name */
+#include "debyer.h" /* for dbr_pbc and dbr_atom */
 
 
 #ifdef __cplusplus
@@ -28,9 +28,9 @@ extern "C" {
 #endif
 
 /* ANSI C API */
-int read_atoms_c(const char* filename, xyz_name **atoms, dbr_pbc *pbc,
-                 int relative);
-void free_atoms(xyz_name *atoms);
+int read_atoms_c(const char* filename, dbr_atom **atoms, dbr_pbc *pbc,
+                 int reduced);
+void free_atoms(dbr_atom *atoms);
 
 
 /**************** the rest of this file is C++ only ******************/
@@ -45,15 +45,16 @@ void free_atoms(xyz_name *atoms);
 // atomistic configuration
 struct dbr_aconf
 {
+    dbr_atom *atoms; // coordinates of atoms
     int n; // number of atoms
-    xyz_name *atoms; // coordinates of atoms
+    bool reduced_coordinates;
     dbr_pbc pbc; // PBC, zeroed if not applicable
     std::string orig_filename;
     std::vector<std::string> comments;  // no newlines here
 };
 
 
-extern int dbr_f_store_relative_coords;
+extern int dbr_f_store_reduced_coords;
 
 bool is_xyz_format(char const* buffer);
 bool is_plain_format(char const* /*buffer*/);
@@ -86,7 +87,7 @@ void write_xyza(dbr_aconf const& aconf, std::string const& filename);
 
 void write_file_with_atoms(dbr_aconf const& aconf, std::string const& filename);
 
-dbr_aconf read_atoms_from_file(LineInput &in, bool relative_coords);
+dbr_aconf read_atoms_from_file(LineInput &in, bool reduced_coords);
 
 class SimpleLineInput : public LineInput
 {
@@ -95,18 +96,18 @@ public:
 };
 
 inline
-dbr_aconf read_atoms_from_file(const char* filename, bool relative_coords)
+dbr_aconf read_atoms_from_file(const char* filename, bool reduced_coords)
 {
-    dbr_f_store_relative_coords = relative_coords;
+    dbr_f_store_reduced_coords = reduced_coords;
     SimpleLineInput lineinp(filename);
-    return read_atoms_from_file(lineinp, relative_coords);
+    return read_atoms_from_file(lineinp, reduced_coords);
 }
 
 inline
-int open_atoms_file(const char* fn, xyz_name **coords, dbr_pbc& pbc,
-                    bool relative_coords = true)
+int open_atoms_file(const char* fn, dbr_atom **coords, dbr_pbc& pbc,
+                    bool reduced_coords = true)
 {
-    return read_atoms_c(fn, coords, &pbc, relative_coords);
+    return read_atoms_c(fn, coords, &pbc, reduced_coords);
 }
 
 

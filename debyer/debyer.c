@@ -178,7 +178,7 @@ void dbr_abort(int err_code)
 
 /* group atoms by name and store in `result',
  * return number of different names */
-int dbr_get_atoms(int n, xyz_name* coords, dbr_atoms** result,
+int dbr_get_atoms(int n, dbr_atom* coords, dbr_atoms** result,
                   int store_indices)
 {
     int i, j;
@@ -237,7 +237,7 @@ int dbr_get_atoms(int n, xyz_name* coords, dbr_atoms** result,
     }
     if (dbr_verbosity > 1) /* very verbose */
         dbr_mesg("%i kbytes allocated for sorted atoms, %i kb for not sorted\n",
-                i/1024, n*sizeof(xyz_name)/1024);
+                i/1024, n*sizeof(dbr_atom)/1024);
     return type_count;
 }
 
