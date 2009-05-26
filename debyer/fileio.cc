@@ -35,11 +35,6 @@ using namespace std;
     if (dbr_nid == 0) \
         cerr
 
-// if true, store reduced coordinates in <0,1) range (relative to PBC box).
-// Not all functions respect this variable. Don't change the variable
-// between reading and writing data.
-int dbr_f_store_reduced_coords = 0;
-
 bool is_xyz_format(char const* buffer)
 {
     // find new lines
@@ -193,10 +188,10 @@ static bool endswith(string const& s, char const* e)
 
 dbr_aconf read_atoms_from_file(LineInput &in, bool reduced_coords)
 {
-    dbr_f_store_reduced_coords = reduced_coords;
     dbr_aconf aconf;
     // initialize dbr_aconf
     aconf.n = 0;
+    aconf.reduced_coordinates = false;
     aconf.atoms = NULL;
     aconf.pbc.v00 = aconf.pbc.v01 = aconf.pbc.v02 = 0.;
     aconf.pbc.v10 = aconf.pbc.v11 = aconf.pbc.v12 = 0.;
@@ -206,7 +201,7 @@ dbr_aconf read_atoms_from_file(LineInput &in, bool reduced_coords)
     if (!strncmp(in.get_buffer(), cfg_magic, strlen(cfg_magic))) {
         if (dbr_verbosity >= 0)
             mcerr << "Detected AtomEye CFG format" << endl;
-        read_atomeye(in, &aconf);
+        read_atomeye(in, &aconf, reduced_coords);
     }
     else if (endswith(in.get_orig_filename(), "CONFIG")
              || endswith(in.get_orig_filename(), "REVCON")) {
@@ -218,7 +213,7 @@ dbr_aconf read_atoms_from_file(LineInput &in, bool reduced_coords)
              || endswith(in.get_orig_filename(), ".lmps")) {
         if (dbr_verbosity >= 0)
             mcerr << "LAMMPS data input format" << endl;
-        read_lammps_data(in, &aconf);
+        read_lammps_data(in, &aconf, reduced_coords);
     }
     else if (is_xyz_format(in.get_buffer())) {
         if (dbr_verbosity >= 0)
@@ -260,7 +255,7 @@ void write_file_with_atoms(dbr_aconf const& aconf, string const& filename)
 
 //=============   AtomEye file reading and writing    ==================
 
-void read_atomeye(LineInput& in, dbr_aconf *aconf)
+void read_atomeye(LineInput& in, dbr_aconf *aconf, bool reduced_coords)
 {
     // only "A = 1.0 [Angstrom]" files are supported
     char const* cfg_magic = "Number of particles =";
@@ -268,6 +263,7 @@ void read_atomeye(LineInput& in, dbr_aconf *aconf)
     int const magic_len = strlen(cfg_magic);
     double H[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
     const char* line = in.get_line();
+    aconf->reduced_coordinates = reduced_coords;
     assert(!strncmp(line, cfg_magic, magic_len));
     sscanf(line + magic_len, "%i", &aconf->n);
     if (dbr_verbosity >= 0)
@@ -338,7 +334,7 @@ void read_atomeye(LineInput& in, dbr_aconf *aconf)
             x -= floor(x);
             y -= floor(y);
             z -= floor(z);
-            if (dbr_f_store_reduced_coords) {
+            if (reduced_coords) {
                 atom.xyz[0] = x;
                 atom.xyz[1] = y;
                 atom.xyz[2] = z;
@@ -430,7 +426,7 @@ void write_atoms_to_atomeye_file(dbr_aconf const& aconf, string const& filename)
             f << (pse ? pse->mass : 1.0) << "\n";
             f << atom.name << "\n";
         }
-        if (dbr_f_store_reduced_coords) {
+        if (aconf.reduced_coordinates) {
             f << atom.xyz[0] << " " << atom.xyz[1]
                 << " " << atom.xyz[2] << "\n";
         }
@@ -654,8 +650,9 @@ vector<string> split_string(const char* s) {
 // The names corresponding to the numbers are in separate lammps file.
 // Here we assume that names of the types follow the line "n atom types"
 // as comments, e.g.: "2 atom types # C Si", or use fake names.
-void read_lammps_data(LineInput& in, dbr_aconf* aconf)
+void read_lammps_data(LineInput& in, dbr_aconf* aconf, bool reduced_coords)
 {
+    aconf->reduced_coordinates = reduced_coords;
     // read header
     vector<string> symbols;
     const char* line = NULL;
@@ -775,7 +772,7 @@ void read_lammps_data(LineInput& in, dbr_aconf* aconf)
             dbr_abort(EXIT_FAILURE);
         }
         strncpy(a->name, symbols[symbol_nr-1].c_str(), 7);
-        if (dbr_f_store_reduced_coords) {
+        if (reduced_coords) {
             ax /= aconf->pbc.v00;
             ay /= aconf->pbc.v11;
             az /= aconf->pbc.v22;

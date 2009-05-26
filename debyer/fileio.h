@@ -47,23 +47,25 @@ struct dbr_aconf
 {
     dbr_atom *atoms; // coordinates of atoms
     int n; // number of atoms
+
+    // reduced coordinates (i.e. values in <0,1) range) are stored 
+    // Some functions may not work well with reduced_coordinates.
     bool reduced_coordinates;
+
     dbr_pbc pbc; // PBC, zeroed if not applicable
     std::string orig_filename;
     std::vector<std::string> comments;  // no newlines here
 };
 
 
-extern int dbr_f_store_reduced_coords;
-
 bool is_xyz_format(char const* buffer);
 bool is_plain_format(char const* /*buffer*/);
 
 void read_xyz(LineInput& in, dbr_aconf *aconf);
-void read_atomeye(LineInput& in, dbr_aconf *aconf);
+void read_atomeye(LineInput& in, dbr_aconf *aconf, bool reduced_coords);
 void read_dlpoly_config(LineInput& in, dbr_aconf *aconf);
 void read_plain(LineInput& in, dbr_aconf *aconf);
-void read_lammps_data(LineInput& in, dbr_aconf *aconf);
+void read_lammps_data(LineInput& in, dbr_aconf *aconf, bool reduced_coords);
 
 /// write atomistic configuration aconf to file in XMOL XYZ format
 void write_atoms_to_xyz_file(dbr_aconf const& aconf,
@@ -87,6 +89,8 @@ void write_xyza(dbr_aconf const& aconf, std::string const& filename);
 
 void write_file_with_atoms(dbr_aconf const& aconf, std::string const& filename);
 
+// if reduced_coords is true, store reduced coordinates in <0,1) range 
+// (relative to PBC box). Not all reading/writing functions respect it.
 dbr_aconf read_atoms_from_file(LineInput &in, bool reduced_coords);
 
 class SimpleLineInput : public LineInput
@@ -98,7 +102,6 @@ public:
 inline
 dbr_aconf read_atoms_from_file(const char* filename, bool reduced_coords)
 {
-    dbr_f_store_reduced_coords = reduced_coords;
     SimpleLineInput lineinp(filename);
     return read_atoms_from_file(lineinp, reduced_coords);
 }
