@@ -1,0 +1,56 @@
+#  dbr_extend -- program for calculation of diffration patterns
+#  Copyright (C) 2009 Marcin Wojdyr
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  $Id: debyer.ggo 112 2009-04-14 00:44:25Z wojdyr $
+
+#gengetopt 2.22
+package "dbr_extend"
+args "-uFILE --file-name=extend_cmd"
+
+option "verbose" v "increase verbosity level (can be used 3x)" optional multiple
+option "min-cell" s "(internal) size (lower limit) of cells used for searching atoms [A]" float default="2.0" optional
+text ""
+option "x" x "extend in x direction, at plane x=x0" float optional
+option "y" y "extend in y direction" float optional
+option "z" z "extend in z direction" float optional
+
+text ""
+option "reduced" r "use reduced coordinates (between 0 and 1)" optional
+option "width" w "width of the slab that will be processed" float optional
+
+text "\nIf width is not given, it will be equal to translation vector."
+text "The following options affect searching of this vector."
+option "epsilon" e "epsilon used to compare coordinates" float default="0.1" optional
+option "min-delta" m "min length of translation vector" float optional
+option "max-delta" M "max length of translation vector" float optional
+
+text "\nActions to be performed on configuration file."
+option "delete" d "delete atoms" float optional
+option "add-vacuum" u "extend PBC and add vacuum" optional
+option "add-copy" c "extend PBC and add atoms" optional
+
+text "\nOutput file options. Skip them for dry run."
+option "in-place" i "replace input file with output" optional
+option "output" o "output file" string typestr="FILENAME"  optional default="dbr_extend.out.cfg"
+
+text "\nUsage examples: \n"
+text "  dbr_extend -z41.5 -e0.2\n"
+text "    Try to find periodicity of the structure in z direction starting\n"
+text "    from z0=41.5. It tries to find z1 such that each atom\n"
+text "    with z0 < z < z1 has a periodic image with\n"
+text "    x'=x, y'=y, z'=z+delta, delta=z1-z0.\n"
+text "    Comparisons of coordinates are done with epsilon=0.2.\n"
+text "  dbr_extend -z41.5 -w20 -e0.2\n"
+text "    Extend PBC box in z direction for about 20A and fill it\n"
+text "    with a copy of a part of the input system.\n"
+
