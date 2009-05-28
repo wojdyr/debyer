@@ -39,6 +39,7 @@ void free_atoms(dbr_atom *atoms);
 
 #include <fstream>
 #include <string>
+#include <cstring>
 #include <vector>
 #include "lineio.h"
 
@@ -131,6 +132,29 @@ void dbr_vec3_mult_mat3x3(dbr_xyz const xyz, double const m[3][3], dbr_xyz r)
     for (int j = 0; j < 3; ++j)
         r[j] = xyz[0] * m[0][j] + xyz[1] * m[1][j] + xyz[2] * m[2][j];
 }
+
+// operations on atom configuration
+
+inline
+void dbr_copy_atom(dbr_atom const& source, dbr_atom& dest)
+{
+    std::strcpy(dest.name, source.name);
+    for (int k = 0; k < 3; ++k)
+        dest.xyz[k] = source.xyz[k];
+}
+
+inline
+void dbr_copy_atom(dbr_atom *atoms, int source_pos, int dest_pos)
+{
+    dbr_copy_atom(atoms[source_pos], atoms[dest_pos]);
+}
+
+inline
+void dbr_copy_atom(dbr_aconf const& aconf, int source_pos, int dest_pos)
+{
+    dbr_copy_atom(aconf.atoms[source_pos], aconf.atoms[dest_pos]);
+}
+
 
 
 #endif /* __cplusplus */

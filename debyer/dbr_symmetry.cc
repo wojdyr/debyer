@@ -603,18 +603,6 @@ bool check_distances(dbr_aconf const&aconf, int dir, Cells const* cells,
 }
 */
 
-void copy_atom(dbr_atom const& source, dbr_atom& dest)
-{
-    strcpy(dest.name, source.name);
-    for (int k = 0; k < 3; ++k)
-        dest.xyz[k] = source.xyz[k];
-}
-
-void copy_atom(dbr_atom *coords, int source_pos, int dest_pos)
-{
-    copy_atom(coords[source_pos], coords[dest_pos]);
-}
-
 // Atoms from the slice with the lowest energy are duplicated to other slices.
 // Only atoms that were selected (i.e. that are in `sel') are changed.
 void multiply_selected_atoms(dbr_atom *coords, int dir,
@@ -627,7 +615,7 @@ void multiply_selected_atoms(dbr_atom *coords, int dir,
         int orig_pos = sel[min_pos+j];
         for (int i = 1; i < nparts; ++i) {
             int copy_pos = sel[i * ac + min_pos+j];
-            copy_atom(coords, orig_pos, copy_pos);
+            dbr_copy_atom(coords, orig_pos, copy_pos);
             coords[copy_pos].xyz[dir]
                   = wrapped_sum(coords[orig_pos].xyz[dir], double(i) / nparts);
         }
@@ -824,7 +812,7 @@ void find_lowest_energy(char axis, int nparts,
                 for (int k = 0; k < ac; ++k) {
                     assert (counter == (i * nparts2 + j) * ac + k);
                     dbr_atom &copy = coords[sel[(i * nparts2 + j) * ac + k]];
-                    copy_atom(aprim[k], copy);
+                    dbr_copy_atom(aprim[k], copy);
                     copy.xyz[dir]
                         = wrapped_sum(copy.xyz[dir], double(i) / nparts);
                     copy.xyz[dir2]
