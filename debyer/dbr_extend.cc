@@ -18,8 +18,11 @@
 // $Id: debyer.ggo 112 2009-04-14 00:44:25Z wojdyr $
 
 // TODO: 
+// * write command options to output file as a comment
+// * average length of the translation vector
 // * it doesn't work when there are two cells in given direction,
 //   ./dbr_extend -r  -e0.02 -c2.99 -M0.03  -v -v  -z0.5 mydisl.cfg.gz
+// * option -cN with N>1 should change PBC only once
 
 #include <algorithm>
 #include <cstring>
@@ -365,6 +368,11 @@ vector<double> nabe_in_direction_distances(dbr_aconf const& aconf,
     dbr_real* xyz0 = aconf.atoms[a0].xyz;
     int dim1 = (dim + 1) % 3;
     int dim2 = (dim + 2) % 3;
+    if (verbosity > 2) {
+        printf("searching for atoms with %c=%g and %c=%g +/- %g,",
+                'x'+dim1, xyz0[dim1], 'x'+dim2, xyz0[dim2], epsilon);
+        printf(" %g < |%c-%g| < %g\n", lo_lim, 'x'+dim, xyz0[dim], hi_lim);
+    }
     for (int i = 0; i != aconf.n; ++i) {
         dbr_real* xyz = aconf.atoms[i].xyz;
         if (fabs(xyz[dim1] - xyz0[dim1]) > epsilon ||
@@ -372,9 +380,11 @@ vector<double> nabe_in_direction_distances(dbr_aconf const& aconf,
                 i == a0)
             continue;
         double diff = dist_forward(xyz[dim], xyz0[dim], pbcd);
+        bool ok = (diff > lo_lim && diff < hi_lim);
         if (verbosity > 2)
-            printf("distance %g to %s\n", diff, atom_to_str(aconf, i));
-        if (diff > lo_lim && diff < hi_lim)
+            printf("distance %g to %s  %s\n", diff, atom_to_str(aconf, i),
+                                              ok ? "ok" : "rejected");
+        if (ok)
             img_dist.push_back(diff);
     }
     sort(img_dist.begin(), img_dist.end());
@@ -439,7 +449,7 @@ double search_for_translation(dbr_aconf const& aconf,
     if (verbosity > 0)
         printf("atom0: %s\n", atom_to_str(aconf, a0));
     double lo_lim = args.min_delta_given ? args.min_delta_arg : 0.;
-    double hi_lim = args.max_delta_given ? args.min_delta_arg
+    double hi_lim = args.max_delta_given ? args.max_delta_arg
                                          : get_pbc(aconf, dim) / 2.;
     double eps = args.epsilon_arg;
     // possible lengths of translation vectors, based on one atom's neighbors
@@ -469,7 +479,7 @@ void delete_atoms(dbr_aconf& aconf, int dim, double x0, double delta)
         }
     int deleted = aconf.n - n;
     aconf.n = n;
-    if (verbosity > 0)
+    if (verbosity > -1)
         printf("%d atoms were deleted.\n", deleted);
 }
 
@@ -482,14 +492,13 @@ void add_vacuum(dbr_aconf& aconf, int dim, double x0, double delta)
 }
 
 void add_copy(dbr_aconf& aconf, int dim, double x0, double delta,
-              CellMethod const& cm, double epsilon)
+              CellMethod const& cm, double epsilon, int N)
 {
     // bookmark atoms that are to be copied
-    double pbcd = get_pbc(aconf, dim);
     vector<int> orig;
     for (int i = 0; i != aconf.n; ++i) {
         dbr_real* xyz = aconf.atoms[i].xyz;
-        double dist = dist_forward(x0, xyz[dim], pbcd);
+        double dist = dist_forward(x0, xyz[dim], get_pbc(aconf, dim));
         if (dist < delta - epsilon)
             orig.push_back(i);
         // to avoid overlapping atoms or gaps, we must ensure that all images
@@ -504,23 +513,20 @@ void add_copy(dbr_aconf& aconf, int dim, double x0, double delta,
         }
     }
 
-    for (int i = 0; i != aconf.n; ++i) {
-        dbr_real* xyz = aconf.atoms[i].xyz;
-        if (xyz[dim] >= x0)
-            xyz[dim] += delta;
-    }
-    expand_pbc(aconf, dim, delta);
-
-    // if delta is relative, we rescale it to keep the same absolute value
-    if (aconf.reduced_coordinates)
-        delta /= 1 + delta;
-
     if (!orig.empty()) {
         // resize atoms table
-        dbr_atom* new_atoms = new dbr_atom[aconf.n + orig.size()];
+        dbr_atom* new_atoms = new dbr_atom[aconf.n + N * orig.size()];
         memcpy(new_atoms, aconf.atoms, sizeof(dbr_atoms) * aconf.n);
         delete [] aconf.atoms;
         aconf.atoms = new_atoms;
+    }
+
+    for (int i = 0; i < N; ++i) {
+        add_vacuum(aconf, dim, x0, delta);
+
+        // if delta is relative, we rescale it to keep the same absolute value
+        if (aconf.reduced_coordinates)
+            delta /= 1 + delta;
 
         // copy bookmarked atoms into the just created vacuum
         for (size_t i = 0; i != orig.size(); ++i) {
@@ -528,9 +534,9 @@ void add_copy(dbr_aconf& aconf, int dim, double x0, double delta,
             aconf.atoms[aconf.n + i].xyz[dim] += delta;
         }
         aconf.n += orig.size();
-        if (verbosity > 0)
-            printf("%d atoms were added.\n", (int) orig.size());
     }
+    if (verbosity > -1)
+        printf("%d atoms were added.\n", int(N * orig.size()));
 }
 
 int main(int argc, char **argv)
@@ -538,24 +544,29 @@ int main(int argc, char **argv)
     // processing cmd line args
     gengetopt_args_info args;
     if (cmdline_parser(argc, argv, &args) != 0)
-        return -1;
+        return EXIT_FAILURE;
 
     verbosity = args.verbose_given; // global variable
 
     if (args.x_given + args.y_given + args.z_given != 1) {
-        fprintf(stderr, "One of -x, -y, -z parameters should be given "
+        fprintf(stderr, "One of -x, -y, -z options should be given "
                 "(-h will show all valid options).\n");
-        return -1;
+        return EXIT_FAILURE;
+    }
+    if (args.in_place_given && args.output_given) {
+        fprintf(stderr, "Only one of -i and -o options can be given "
+                "(-h will show explaination).\n");
+        return EXIT_FAILURE;
     }
     if (args.add_vacuum_given && args.add_copy_given) {
         fprintf(stderr, "Only one of add-copy and add_vacuum parameters "
                 "can be given.\n");
-        return -1;
+        return EXIT_FAILURE;
     }
 
     if (args.inputs_num != 1) {
         fprintf(stderr, "Exactly one input file should be given.\n");
-        return -1;
+        return EXIT_FAILURE;
     }
 
     int dim = -1;
@@ -583,12 +594,12 @@ int main(int argc, char **argv)
     if (val < 0) {
         fprintf(stderr,
                 "The given point (%g) should be in PBC (non-negative)\n", val);
-        return -1;
+        return EXIT_FAILURE;
     }
     if (val > pbcd) {
         fprintf(stderr,
                 "The given point (%g) should be in PBC ( < %g)\n", val, pbcd);
-        return -1;
+        return EXIT_FAILURE;
     }
 
     // put atoms into cells
@@ -597,7 +608,7 @@ int main(int argc, char **argv)
     // if epsilon is larger than half of cell, increase cell sizes
     if (args.epsilon_arg >= cm.half_cell()) {
         fprintf(stderr, "Epsilon too large.\n");
-        return -1;
+        return EXIT_FAILURE;
     }
 
     double delta = 0.;
@@ -605,23 +616,28 @@ int main(int argc, char **argv)
         delta = args.width_arg;
     else {
         delta = search_for_translation(aconf, cm, args, dim, val);
-        if (delta != 0.)
-            printf("translation length: %g\n", delta);
-        else
-            printf("translation not found\n");
+        if (verbosity > -1) {
+            if (delta != 0.)
+                printf("translation length: %g\n", delta);
+            else {
+                printf("translation not found\n");
+                return EXIT_FAILURE;
+            }
+        }
     }
     if (args.delete_given)
         delete_atoms(aconf, dim, val, delta);
     if (args.add_vacuum_given)
         add_vacuum(aconf, dim, val, delta);
     if (args.add_copy_given)
-        add_copy(aconf, dim, val, delta, cm, args.epsilon_arg);
+        add_copy(aconf, dim, val, delta, cm, args.epsilon_arg,
+                 args.add_copy_arg);
 
     if (args.in_place_given)
         write_file_with_atoms(aconf, aconf.orig_filename);
     else if (args.output_given)
         write_file_with_atoms(aconf, args.output_arg);
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 

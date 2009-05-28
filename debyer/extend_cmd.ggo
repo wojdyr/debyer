@@ -28,29 +28,30 @@ text ""
 option "reduced" r "use reduced coordinates (between 0 and 1)" optional
 option "width" w "width of the slab that will be processed" float optional
 
-text "\nIf width is not given, it will be equal to translation vector."
-text "The following options affect searching of this vector."
+text "\nIf width is not given, it will be equal to the shortest translation vector "
+text "\nfound by the program. The following options affect searching of this vector."
 option "epsilon" e "epsilon used to compare coordinates" float default="0.1" optional
 option "min-delta" m "min length of translation vector" float optional
 option "max-delta" M "max length of translation vector" float optional
 
 text "\nActions to be performed on configuration file."
-option "delete" d "delete atoms" float optional
+option "delete" d "delete atoms" optional
 option "add-vacuum" u "extend PBC and add vacuum" optional
-option "add-copy" c "extend PBC and add atoms" optional
+option "add-copy" c "extend PBC and add atoms (does the same N times)" optional int argoptional typestr="N" default="1"
 
-text "\nOutput file options. Skip them for dry run."
+text "\nOutput file. Default is a dry run."
 option "in-place" i "replace input file with output" optional
-option "output" o "output file" string typestr="FILENAME"  optional default="dbr_extend.out.cfg"
+option "output" o "output file" string typestr="FILENAME"  optional
 
 text "\nUsage examples: \n"
-text "  dbr_extend -z41.5 -e0.2\n"
+text "  dbr_extend -z41.5 -e0.2 -vvv file.cfg\n"
 text "    Try to find periodicity of the structure in z direction starting\n"
 text "    from z0=41.5. It tries to find z1 such that each atom\n"
 text "    with z0 < z < z1 has a periodic image with\n"
 text "    x'=x, y'=y, z'=z+delta, delta=z1-z0.\n"
 text "    Comparisons of coordinates are done with epsilon=0.2.\n"
-text "  dbr_extend -z41.5 -w20 -e0.2\n"
-text "    Extend PBC box in z direction for about 20A and fill it\n"
-text "    with a copy of a part of the input system.\n"
+text "  dbr_extend -c10 -z41.5 -e0.2 -i file.cfg\n"
+text "    Extend PBC box by in z direction by 10 x the value reported\n"
+text "    in the previous try run, copy atoms to the created space,\n"
+text "    write the configuration back to file.cfg.\n"
 
