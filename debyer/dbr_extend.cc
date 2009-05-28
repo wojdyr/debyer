@@ -435,22 +435,17 @@ double search_for_translation(dbr_aconf const& aconf,
                               gengetopt_args_info const& args,
                               int dim, double val)
 {
-    // if epsilon is larger than half of cell, increase cell sizes
-    double eps = args.epsilon_arg;
-    if (eps >= cm.half_cell()) {
-        fprintf(stderr, "Epsilon too large.\n");
-        return -1;
-    }
-
     int a0 = select_atom(aconf, dim, val);
     if (verbosity > 0)
         printf("atom0: %s\n", atom_to_str(aconf, a0));
     double lo_lim = args.min_delta_given ? args.min_delta_arg : 0.;
     double hi_lim = args.max_delta_given ? args.min_delta_arg
                                          : get_pbc(aconf, dim) / 2.;
-    // possible length of translation vectors, based on one atom's neighbors
+    double eps = args.epsilon_arg;
+    // possible lengths of translation vectors, based on one atom's neighbors
     vector<double> tr = nabe_in_direction_distances(aconf, a0, dim,
                                                     lo_lim, hi_lim, eps);
+    // return the first (smallest) translation vector found
     for (vector<double>::const_iterator d = tr.begin(); d != tr.end(); ++d)
         if (check_symmetry_in_distance(cm, dim, val, *d, eps))
             return *d;
@@ -492,26 +487,27 @@ void add_copy(dbr_aconf& aconf, int dim, double x0, double delta,
     // bookmark atoms that are to be copied
     double pbcd = get_pbc(aconf, dim);
     vector<int> orig;
-    for (int i = 0; i != aconf.n; ++i)
-        if (dist_forward(x0, aconf.atoms[i].xyz[dim], pbcd) < delta)
-            orig.push_back(i);
-
-    // to avoid overlapping atoms or gaps, we must ensure that all images
-    // of bookmarked atoms are moved, and atoms which images are not to be
-    // copied/movied are not moved.
     for (int i = 0; i != aconf.n; ++i) {
         dbr_real* xyz = aconf.atoms[i].xyz;
-        if (xyz[dim] >= x0 + epsilon)
-            xyz[dim] += delta;
-        else if (xyz[dim] > x0 - epsilon) {
-            // find (reverse) image of i'th atom
+        double dist = dist_forward(x0, xyz[dim], pbcd);
+        if (dist < delta - epsilon)
+            orig.push_back(i);
+        // to avoid overlapping atoms or gaps, we must ensure that all images
+        // of bookmarked atoms are moved, and atoms which images are not to be
+        // moved are not copied.
+        else if (dist < delta + epsilon) {
             dbr_real x[3] = { xyz[0], xyz[1], xyz[2] };
-            x[dim] -= delta;
+            x[dim] += delta;
             dbr_atom const* img = cm.get_atom_at(x, epsilon);
-            // check if the image atom, if any, is bookmarked
-            if (img && dist_forward(x0, img->xyz[dim], pbcd) < delta)
-                xyz[dim] += delta;
+            if (img && img->xyz[dim] >= x0)
+                orig.push_back(i);
         }
+    }
+
+    for (int i = 0; i != aconf.n; ++i) {
+        dbr_real* xyz = aconf.atoms[i].xyz;
+        if (xyz[dim] >= x0)
+            xyz[dim] += delta;
     }
     expand_pbc(aconf, dim, delta);
 
@@ -597,6 +593,12 @@ int main(int argc, char **argv)
 
     // put atoms into cells
     CellMethod cm(aconf, args.min_cell_arg);
+
+    // if epsilon is larger than half of cell, increase cell sizes
+    if (args.epsilon_arg >= cm.half_cell()) {
+        fprintf(stderr, "Epsilon too large.\n");
+        return -1;
+    }
 
     double delta = 0.;
     if (args.width_given)
