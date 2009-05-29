@@ -56,6 +56,9 @@ struct dbr_aconf
     dbr_pbc pbc; // PBC, zeroed if not applicable
     std::string orig_filename;
     std::vector<std::string> comments;  // no newlines here
+    // extra values for each atom, not parsed
+    std::vector<std::string> auxiliary;
+    std::string auxiliary_header;
 };
 
 
@@ -150,9 +153,13 @@ void dbr_copy_atom(dbr_atom *atoms, int source_pos, int dest_pos)
 }
 
 inline
-void dbr_copy_atom(dbr_aconf const& aconf, int source_pos, int dest_pos)
+void dbr_copy_atom(dbr_aconf& aconf, int source_pos, int dest_pos)
 {
+    if (source_pos == dest_pos)
+        return;
     dbr_copy_atom(aconf.atoms[source_pos], aconf.atoms[dest_pos]);
+    if (!aconf.auxiliary.empty())
+        aconf.auxiliary[dest_pos] = aconf.auxiliary[source_pos];
 }
 
 

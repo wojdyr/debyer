@@ -479,6 +479,8 @@ void delete_atoms(dbr_aconf& aconf, int dim, double x0, double delta)
         }
     int deleted = aconf.n - n;
     aconf.n = n;
+    if (!aconf.auxiliary.empty())
+        aconf.auxiliary.resize(aconf.n);
     if (verbosity > -1)
         printf("%d atoms were deleted.\n", deleted);
 }

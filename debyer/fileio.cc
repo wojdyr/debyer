@@ -271,6 +271,7 @@ void read_atomeye(LineInput& in, dbr_aconf *aconf, bool reduced_coords)
     aconf->atoms = new dbr_atom[aconf->n];
     int counter = 0;
     bool extended = false;
+    int entry_count = 0;
     char ext_name[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
     while ((line = in.get_line())) {
@@ -296,13 +297,18 @@ void read_atomeye(LineInput& in, dbr_aconf *aconf, bool reduced_coords)
         else if (!strncmp(nonblank, extended_mark, strlen(extended_mark))) {
             char *eq = strchr(nonblank, '=');
             ASSERT_FORMAT(*eq);
-            int n;
-            int r = sscanf(eq+1, "%i", &n);
+            int r = sscanf(eq+1, "%i", &entry_count);
             ASSERT_FORMAT(r == 1);
             if (dbr_verbosity > 0)
-                mcerr << "Extended CFG format with " << n
+                mcerr << "Extended CFG format with " << entry_count
                     << " entries per atom." << endl;
             extended = true;
+            if (entry_count > 3)
+                aconf->auxiliary.resize(aconf->n);
+        }
+
+        else if (!strncmp(nonblank, "auxiliary", strlen("auxiliary"))) {
+            aconf->auxiliary_header += nonblank + string("\n");
         }
 
         // either atom mass or coordinates line
@@ -310,19 +316,24 @@ void read_atomeye(LineInput& in, dbr_aconf *aconf, bool reduced_coords)
             dbr_atom& atom = aconf->atoms[counter];
             dbr_real x=0, y=0, z=0;
             if (extended) {
-                int r = sscanf(nonblank, DBR_F " " DBR_F " " DBR_F, &x, &y, &z);
-                if (r == 1) {
+                int char_count;
+                int r = sscanf(nonblank, DBR_F " " DBR_F " " DBR_F "%n",
+                               &x, &y, &z, &char_count);
+                // it is not known if "%n" increased r above or not
+                if (r < 3) {
                     line = in.get_line();
                     sscanf(line, "%7s", ext_name);
                     continue;
                 }
-                assert(r == 3);
+                // if we are here, it's a line with coordinates
+                assert(r == 3 || r == 4);
                 assert(strlen(ext_name) > 0);
                 //{
                 //    mcerr << "Error in line " << i+2 << endl;
                 //    dbr_abort(EXIT_FAILURE);
                 //}
                 strcpy(atom.name, ext_name);
+                aconf->auxiliary[counter] = nonblank+char_count;
             }
             else {
                 dbr_real mass;
@@ -389,6 +400,22 @@ void write_comments_with_hashes(dbr_aconf const& aconf, ostream &f)
         f << "# " << *i << "\n";
 }
 
+int count_words(const char* s)
+{
+    int n = 0;
+    while (isspace(*s))
+        ++s;
+    while (*s != '\0')
+    {
+        while (!isspace (*s) && *s != '\0')
+            ++s;
+        while (isspace(*s))
+            ++s;
+        n++;
+    }
+    return n;
+}
+
 void write_atoms_to_atomeye_file(dbr_aconf const& aconf, string const& filename)
 {
     if (dbr_nid != 0)
@@ -416,7 +443,12 @@ void write_atoms_to_atomeye_file(dbr_aconf const& aconf, string const& filename)
     f << "H0(3,3) = " << setprecision(12) << aconf.pbc.v22 << " A\n";
 
     f << ".NO_VELOCITY.\n";
-    f << "entry_count = 3\n";
+    int entry_count = 3;
+    if (!aconf.auxiliary.empty())
+        entry_count += count_words(aconf.auxiliary[0].c_str());
+    f << "entry_count = " << entry_count << "\n";
+    if (!aconf.auxiliary_header.empty())
+        f << aconf.auxiliary_header << endl;
     double H_1[3][3]; //inverse of pbc matrix
     dbr_inverse_3x3_matrix(aconf.pbc, H_1);
     for (int i = 0; i < aconf.n; ++i) {
@@ -428,13 +460,17 @@ void write_atoms_to_atomeye_file(dbr_aconf const& aconf, string const& filename)
         }
         if (aconf.reduced_coordinates) {
             f << atom.xyz[0] << " " << atom.xyz[1]
-                << " " << atom.xyz[2] << "\n";
+                << " " << atom.xyz[2];
         }
         else {
             dbr_xyz r;
             dbr_vec3_mult_mat3x3(atom.xyz, H_1, r);
-            f << r[0] << " " << r[1] << " " << r[2] << "\n";
+            f << r[0] << " " << r[1] << " " << r[2];
         }
+        if (!aconf.auxiliary.empty() && !aconf.auxiliary[i].empty())
+            f << (isspace(aconf.auxiliary[i][0]) ? "" : " ")
+              << aconf.auxiliary[i];
+        f << "\n";
     }
     f.close();
 }
