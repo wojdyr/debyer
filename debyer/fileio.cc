@@ -333,7 +333,8 @@ void read_atomeye(LineInput& in, dbr_aconf *aconf, bool reduced_coords)
                 //    dbr_abort(EXIT_FAILURE);
                 //}
                 strcpy(atom.name, ext_name);
-                aconf->auxiliary[counter] = nonblank+char_count;
+                if (!aconf->auxiliary.empty())
+                    aconf->auxiliary[counter] = nonblank + char_count;
             }
             else {
                 dbr_real mass;
