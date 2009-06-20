@@ -541,6 +541,71 @@ void add_copy(dbr_aconf& aconf, int dim, double x0, double delta,
         printf("%d atoms were added.\n", int(N * orig.size()));
 }
 
+// Don't search for translation vectors, just multiply the configuration
+// by integer number in all directions.
+void multiply_pbc(dbr_aconf& aconf, int x, int y, int z)
+{
+    int new_n = aconf.n * x * y * z;
+    dbr_atom* new_atoms = new dbr_atom[new_n];
+    int mult[3] = {x, y, z};
+    for (int ix = 0; ix < x; ++ix)
+        for (int iy = 0; iy < y; ++iy)
+            for (int iz = 0; iz < z; ++iz) {
+                int img_start = (ix * y * z + iy * z + iz) * aconf.n;
+                dbr_real r[3];
+                dbr_real img[3] = {ix, iy, iz};
+                dbr_vec3_mult_pbc(img, aconf.pbc, r);
+                for (int i = 0; i < aconf.n; ++i) {
+                    dbr_atom const& source = aconf.atoms[i];
+                    dbr_atom& dest = new_atoms[i + img_start];
+                    strcpy(dest.name, source.name);
+                    if (aconf.reduced_coordinates) {
+                        for (int i = 0; i < 3; ++i)
+                            dest.xyz[i] = (source.xyz[i] + img[i]) / mult[i];
+                    }
+                    else {
+                        for (int i = 0; i < 3; ++i)
+                            dest.xyz[i] = source.xyz[i] + r[i];
+                    }
+                }
+            }
+
+    aconf.atoms = new_atoms;
+    aconf.pbc.v00 *= x; aconf.pbc.v01 *= x; aconf.pbc.v02 *= x;
+    aconf.pbc.v10 *= y; aconf.pbc.v11 *= y; aconf.pbc.v12 *= y;
+    aconf.pbc.v20 *= z; aconf.pbc.v21 *= z; aconf.pbc.v22 *= z;
+    string comment = static_cast<ostringstream&>(ostringstream() <<
+            "configuration multiplied by " << x << "x" << y << "x" << z).str();
+    aconf.comments.push_back(comment);
+    aconf.auxiliary.resize(new_n);
+    for (int img = 1; img < x*y*z; ++img)
+        for (int i = 0; i != aconf.n; ++i)
+            aconf.auxiliary[img * aconf.n + i] = aconf.auxiliary[i];
+    aconf.n = new_n;
+}
+
+bool multiply_pbc(dbr_aconf& aconf, const char* mult)
+{
+    // parse string
+    const char *start = mult;
+    char *endptr = NULL;
+    int x = strtol(start, &endptr, 10);
+    if (endptr == start || *endptr != 'x')
+        return false;
+    start = endptr + 1;
+    int y = strtol(start, &endptr, 10);
+    if (endptr == start || *endptr != 'x')
+        return false;
+    start = endptr + 1;
+    int z = strtol(start, &endptr, 10);
+    if (endptr == start || *endptr != '\0')
+        return false;
+    if (x == 0 || y == 0 || z == 0)
+        return false;
+    multiply_pbc(aconf, x, y, z);
+    return true;
+}
+
 int main(int argc, char **argv)
 {
     // processing cmd line args
@@ -550,8 +615,14 @@ int main(int argc, char **argv)
 
     verbosity = args.verbose_given; // global variable
 
-    if (args.x_given + args.y_given + args.z_given != 1) {
-        fprintf(stderr, "One of -x, -y, -z options should be given "
+    if (args.x_given + args.y_given + args.z_given > 1) {
+        fprintf(stderr, "Only one of -x, -y, -z options can be given "
+                "(-h will show all valid options).\n");
+        return EXIT_FAILURE;
+    }
+    if (!args.x_given && !args.y_given && !args.z_given
+            && !args.multiply_given) {
+        fprintf(stderr, "One of -x, -y, -z, -N options must be given "
                 "(-h will show all valid options).\n");
         return EXIT_FAILURE;
     }
@@ -590,50 +661,55 @@ int main(int argc, char **argv)
     bool reduced_coords = args.reduced_given;
     dbr_aconf aconf = read_atoms_from_file(args.inputs[0], reduced_coords);
 
-    double pbcd = get_pbc(aconf, dim);
-    if (verbosity > 1)
-        printf("PBC[%d]=%g\n", dim, pbcd);
-    if (val < 0) {
-        fprintf(stderr,
+    if (dim >= 0) {
+        double pbcd = get_pbc(aconf, dim);
+        if (verbosity > 1)
+            printf("PBC[%d]=%g\n", dim, pbcd);
+        if (val < 0) {
+            fprintf(stderr,
                 "The given point (%g) should be in PBC (non-negative)\n", val);
-        return EXIT_FAILURE;
-    }
-    if (val > pbcd) {
-        fprintf(stderr,
+            return EXIT_FAILURE;
+        }
+        if (val > pbcd) {
+            fprintf(stderr,
                 "The given point (%g) should be in PBC ( < %g)\n", val, pbcd);
-        return EXIT_FAILURE;
-    }
+            return EXIT_FAILURE;
+        }
 
-    // put atoms into cells
-    CellMethod cm(aconf, args.min_cell_arg);
+        // put atoms into cells
+        CellMethod cm(aconf, args.min_cell_arg);
 
-    // if epsilon is larger than half of cell, increase cell sizes
-    if (args.epsilon_arg >= cm.half_cell()) {
-        fprintf(stderr, "Epsilon too large.\n");
-        return EXIT_FAILURE;
-    }
+        // if epsilon is larger than half of cell, increase cell sizes
+        if (args.epsilon_arg >= cm.half_cell()) {
+            fprintf(stderr, "Epsilon too large.\n");
+            return EXIT_FAILURE;
+        }
 
-    double delta = 0.;
-    if (args.width_given)
-        delta = args.width_arg;
-    else {
-        delta = search_for_translation(aconf, cm, args, dim, val);
-        if (verbosity > -1) {
-            if (delta != 0.)
-                printf("translation length: %g\n", delta);
-            else {
-                printf("translation not found\n");
-                return EXIT_FAILURE;
+        double delta = 0.;
+        if (args.width_given)
+            delta = args.width_arg;
+        else {
+            delta = search_for_translation(aconf, cm, args, dim, val);
+            if (verbosity > -1) {
+                if (delta != 0.)
+                    printf("translation length: %g\n", delta);
+                else {
+                    printf("translation not found\n");
+                    return EXIT_FAILURE;
+                }
             }
         }
+        if (args.delete_given)
+            delete_atoms(aconf, dim, val, delta);
+        if (args.add_vacuum_given)
+            add_vacuum(aconf, dim, val, delta);
+        if (args.add_copy_given)
+            add_copy(aconf, dim, val, delta, cm, args.epsilon_arg,
+                     args.add_copy_arg);
     }
-    if (args.delete_given)
-        delete_atoms(aconf, dim, val, delta);
-    if (args.add_vacuum_given)
-        add_vacuum(aconf, dim, val, delta);
-    if (args.add_copy_given)
-        add_copy(aconf, dim, val, delta, cm, args.epsilon_arg,
-                 args.add_copy_arg);
+
+    if (args.multiply_given)
+        multiply_pbc(aconf, args.multiply_arg);
 
     if (args.in_place_given)
         write_file_with_atoms(aconf, aconf.orig_filename);

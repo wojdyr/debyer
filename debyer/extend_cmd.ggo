@@ -39,6 +39,8 @@ option "delete" d "delete atoms" optional
 option "add-vacuum" u "extend PBC and add vacuum" optional
 option "add-copy" c "extend PBC and add atoms (does the same N times)" optional int argoptional typestr="N" default="1"
 
+option "multiply" N "multiply configuration in x y and z" string typestr="NxNxN" optional
+
 text "\nOutput file. Default is a dry run."
 option "in-place" i "replace input file with output" optional
 option "output" o "output file" string typestr="FILENAME"  optional
