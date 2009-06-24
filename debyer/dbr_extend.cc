@@ -78,8 +78,11 @@ void expand_pbc(dbr_aconf& aconf, int dim, double delta)
                                              : old_p + delta;
 
     if (aconf.reduced_coordinates)
-        for (int i = 0; i != aconf.n; ++i)
+        for (int i = 0; i != aconf.n; ++i) {
             aconf.atoms[i].xyz[dim] /= (1. + delta);
+            if (aconf.atoms[i].xyz[dim] > 1)
+                aconf.atoms[i].xyz[dim] -= floor(aconf.atoms[i].xyz[dim]);
+        }
 
     *pp = new_p;
 
@@ -107,6 +110,7 @@ public:
     dbr_atom const* get_atom_at(dbr_real const* xyz, double epsilon) const;
 
     int find_nearest(dbr_real const* xyz) const;
+    int find_nearest_to_atom(int atom_idx, double min_sq_dist) const;
 
     double get_dist(dbr_real const* a, dbr_real const* b) const;
 
@@ -116,7 +120,9 @@ public:
     double const* pbc() const { return pbc_; }
     dbr_aconf const& aconf() const { return aconf_; }
 
-//private:
+    double find_min_distance() const;
+
+private:
     void fill();
 
     int* cell_start(int a0, int a1, int a2) const
@@ -262,6 +268,43 @@ int CellMethod::find_nearest(dbr_real const* xyz) const
     return closest_atom;
 }
 
+int CellMethod::find_nearest_to_atom(int atom_idx, double min_sq_dist) const
+{
+    // very similar to find_nearest()
+    dbr_real const* xyz = aconf_.atoms[atom_idx].xyz; // this line was added
+    int closest_atom = -1;
+    int idx[3];
+    find_cell_indices(xyz, idx);
+    for (int i = idx[0]-1; i <= idx[0]+1; ++i)
+        for (int j = idx[1]-1; j <= idx[1]+1; ++j)
+            for (int k = idx[2]-1; k <= idx[2]+1; ++k) {
+                dbr_real x[3] = { xyz[0], xyz[1], xyz[2] };
+                int const* p = adjust_atom(i, j, k, x);
+                while (*p != -1) {
+                    if (*p != atom_idx) { // this condition was added
+                        double sq_dist = get_sq_dist(x, aconf_.atoms[*p].xyz);
+                        if (sq_dist < min_sq_dist) {
+                            closest_atom = *p;
+                            min_sq_dist = sq_dist;
+                        }
+                    }
+                    ++p;
+                }
+            }
+    return closest_atom;
+}
+
+double CellMethod::find_min_distance() const
+{
+    double min_dist = 1e9;
+    for (int i = 0; i < aconf_.n; ++i) {
+        int k = find_nearest_to_atom(i, min_dist*min_dist);
+        if (k != -1) {
+            min_dist = get_dist(aconf_.atoms[i].xyz, aconf_.atoms[k].xyz);
+        }
+    }
+    return min_dist;
+}
 
 dbr_atom const*
 CellMethod::get_atom_at(dbr_real const* xyz, double epsilon) const
@@ -391,11 +434,16 @@ vector<double> nabe_in_direction_distances(dbr_aconf const& aconf,
     return img_dist;
 }
 
-// check if there is a translational symmetry with translation
-// vector that has direction `dim' and length w that maps 1:1 atoms with
-// `dim' coordinates in range (x0-w, x0) to atoms in range (x0, x0+w).
+// If single_translation is true:
+//   check if there is a translational symmetry with translation
+//   vector that has direction `dim' and length w that maps 1:1 atoms with
+//   `dim' coordinates in range (x0-w, x0) to atoms in range (x0, x0+w).
+// Otherwise:
+//   check if all atoms have images in translation, i.e. check
+//   periodicity (in given direction) in all the system.
 bool check_symmetry_in_distance(CellMethod const& cm,
-                                int dim, double x0, double w, double epsilon)
+                                int dim, double x0, double w, double epsilon,
+                                bool single_translation)
 {
     if (verbosity > 0) {
         printf("checking translations |v|=%g ... ", w);
@@ -405,11 +453,15 @@ bool check_symmetry_in_distance(CellMethod const& cm,
     double pbcd = get_pbc(aconf, dim);
     for (int i = 0; i != aconf.n; ++i) {
         dbr_real* xyz = aconf.atoms[i].xyz;
-        double d = dist_forward(xyz[dim], x0, pbcd);
-        assert (d >= 0);
-        assert (d <= pbcd);
-        if (d < w || d > pbcd - w) {
-            dbr_real x[3] = { xyz[0], xyz[1], xyz[2] };
+        dbr_real x[3] = { xyz[0], xyz[1], xyz[2] };
+        if (single_translation) { // checking one translation
+            double d = dist_forward(xyz[dim], x0, pbcd);
+            assert (d >= 0);
+            assert (d <= pbcd);
+            // checking only atoms in distance w from x0 (on both sides)
+            if (d > w && d <= pbcd - w)
+                continue;
+
             if (d < w) {
                 x[dim] -= w;
                 if (x[dim] < 0)
@@ -420,19 +472,25 @@ bool check_symmetry_in_distance(CellMethod const& cm,
                 if (x[dim] >= pbcd)
                     x[dim] -= pbcd;
             }
-            dbr_atom const* atom = cm.get_atom_at(x, epsilon);
-            if (atom == NULL || strcmp(atom->name, aconf.atoms[i].name) != 0) {
-                if (verbosity > 0)
-                    printf("failed (atom %s)\n", atom_to_str(aconf, i));
-                if (verbosity > 1) {
-                    int a = cm.find_nearest(x);
-                    if (a >= 0)
-                        printf(" the nearest atom (|r|=%g) is %s\n",
-                               cm.get_dist(x, aconf.atoms[a].xyz),
-                               atom_to_str(aconf, a));
-                }
-                return false;
+        }
+        else { // checking if all the system is periodic
+            x[dim] += w;
+            if (x[dim] >= pbcd)
+                x[dim] -= pbcd;
+        }
+
+        dbr_atom const* atom = cm.get_atom_at(x, epsilon);
+        if (atom == NULL || strcmp(atom->name, aconf.atoms[i].name) != 0) {
+            if (verbosity > 0)
+                printf("failed (atom %s)\n", atom_to_str(aconf, i));
+            if (verbosity > 1) {
+                int a = cm.find_nearest(x);
+                if (a >= 0)
+                    printf(" the nearest atom (|r|=%g) is %s\n",
+                           cm.get_dist(x, aconf.atoms[a].xyz),
+                           atom_to_str(aconf, a));
             }
+            return false;
         }
     }
     if (verbosity > 0)
@@ -452,19 +510,27 @@ double search_for_translation(dbr_aconf const& aconf,
     double hi_lim = args.max_delta_given ? args.max_delta_arg
                                          : get_pbc(aconf, dim) / 2.;
     double eps = args.epsilon_arg;
+    bool single_trans = !args.periodic_given;
     // possible lengths of translation vectors, based on one atom's neighbors
     vector<double> tr = nabe_in_direction_distances(aconf, a0, dim,
                                                     lo_lim, hi_lim, eps);
     // return the first (smallest) translation vector found
-    for (vector<double>::const_iterator d = tr.begin(); d != tr.end(); ++d)
-        if (check_symmetry_in_distance(cm, dim, val, *d, eps))
+    for (vector<double>::const_iterator d = tr.begin(); d != tr.end(); ++d) {
+        if (check_symmetry_in_distance(cm, dim, val, *d, eps, single_trans)) {
+            if (!single_trans && verbosity > -1)
+                printf("PBC[%d] / |t| = %g\n", dim, get_pbc(aconf, dim) / *d);
             return *d;
+        }
+    }
     return 0.;
 }
 
-// delete atoms with `dim' coord in <x0, x0+delta). 
-// If delta < 0, deleted range is <x0-|delta|, x0).
-void delete_atoms(dbr_aconf& aconf, int dim, double x0, double delta)
+// If output is false:
+//   delete atoms with `dim' coord in <x0, x0+delta). 
+//   If delta < 0, deleted range is <x0-|delta|, x0).
+// Otherwise delete the rest of atoms.
+void delete_atoms(dbr_aconf& aconf, int dim, double x0, double delta,
+                  bool outside)
 {
     int n = 0;
     double pbcd = get_pbc(aconf, dim);
@@ -472,11 +538,16 @@ void delete_atoms(dbr_aconf& aconf, int dim, double x0, double delta)
         x0 -= delta;
         delta = -delta;
     }
-    for (int i = 0; i != aconf.n; ++i)
-        if (dist_forward(aconf.atoms[i].xyz[dim], x0, pbcd) >= delta) {
+    for (int i = 0; i != aconf.n; ++i) {
+        bool out = (dist_forward(aconf.atoms[i].xyz[dim], x0, pbcd) >= delta);
+        // if outside==false, we keep (i.e. don't delete) atoms out of slab
+        // otherwise, we keep atom in the slab
+        bool keep = (out != outside);
+        if (keep) {
             dbr_copy_atom(aconf, i, n);
             ++n;
         }
+    }
     int deleted = aconf.n - n;
     aconf.n = n;
     if (!aconf.auxiliary.empty())
@@ -679,6 +750,10 @@ int main(int argc, char **argv)
         // put atoms into cells
         CellMethod cm(aconf, args.min_cell_arg);
 
+        // print min. interatomic distance
+        double min_dist = cm.find_min_distance();
+        printf("Min. interatomic distance: %g\n", min_dist);
+
         // if epsilon is larger than half of cell, increase cell sizes
         if (args.epsilon_arg >= cm.half_cell()) {
             fprintf(stderr, "Epsilon too large.\n");
@@ -700,12 +775,16 @@ int main(int argc, char **argv)
             }
         }
         if (args.delete_given)
-            delete_atoms(aconf, dim, val, delta);
+            delete_atoms(aconf, dim, val, delta, /*outside=*/false);
         if (args.add_vacuum_given)
             add_vacuum(aconf, dim, val, delta);
         if (args.add_copy_given)
             add_copy(aconf, dim, val, delta, cm, args.epsilon_arg,
                      args.add_copy_arg);
+        if (args.cut_given) {
+            delete_atoms(aconf, dim, val, delta, /*outside=*/true);
+            expand_pbc(aconf, dim, delta-pbcd);
+        }
     }
 
     if (args.multiply_given)

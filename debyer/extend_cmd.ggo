@@ -19,24 +19,28 @@ args "-uFILE --file-name=extend_cmd"
 
 option "verbose" v "increase verbosity level (can be used 3x)" optional multiple
 option "min-cell" s "(internal) size (lower limit) of cells used for searching atoms [A]" float default="2.0" optional
-text ""
-option "x" x "extend in x direction, at plane x=x0" float optional
-option "y" y "extend in y direction" float optional
-option "z" z "extend in z direction" float optional
+text "\n*** In this program you define and use translation vector t     ***"
+text "\n*** and a plane P. This defines slab (volume between P and t.P) ***"
+text "\n"
+option "x" x "t || x; the value defines a plane x=x0" float optional
+option "y" y "t || y" float optional
+option "z" z "t || z" float optional
 
 text ""
 option "reduced" r "use reduced coordinates (between 0 and 1)" optional
-option "width" w "width of the slab that will be processed" float optional
+option "width" w "width of the slab that will be processed (or |t|)" float optional
 
 text "\nIf width is not given, it will be equal to the shortest translation vector "
 text "\nfound by the program. The following options affect searching of this vector."
 option "epsilon" e "epsilon used to compare coordinates" float default="0.1" optional
 option "min-delta" m "min length of translation vector" float optional
 option "max-delta" M "max length of translation vector" float optional
+option "periodic" p "require translational symmetry of all the system" optional
 
 text "\nActions to be performed on configuration file."
-option "delete" d "delete atoms" optional
-option "add-vacuum" u "extend PBC and add vacuum" optional
+option "delete" d "delete atoms in the slab" optional
+option "cut" C "cut out the slab and change PBC accordingly" optional
+option "add-vacuum" u "extend PBC by t and add vacuum" optional
 option "add-copy" c "extend PBC and add atoms (does the same N times)" optional int argoptional typestr="N" default="1"
 
 option "multiply" N "multiply configuration in x y and z" string typestr="NxNxN" optional
