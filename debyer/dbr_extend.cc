@@ -19,7 +19,6 @@
 
 // TODO: 
 // * write command options to output file as a comment
-// * average length of the translation vector
 // * it doesn't work when there are two cells in given direction,
 //   ./dbr_extend -r  -e0.02 -c2.99 -M0.03  -v -v  -z0.5 mydisl.cfg.gz
 // * option -cN with N>1 should change PBC only once
@@ -441,16 +440,17 @@ vector<double> nabe_in_direction_distances(dbr_aconf const& aconf,
 // Otherwise:
 //   check if all atoms have images in translation, i.e. check
 //   periodicity (in given direction) in all the system.
-bool check_symmetry_in_distance(CellMethod const& cm,
-                                int dim, double x0, double w, double epsilon,
-                                bool single_translation)
+double check_symmetry_in_distance(CellMethod const& cm,
+                                  int dim, double x0, double w, double epsilon,
+                                  bool single_translation)
 {
     if (verbosity > 0) {
-        printf("checking translations |v|=%g ... ", w);
+        printf("checking translation |t|=%g ... ", w);
         fflush(stdout);
     }
     dbr_aconf const& aconf = cm.aconf();
     double pbcd = get_pbc(aconf, dim);
+    StdDev avg_w;
     for (int i = 0; i != aconf.n; ++i) {
         dbr_real* xyz = aconf.atoms[i].xyz;
         dbr_real x[3] = { xyz[0], xyz[1], xyz[2] };
@@ -490,12 +490,16 @@ bool check_symmetry_in_distance(CellMethod const& cm,
                            cm.get_dist(x, aconf.atoms[a].xyz),
                            atom_to_str(aconf, a));
             }
-            return false;
+            return 0.;
         }
+        // calculate average length of translation vector in direction dim
+        double exact_w = dist_forward(atom->xyz[dim], xyz[dim], pbcd);
+        avg_w.add_x(exact_w);
     }
     if (verbosity > 0)
-        printf("ok\n");
-    return true;
+        printf("ok (t%c = %g +/- %g)\n", 'x'+dim, avg_w.get_mean(),
+                                                  avg_w.get_stddev());
+    return avg_w.get_mean();
 }
 
 double search_for_translation(dbr_aconf const& aconf,
@@ -516,10 +520,12 @@ double search_for_translation(dbr_aconf const& aconf,
                                                     lo_lim, hi_lim, eps);
     // return the first (smallest) translation vector found
     for (vector<double>::const_iterator d = tr.begin(); d != tr.end(); ++d) {
-        if (check_symmetry_in_distance(cm, dim, val, *d, eps, single_trans)) {
+        double t
+            = check_symmetry_in_distance(cm, dim, val, *d, eps, single_trans);
+        if (t != 0.) {
             if (!single_trans && verbosity > -1)
-                printf("PBC[%d] / |t| = %g\n", dim, get_pbc(aconf, dim) / *d);
-            return *d;
+                printf("PBC[%d] / |t| = %g\n", dim, get_pbc(aconf, dim) / t);
+            return t;
         }
     }
     return 0.;
@@ -647,7 +653,7 @@ void multiply_pbc(dbr_aconf& aconf, int x, int y, int z)
     aconf.pbc.v20 *= z; aconf.pbc.v21 *= z; aconf.pbc.v22 *= z;
     string comment = static_cast<ostringstream&>(ostringstream() <<
             "configuration multiplied by " << x << "x" << y << "x" << z).str();
-    aconf.comments.push_back(comment);
+    aconf.comments.insert(aconf.comments.begin(), comment);
     aconf.auxiliary.resize(new_n);
     for (int img = 1; img < x*y*z; ++img)
         for (int i = 0; i != aconf.n; ++i)
@@ -675,6 +681,21 @@ bool multiply_pbc(dbr_aconf& aconf, const char* mult)
         return false;
     multiply_pbc(aconf, x, y, z);
     return true;
+}
+
+string argv_as_str(int argc, char **argv)
+{
+    string s;
+    for (int i = 0; i < argc; ++i) {
+        if (i != 0)
+            s += " ";
+        // TODO
+        //if (should be quoted)
+        //    s += str('"') + argv[i] + '"';
+        //else
+            s += argv[i];
+    }
+    return s;
 }
 
 int main(int argc, char **argv)
@@ -790,6 +811,7 @@ int main(int argc, char **argv)
     if (args.multiply_given)
         multiply_pbc(aconf, args.multiply_arg);
 
+    aconf.comments.insert(aconf.comments.begin(), argv_as_str(argc, argv));
     if (args.in_place_given)
         write_file_with_atoms(aconf, aconf.orig_filename);
     else if (args.output_given)

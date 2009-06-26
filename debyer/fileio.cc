@@ -393,7 +393,7 @@ void read_atomeye(LineInput& in, dbr_aconf *aconf, bool reduced_coords)
 
 void write_comments_with_hashes(dbr_aconf const& aconf, ostream &f)
 {
-    f << "# converted by debyer\n\n";
+    f << "# converted by debyer\n";
     if (!aconf.orig_filename.empty())
         f << "# original filename: " << aconf.orig_filename << "\n";
     for (vector<string>::const_iterator i = aconf.comments.begin();
