@@ -1,4 +1,6 @@
 
+warn when lammps input file doesn't have a comment after "n atoms" line
+
 configure option to build only debyer
 
 multiple input files -- only when options -dfile and -o are not given

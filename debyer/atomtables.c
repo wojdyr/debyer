@@ -14,7 +14,7 @@
  *  $Id: crystables.c 110 2009-04-13 03:07:00Z wojdyr $
  */
 
-#include "crystables.h"
+#include "atomtables.h"
 
 #include <ctype.h>
 #include <string.h>

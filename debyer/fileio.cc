@@ -26,7 +26,7 @@
 #include <vector>
 #include <algorithm>
 
-#include "crystables.h"
+#include "atomtables.h"
 
 using namespace std;
 

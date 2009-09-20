@@ -21,7 +21,8 @@
  *  The data in tables is taken from sources cited below.
  */
 
-#ifndef DEBYER_CRYSTABLES_H_
+#ifndef DEBYER_ATOMTABLES_H_
+#define DEBYER_ATOMTABLES_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -110,4 +111,4 @@ const t_nn92_record *find_in_nn92(const char *label);
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
-#endif /* DEBYER_CRYSTABLES_H_ */
+#endif /* DEBYER_ATOMTABLES_H_ */

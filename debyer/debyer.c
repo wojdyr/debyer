@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include <stdarg.h>
 
-#include "crystables.h"
+#include "atomtables.h"
 #include "iloops.h"
 
 
