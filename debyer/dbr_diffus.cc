@@ -74,7 +74,7 @@ void write_displacement_aux(ofstream& f, int n,
 #ifdef SPLIT_DIFFUSION
     if (!cat.empty()) {
         for (int i = 0; i < SPLIT_DIFFUSION; ++i)
-            if (cat_diffus[i].get_n() > 100)
+            if (cat_diffus[i].n() > 100)
                 cerr << "Diffusion of cat. " << i << ": "
                      << cat_diffus[i].str() << endl;
     }

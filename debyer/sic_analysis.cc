@@ -20,12 +20,6 @@
 
 using namespace std;
 
-/// S() converts to string
-template <typename T>
-inline string S(T k) {
-    return static_cast<ostringstream&>(ostringstream() << k).str();
-}
-
 static
 string do_format_stats(vector<int> const& v)
 {
@@ -519,7 +513,7 @@ int main(int argc, char **argv)
         for (int i = 0; i < aconf.n; ++i) {
             f << r3[i] << " " << (r3[i] == 12 ? 1 : 0) << " " << nabes[i];
             if (!angle_distrib.empty())
-                f << " " << aa[i].get_mean() * 180. / M_PI;
+                f << " " << aa[i].mean() * 180. / M_PI;
             f << endl;
         }
     }

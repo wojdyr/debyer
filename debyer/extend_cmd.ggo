@@ -44,6 +44,10 @@ option "add-vacuum" u "extend PBC by t and add vacuum" optional
 option "add-copy" c "extend PBC and add atoms (does the same N times)" optional int argoptional typestr="N" default="1"
 
 option "multiply" N "multiply configuration in x y and z" string typestr="NxNxN" optional
+option "shift" S "shift the system (all atoms) under PBC" string typestr="x,y,z" optional
+option "find-trans" F "find translation symmetries" optional
+option "merge" - "merge atoms that are closer to each other than epsilon" optional
+option "t1" - "transformation defined in the code as tranform1()" optional
 
 text "\nOutput file. Default is a dry run."
 option "in-place" i "replace input file with output" optional

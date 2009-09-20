@@ -18,7 +18,6 @@
 // $Id: debyer.ggo 112 2009-04-14 00:44:25Z wojdyr $
 
 // TODO: 
-// * write command options to output file as a comment
 // * it doesn't work when there are two cells in given direction,
 //   ./dbr_extend -r  -e0.02 -c2.99 -M0.03  -v -v  -z0.5 mydisl.cfg.gz
 // * option -cN with N>1 should change PBC only once
@@ -67,6 +66,36 @@ double get_real_pbc(dbr_aconf const& aconf, int dim)
     }
 }
 
+void wrap_to_pbc(dbr_aconf& aconf)
+{
+    if (aconf.reduced_coordinates)
+        for (int i = 0; i != aconf.n; ++i)
+            for (int j = 0; j < 3; ++j)
+                aconf.atoms[i].xyz[j] -= floor(aconf.atoms[i].xyz[j]);
+    else {
+        // works only for orthorhombic PBC
+        double pbc[3] = { aconf.pbc.v00, aconf.pbc.v11, aconf.pbc.v22 };
+        for (int i = 0; i != aconf.n; ++i)
+            for (int j = 0; j < 3; ++j) {
+                double n = floor(aconf.atoms[i].xyz[j] / pbc[j]);
+                aconf.atoms[i].xyz[j] -= n * pbc[j];
+            }
+    }
+}
+
+void wrap_one(dbr_aconf const& aconf, dbr_real *xyz)
+{
+    if (aconf.reduced_coordinates)
+        for (int j = 0; j < 3; ++j)
+            xyz[j] -= floor(xyz[j]);
+    else {
+        // works only for orthorhombic PBC
+        double pbc[3] = { aconf.pbc.v00, aconf.pbc.v11, aconf.pbc.v22 };
+        for (int j = 0; j < 3; ++j)
+            xyz[j] -= floor(xyz[j] / pbc[j]) * pbc[j];
+    }
+}
+
 // expand PBC, but don't move atoms, i.e. change reduced coordinates
 // in case of reduced coords, delta is also reduced
 void expand_pbc(dbr_aconf& aconf, int dim, double delta)
@@ -84,6 +113,8 @@ void expand_pbc(dbr_aconf& aconf, int dim, double delta)
         }
 
     *pp = new_p;
+
+    wrap_to_pbc(aconf);
 
     if (verbosity > 0)
         printf("new PBC[%d]=%g (was: %g)\n", dim, new_p, old_p);
@@ -112,6 +143,8 @@ public:
     int find_nearest_to_atom(int atom_idx, double min_sq_dist) const;
 
     double get_dist(dbr_real const* a, dbr_real const* b) const;
+    void get_shortest_vec(dbr_real const* a, dbr_real const* b,
+                          dbr_real *r) const;
 
     double half_cell() const
         { return min(min(cell_size(0), cell_size(1)), cell_size(2)); }
@@ -210,6 +243,19 @@ double CellMethod::get_dist(dbr_real const* a, dbr_real const* b) const
     return sqrt(sum);
 }
 
+// get vector v=b-a (in PBC) such that |v| is minimal
+void CellMethod::get_shortest_vec(dbr_real const* a, dbr_real const* b,
+                                  dbr_real *r) const
+{
+    for (int i = 0; i < 3; ++i) {
+        r[i] = b[i] - a[i];
+        if (r[i] >= pbc_[i] / 2.)
+            r[i] -= pbc_[i];
+        else if (r[i] < -pbc_[i] / 2.)
+            r[i] += pbc_[i];
+    }
+}
+
 // gets cell and atom coordinates; 
 // if the cell indices are correct returns pointer to data of this cell,
 // otherwise wraps the cell indices and shifts the atom.
@@ -217,15 +263,13 @@ int const* CellMethod::adjust_atom(int idx0, int idx1, int idx2,
                                    dbr_real* xyz) const
 {
     int a[3] = { idx0, idx1, idx2 };
-    for (int i = 0; i < 3; ++i)
-        if (a[i] == -1) {
-            a[i] += n_[i];
-            xyz[i] += pbc_[i];
+    for (int i = 0; i < 3; ++i) {
+        int t = mod(a[i], n_[i]);
+        if (t != a[i]) {
+            xyz[i] += pbc_[i] * ((t - a[i]) / n_[i]);
+            a[i] = t;
         }
-        else if (a[i] == n_[i]) {
-            a[i] = 0;
-            xyz[i] -= pbc_[i];
-        }
+    }
     return cell_start(a);
 }
 
@@ -280,7 +324,8 @@ int CellMethod::find_nearest_to_atom(int atom_idx, double min_sq_dist) const
                 dbr_real x[3] = { xyz[0], xyz[1], xyz[2] };
                 int const* p = adjust_atom(i, j, k, x);
                 while (*p != -1) {
-                    if (*p != atom_idx) { // this condition was added
+                    // this condition was added
+                    if (*p != atom_idx && !is_null(aconf_.atoms[*p])) {
                         double sq_dist = get_sq_dist(x, aconf_.atoms[*p].xyz);
                         if (sq_dist < min_sq_dist) {
                             closest_atom = *p;
@@ -312,12 +357,15 @@ CellMethod::get_atom_at(dbr_real const* xyz, double epsilon) const
     int idx[3];
     find_cell_indices(xyz, idx);
 
-    int *p = cell_start(idx);
-    while (*p != -1) {
-        if (get_sq_dist(xyz, aconf_.atoms[*p].xyz) < epsilon * epsilon)
-            return &aconf_.atoms[*p];
-        ++p;
-    }
+    //int *p = cell_start(idx);
+    //while (*p != -1) {
+    //    if (get_sq_dist(xyz, aconf_.atoms[*p].xyz) < epsilon * epsilon)
+    //        return &aconf_.atoms[*p];
+    //    ++p;
+    //}
+    dbr_atom const* ret = find_one_in_cell(idx, xyz, epsilon);
+    if (ret != NULL)
+        return ret;
 
     int nb[3] = { 0, 0, 0 };
     for (int i = 0; i < 3; ++i) {
@@ -368,6 +416,72 @@ CellMethod::get_atom_at(dbr_real const* xyz, double epsilon) const
         return find_one_in_cell(idx, xyz, epsilon);
 
     return NULL;
+}
+
+void merge_atoms(dbr_aconf& aconf, gengetopt_args_info const& args)
+{
+    CellMethod cm(aconf, args.min_cell_arg);
+    int new_n = aconf.n;
+    for (int i = 0; i != aconf.n; ++i) {
+        if (is_null(aconf.atoms[i]))
+            continue;
+        double min_sq_dist = args.epsilon_arg * args.epsilon_arg;
+        int k = cm.find_nearest_to_atom(i, min_sq_dist);
+        if (k != -1) {
+            if (strcmp(aconf.atoms[i].name, aconf.atoms[k].name) != 0)
+                printf("WARNING: atoms with different symbols were merged\n");
+            // mark atoms that are to be deleted
+            int t = min(i, k);
+            nullify(aconf.atoms[t]);
+            --new_n;
+        }
+        // TODO? : average coordinates of merged atoms
+    }
+    double ratio = double(aconf.n) / new_n;
+    printf("merging, i.e. removing duplicates: %g%% (1/%g) of atoms left\n",
+            100./ratio, ratio);
+
+    int n = 0;
+    for (int i = 0; i != aconf.n; ++i) {
+        if (!is_null(aconf.atoms[i])) {
+            dbr_copy_atom(aconf, i, n);
+            if (!aconf.auxiliary.empty() && i != n)
+                aconf.auxiliary[n] = aconf.auxiliary[i];
+            ++n;
+        }
+    }
+    assert (n == new_n);
+    if (!aconf.auxiliary.empty())
+        aconf.auxiliary.resize(new_n);
+
+    string comment = "merging atoms, " + S(aconf.n) + " -> " + S(new_n);
+    aconf.comments.insert(aconf.comments.begin(), comment);
+
+    aconf.n = new_n;
+}
+
+void rotate_atoms(dbr_aconf& aconf, double angle, double axis[3])
+{
+    double rot[3][3];
+    rodrigues(angle, axis, rot);
+    for (int i = 0; i != aconf.n; ++i) {
+        dbr_real* x = aconf.atoms[i].xyz;
+        dbr_real r[3];
+        matrix_dot_vec3(rot, x, r);
+        for (int i = 0; i < 3; ++i)
+            x[i] = r[i];
+    }
+}
+
+void transform1(dbr_aconf& aconf, gengetopt_args_info const& args)
+{
+    wrap_to_pbc(aconf);
+    aconf.pbc.v00 /= sqrt(2);
+    aconf.pbc.v11 /= sqrt(2);
+    double axis[3] = { 0, 0, 1 };
+    rotate_atoms(aconf, M_PI / 4, axis);
+    wrap_to_pbc(aconf);
+    merge_atoms(aconf, args);
 }
 
 // select the last atom that in direction `dim' has position lesser than `x0'.
@@ -497,9 +611,9 @@ double check_symmetry_in_distance(CellMethod const& cm,
         avg_w.add_x(exact_w);
     }
     if (verbosity > 0)
-        printf("ok (t%c = %g +/- %g)\n", 'x'+dim, avg_w.get_mean(),
-                                                  avg_w.get_stddev());
-    return avg_w.get_mean();
+        printf("ok (t%c = %g +/- %g)\n", 'x'+dim, avg_w.mean(),
+                                                  avg_w.stddev());
+    return avg_w.mean();
 }
 
 double search_for_translation(dbr_aconf const& aconf,
@@ -529,6 +643,123 @@ double search_for_translation(dbr_aconf const& aconf,
         }
     }
     return 0.;
+}
+
+template <typename T>
+struct index_sorter
+{
+    index_sorter(vector<T> const& values) : values_(values) {}
+    bool operator() (int a, int b) const { return values_[a] < values_[b]; }
+    vector<T> const& values_;
+};
+
+struct XYZ
+{
+    dbr_real x, y, z;
+};
+
+// search for translational symmetry in all directions
+void find_trans_sym(dbr_aconf const& aconf,
+                    gengetopt_args_info const& args)
+{
+    CellMethod cm(aconf, args.min_cell_arg);
+
+    // print min. interatomic distance
+    double min_dist = cm.find_min_distance();
+    double eps = args.epsilon_arg;
+    if (eps >= min_dist / 2.) {
+        printf("WARNING: Min. interatomic distance is: %g.\n", min_dist);
+        printf("WARNING: Epsilon should be smaller than %g.\n", min_dist/2);
+    }
+
+    vector<double> dd(aconf.n, 0.);
+    vector<int> pp;
+    dbr_real* xyz0 = aconf.atoms[0].xyz;
+    for (int i = 1; i != aconf.n; ++i) {
+        if (strcmp(aconf.atoms[0].name, aconf.atoms[i].name) != 0)
+            continue;
+        dbr_real r[3];
+        dbr_diff3(aconf.atoms[i].xyz, xyz0, r);
+        bool ok = true;
+        for (int j = 0; j != aconf.n; ++j) {
+            dbr_real* xyz = aconf.atoms[j].xyz;
+            dbr_real x[3] = { xyz[0]+r[0], xyz[1]+r[1], xyz[2]+r[2] };
+            //wrap_one(aconf, x);
+            dbr_atom const* atom = cm.get_atom_at(x, eps);
+            if (atom == NULL || strcmp(atom->name, aconf.atoms[j].name) != 0) {
+                //printf("XXX: %d %d  r=(%f %f %f) (%f %f %f)\n", i, j, r[0], r[1], r[2], x[0], x[1], x[2]);//XXX
+                ok = false;
+                break;
+            }
+        }
+        if (ok) {
+            dd[i] = cm.get_dist(xyz0, aconf.atoms[i].xyz);
+            pp.push_back(i);
+            //printf("xxx: %d r=(%f %f %f)\n", i, r[0], r[1], r[2]);//XXX
+        }
+    }
+    sort(pp.begin(), pp.end(), index_sorter<double>(dd));
+
+    vector<XYZ> tt;
+
+    for (vector<int>::const_iterator i = pp.begin(); i != pp.end(); ++i) {
+        int n = *i;
+        if (dd[n] == 0)
+            continue;
+
+        dbr_real r[3];
+        cm.get_shortest_vec(xyz0, aconf.atoms[n].xyz, r);
+
+        // average the vector
+        StdDev avg_r[3];
+        for (int j = 0; j != aconf.n; ++j) {
+            dbr_real* xyz = aconf.atoms[j].xyz;
+            dbr_real x[3] = { xyz[0]+r[0], xyz[1]+r[1], xyz[2]+r[2] };
+            dbr_atom const* atom = cm.get_atom_at(x, eps);
+            assert(atom != NULL);
+            dbr_real dr[3];
+            cm.get_shortest_vec(x, atom->xyz, dr);
+            for (int k = 0; k < 3; ++k) {
+                avg_r[k].add_x(dr[k]+r[k]);
+            }
+        }
+        XYZ t = { avg_r[0].mean(), avg_r[1].mean(), avg_r[2].mean() };
+        if (t.x < 0) {
+            t.x = -t.x;
+            t.y = -t.y;
+            t.z = -t.z;
+        }
+
+        // check if it's not n * another translation
+        bool is_dup = false;
+        for (vector<XYZ>::const_iterator j = tt.begin(); j != tt.end(); ++j) {
+            // calculate average multiplier
+            double m = (t.x + t.y + t.z) / (j->x + j->y + j->z);
+            // check if this is a multiplier for all coordinates
+            if (fabs(m * j->x - t.x) < eps
+                    && fabs(m * j->y - t.y) < eps
+                    && fabs(m * j->z - t.z) < eps) {
+                is_dup = true;
+                break;
+            }
+        }
+        if (is_dup)
+            continue;
+
+        printf("T = (% f % f % f) +/- (%g %g %g)\n",
+               t.x, t.y, t.z,
+               avg_r[0].stddev(), avg_r[1].stddev(), avg_r[2].stddev());
+        tt.push_back(t);
+#if 0
+        // remove translations that are n * base_translation (in PBC)
+        while (n != 0) { // n == 0 means we got back to the original atom
+            dbr_real* xyz = aconf.atoms[n].xyz;
+            dbr_real x[3] = { xyz[0]+r[0], xyz[1]+r[1], xyz[2]+r[2] };
+            n = cm.find_nearest(x);
+            dd[n] = 0.;
+        }
+#endif
+    }
 }
 
 // If output is false:
@@ -651,8 +882,8 @@ void multiply_pbc(dbr_aconf& aconf, int x, int y, int z)
     aconf.pbc.v00 *= x; aconf.pbc.v01 *= x; aconf.pbc.v02 *= x;
     aconf.pbc.v10 *= y; aconf.pbc.v11 *= y; aconf.pbc.v12 *= y;
     aconf.pbc.v20 *= z; aconf.pbc.v21 *= z; aconf.pbc.v22 *= z;
-    string comment = static_cast<ostringstream&>(ostringstream() <<
-            "configuration multiplied by " << x << "x" << y << "x" << z).str();
+    string comment = "configuration multiplied by " + S(x) + "x" + S(y)
+                     + "x" + S(z);
     aconf.comments.insert(aconf.comments.begin(), comment);
     aconf.auxiliary.resize(new_n);
     for (int img = 1; img < x*y*z; ++img)
@@ -680,6 +911,32 @@ bool multiply_pbc(dbr_aconf& aconf, const char* mult)
     if (x == 0 || y == 0 || z == 0)
         return false;
     multiply_pbc(aconf, x, y, z);
+    return true;
+}
+
+bool shift_under_pbc(dbr_aconf& aconf, const char* arg)
+{
+    // parse string
+    const char *start = arg;
+    char *endptr = NULL;
+    double d[3];
+    d[0] = strtod(start, &endptr);
+    if (endptr == start || *endptr != ',')
+        return false;
+    start = endptr + 1;
+    d[1] = strtod(start, &endptr);
+    if (endptr == start || *endptr != ',')
+        return false;
+    start = endptr + 1;
+    d[2] = strtod(start, &endptr);
+    if (endptr == start || *endptr != '\0')
+        return false;
+
+    // shift atoms
+    for (int i = 0; i != aconf.n; ++i)
+        for (int j = 0; j < 3; ++j)
+            aconf.atoms[i].xyz[j] += d[j];
+    wrap_to_pbc(aconf);
     return true;
 }
 
@@ -713,8 +970,9 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
     if (!args.x_given && !args.y_given && !args.z_given
-            && !args.multiply_given) {
-        fprintf(stderr, "One of -x, -y, -z, -N options must be given "
+            && !args.multiply_given && !args.shift_given
+            && !args.find_trans_given && !args.merge_given && !args.t1_given) {
+        fprintf(stderr, "One of -x, -y, -z, -N, -S, -F options must be given "
                 "(-h will show all valid options).\n");
         return EXIT_FAILURE;
     }
@@ -810,6 +1068,18 @@ int main(int argc, char **argv)
 
     if (args.multiply_given)
         multiply_pbc(aconf, args.multiply_arg);
+
+    if (args.shift_given)
+        shift_under_pbc(aconf, args.shift_arg);
+
+    if (args.find_trans_given)
+        find_trans_sym(aconf, args);
+
+    if (args.t1_given)
+        transform1(aconf, args);
+
+    if (args.merge_given)
+        merge_atoms(aconf, args);
 
     aconf.comments.insert(aconf.comments.begin(), argv_as_str(argc, argv));
     if (args.in_place_given)

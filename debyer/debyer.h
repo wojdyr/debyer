@@ -218,6 +218,10 @@ int dbr_is_atom_in_sector(const dbr_real *xyz, const dbr_picker* picker);
 
 
 #ifdef __cplusplus
+
+inline bool is_null(dbr_atom const& atom) { return atom.name[0] == '\0'; }
+inline void nullify(dbr_atom& atom) { atom.name[0] = '\0'; }
+
 inline int dbr_cell_original(const dbr_cell *a)
   { return a->original >= 0 ? a->original : a->neighbours[13]; }
 

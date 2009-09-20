@@ -5,8 +5,8 @@ noinst_LIBRARIES = libdebyer.a
 bin_PROGRAMS = debyer sic_analysis sic_orient dbr_diffus dbr_volume \
 	       dbr_symmetry dbr_extend
 
-libdebyer_a_SOURCES = debyer.c lineio.cc fileio.cc crystables.c \
- 		      debyer.h lineio.h fileio.h  iloops.h crystables.h
+libdebyer_a_SOURCES = debyer.c lineio.cc fileio.cc atomtables.c \
+ 		      debyer.h lineio.h fileio.h  iloops.h atomtables.h
 
 debyer_SOURCES = cmdline.c cmdline.h main.cc
 debyer_LDADD = libdebyer.a

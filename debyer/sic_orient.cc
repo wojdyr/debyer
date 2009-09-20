@@ -242,7 +242,7 @@ int main(int argc, char **argv)
             z_rot_sd.add_x(z_rot);
         }
     }
-    cerr << x_rot_sd.get_n() << " atoms considered..." << endl;
+    cerr << x_rot_sd.n() << " atoms considered..." << endl;
     cerr << "x rot [deg]: " << x_rot_sd.str() << endl;
     cerr << "y rot [deg]: " << y_rot_sd.str() << endl;
     cerr << "z rot [deg]: " << z_rot_sd.str() << endl;
