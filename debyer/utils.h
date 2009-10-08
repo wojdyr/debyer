@@ -11,7 +11,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  $Id: utils.h 107 2009-04-12 22:39:39Z wojdyr $
+ *  $Id$
  *
  *  Misc utilities (in C++). ATM all functions/methods are inlined.
  */

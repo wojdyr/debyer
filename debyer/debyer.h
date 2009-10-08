@@ -11,7 +11,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  $Id: debyer.h 112 2009-04-14 00:44:25Z wojdyr $
+ *  $Id$
  *
  *  Contains data structures and functions used by debyer and other programs
  *  for doing computations of PDFs, diffraction patters, etc.

@@ -11,7 +11,7 @@
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 //  GNU General Public License for more details.
 //
-//  $Id: fileio.cc 83 2008-10-15 20:05:20Z wojdyr $
+//  $Id$
 
 #include "lineio.h"
 #include <cstring>

@@ -11,7 +11,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  $Id: iloops.h 107 2009-04-12 22:39:39Z wojdyr $
+ *  $Id$
  */
 
 /* This file is to be included only by debyer.c

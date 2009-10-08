@@ -15,7 +15,7 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-// $Id: debyer.ggo 112 2009-04-14 00:44:25Z wojdyr $
+// $Id$
 
 // TODO: 
 // * it doesn't work when there are two cells in given direction,

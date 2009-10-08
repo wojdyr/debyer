@@ -11,7 +11,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  $Id: fileio.h 82 2008-10-15 19:30:45Z wojdyr $
+ *  $Id$
  *
  *  class LineInput -- see description below
  */
