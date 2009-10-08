@@ -17,17 +17,19 @@
 package "dbr_extend"
 args "-uFILE --file-name=extend_cmd"
 
+option "show-examples" - "show examples, can be more useful than --help" optional
 option "verbose" v "increase verbosity level (can be used 3x)" optional multiple
 option "min-cell" s "(internal) size (lower limit) of cells used for searching atoms [A]" float default="2.0" optional
-text "\n*** In this program you define and use translation vector t     ***"
-text "\n*** and a plane P. This defines slab (volume between P and t.P) ***"
-text "\n"
-option "x" x "t || x; the value defines a plane x=x0" float optional
-option "y" y "t || y" float optional
-option "z" z "t || z" float optional
-
-text ""
 option "reduced" r "use reduced coordinates (between 0 and 1)" optional
+
+text "\nMost of actions requires a defined `slab'."
+text "\nThe slab is constructe by a bounding plane (must be normal to one of"
+text "\nthe x, y, z axes) and width."
+text ""
+option "x" x "defines a plane x=FLOAT" float optional
+option "y" y "defines a plane y=FLOAT" float optional
+option "z" z "defines a plane z=FLOAT" float optional
+option "bound" b "for system finite in given direction: set a plane to the lower (x,y,z) or upper (X,Y,Z) bound" values="x","X","y","Y","z","Z" enum optional
 option "width" w "width of the slab that will be processed (or |t|)" float optional
 
 text "\nIf width is not given, it will be equal to the shortest translation vector "
@@ -40,8 +42,8 @@ option "periodic" p "require translational symmetry of all the system" optional
 text "\nActions to be performed on configuration file."
 option "delete" d "delete atoms in the slab" optional
 option "cut" C "cut out the slab and change PBC accordingly" optional
-option "add-vacuum" u "extend PBC by t and add vacuum" optional
-option "add-copy" c "extend PBC and add atoms (does the same N times)" optional int argoptional typestr="N" default="1"
+option "add-vacuum" u "add vacuum 'slab'; extends PBC" optional
+option "add-copy" c "multiplicate the slab N times (extend PBC and add atoms)" optional int argoptional typestr="N" default="1"
 
 option "multiply" N "multiply configuration in x y and z" string typestr="NxNxN" optional
 option "shift" S "shift the system (all atoms) under PBC" string typestr="x,y,z" optional
@@ -53,15 +55,5 @@ text "\nOutput file. Default is a dry run."
 option "in-place" i "replace input file with output" optional
 option "output" o "output file" string typestr="FILENAME"  optional
 
-text "\nUsage examples: \n"
-text "  dbr_extend -z41.5 -e0.2 -vvv file.cfg\n"
-text "    Try to find periodicity of the structure in z direction starting\n"
-text "    from z0=41.5. It tries to find z1 such that each atom\n"
-text "    with z0 < z < z1 has a periodic image with\n"
-text "    x'=x, y'=y, z'=z+delta, delta=z1-z0.\n"
-text "    Comparisons of coordinates are done with epsilon=0.2.\n"
-text "  dbr_extend -c10 -z41.5 -e0.2 -i file.cfg\n"
-text "    Extend PBC box by in z direction by 10 x the value reported\n"
-text "    in the previous try run, copy atoms to the created space,\n"
-text "    write the configuration back to file.cfg.\n"
+text "\nFor usage examples, invoke the progam with --show-examples option.\n"
 
