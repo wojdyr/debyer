@@ -44,6 +44,7 @@ option "delete" d "delete atoms in the slab" optional
 option "cut" C "cut out the slab and change PBC accordingly" optional
 option "add-vacuum" u "add vacuum 'slab'; extends PBC" optional
 option "add-copy" c "multiplicate the slab N times (extend PBC and add atoms)" optional int argoptional typestr="N" default="1"
+option "add" a "extend PBC by WIDTH and fill the new space using translation symmetry found in the defined slab" optional float typestr="WIDTH"
 
 option "multiply" N "multiply configuration in x y and z" string typestr="NxNxN" optional
 option "shift" S "shift the system (all atoms) under PBC" string typestr="x,y,z" optional

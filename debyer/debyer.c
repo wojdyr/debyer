@@ -435,16 +435,6 @@ int calculate_irdf_cm(const dbr_picker* picker,
 }
 
 
-static double len3(double a, double b, double c)
-{
-    return sqrt(a*a + b*b + c*c);
-}
-
-static double len3v(double *a)
-{
-    return sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]);
-}
-
 void dbr_inverse_3x3_matrix(const dbr_pbc a, double b[3][3])
 {
     int i, j;
@@ -471,9 +461,9 @@ dbr_pbc_prop get_pbc_properties(dbr_pbc pbc)
     double axb[3], bxc[3], cxa[3];
 
     p.vectors = pbc;
-    p.lengths[0] = len3(pbc.v00, pbc.v01, pbc.v02);
-    p.lengths[1] = len3(pbc.v10, pbc.v11, pbc.v12);
-    p.lengths[2] = len3(pbc.v20, pbc.v21, pbc.v22);
+    p.lengths[0] = dbr_len3(pbc.v00, pbc.v01, pbc.v02);
+    p.lengths[1] = dbr_len3(pbc.v10, pbc.v11, pbc.v12);
+    p.lengths[2] = dbr_len3(pbc.v20, pbc.v21, pbc.v22);
 
     p.cosines[0] = (pbc.v00*pbc.v10 + pbc.v01*pbc.v11 + pbc.v02*pbc.v12)
                     / (p.lengths[0]*p.lengths[1]);
@@ -495,9 +485,9 @@ dbr_pbc_prop get_pbc_properties(dbr_pbc pbc)
 
     p.volume = fabs(pbc.v00*bxc[0] + pbc.v01*bxc[1] + pbc.v02*bxc[2]);
 
-    p.widths[0] = p.volume / len3v(bxc);
-    p.widths[1] = p.volume / len3v(cxa);
-    p.widths[2] = p.volume / len3v(axb);
+    p.widths[0] = p.volume / dbr_len3v(bxc);
+    p.widths[1] = p.volume / dbr_len3v(cxa);
+    p.widths[2] = p.volume / dbr_len3v(axb);
 
     return p;
 }
