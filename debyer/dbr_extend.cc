@@ -293,14 +293,22 @@ void CellMethod::init(double r)
 
 void CellMethod::fill()
 {
+    bool normalized = true;
     for (int i = 0; i < aconf_.n; ++i) {
         dbr_real* x = aconf_.atoms[i].xyz;
+        if (x[1] < 0 || x[1] > pbc_[1]
+                || x[1] < 0 || x[1] > pbc_[1]
+                || x[2] < 0 || x[2] > pbc_[2])
+            normalized = false;
         //assert (x[0] >= 0 && x[1] >= 0 && x[2] >= 0);
         int *p = find_cell_for_atom(x);
         while (*p != -1)
             ++p;
         *p = i;
     }
+    if (!normalized)
+        printf("Warning: atom coordinates are not wrapped to PBC box,\n"
+               "         calculation of distances may not work.\n");
 }
 
 double CellMethod::get_dist(dbr_real const* a, dbr_real const* b) const
@@ -1042,6 +1050,7 @@ void add_by_translation(dbr_aconf& aconf, Slab const& slab,
     aconf.n += sum;
 
     // remove duplicates
+    wrap_to_pbc(aconf);
     merge_atoms(aconf, args, true);
     if (verbosity > -1)
         printf("%d atoms were added (%d -> %d).\n", aconf.n - orig_n,
