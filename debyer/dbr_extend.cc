@@ -595,8 +595,6 @@ void merge_atoms(dbr_aconf& aconf, gengetopt_args_info const& args, bool quiet)
     for (int i = 0; i != aconf.n; ++i) {
         if (!is_null(aconf.atoms[i])) {
             dbr_copy_atom(aconf, i, n);
-            if (!aconf.auxiliary.empty() && i != n)
-                aconf.auxiliary[n] = aconf.auxiliary[i];
             ++n;
         }
     }
@@ -730,7 +728,7 @@ double check_symmetry_in_distance(CellMethod const& cm, Slab const& slab,
     StdDev avg_w;
     for (int i = 0; i != aconf.n; ++i) {
         dbr_real* xyz = aconf.atoms[i].xyz;
-        dbr_real x[3] = { xyz[0], xyz[1], xyz[2] };
+        bool forward = true;
         if (single_translation) { // checking one translation
             double d = dist_forward(xyz[slab.dim], slab.x0, pbcd);
             assert (d >= 0);
@@ -738,22 +736,20 @@ double check_symmetry_in_distance(CellMethod const& cm, Slab const& slab,
             // checking only atoms in distance delta from x0 (on both sides)
             if (d > slab.delta && d <= pbcd - slab.delta)
                 continue;
-
-            if (d < slab.delta) {
-                x[slab.dim] -= slab.delta;
-                if (x[slab.dim] < 0)
-                    x[slab.dim] += pbcd;
-            }
-            else {
-                x[slab.dim] += slab.delta;
-                if (x[slab.dim] >= pbcd)
-                    x[slab.dim] -= pbcd;
-            }
+            if (d < slab.delta)
+                forward = false;
         }
-        else { // checking if all the system is periodic
+
+        dbr_real x[3] = { xyz[0], xyz[1], xyz[2] };
+        if (forward) {
             x[slab.dim] += slab.delta;
             if (x[slab.dim] >= pbcd)
                 x[slab.dim] -= pbcd;
+        }
+        else {
+            x[slab.dim] -= slab.delta;
+            if (x[slab.dim] < 0)
+                x[slab.dim] += pbcd;
         }
 
         dbr_atom const* atom = cm.get_atom_at(x, epsilon);
@@ -770,12 +766,14 @@ double check_symmetry_in_distance(CellMethod const& cm, Slab const& slab,
             return 0.;
         }
         // calculate average length of translation vector in direction dim
-        double exact_w = dist_forward(atom->xyz[slab.dim], xyz[slab.dim], pbcd);
+        double exact_w = forward ?
+                    dist_forward(atom->xyz[slab.dim], xyz[slab.dim], pbcd)
+                  : dist_forward(xyz[slab.dim], atom->xyz[slab.dim], pbcd);
         avg_w.add_x(exact_w);
     }
     if (verbosity > 0)
-        printf("ok (t%c = %g +/- %g)\n", 'x'+slab.dim, avg_w.mean(),
-                                                       avg_w.stddev());
+        printf("ok (t_%c = %g +/- %g)\n", 'x'+slab.dim, avg_w.mean(),
+                                                        avg_w.stddev());
     return avg_w.mean();
 }
 
@@ -935,6 +933,8 @@ void resize_atoms_table(dbr_aconf& aconf, int new_size)
     memcpy(new_atoms, aconf.atoms, sizeof(dbr_atoms) * min(aconf.n, new_size));
     delete [] aconf.atoms;
     aconf.atoms = new_atoms;
+    if (!aconf.auxiliary.empty())
+        aconf.auxiliary.resize(new_size);
 }
 
 void add_copy(dbr_aconf& aconf, Slab const& slab,
@@ -992,8 +992,9 @@ void add_by_translation(dbr_aconf& aconf, Slab const& slab,
     double eps = args.epsilon_arg;
     // find translation vector
     vector<Trans> tt = find_trans_sym(aconf, slab, args);
-    if (tt.empty())
-        return;
+    if (tt.empty()) {
+        exit(EXIT_FAILURE);
+    }
     // we choose the vector in direction closest to slab normal
     Trans const* t = NULL;
     for (vector<Trans>::const_iterator i = tt.begin(); i != tt.end(); ++i) {
@@ -1014,18 +1015,16 @@ void add_by_translation(dbr_aconf& aconf, Slab const& slab,
     double pbcd = get_pbc(aconf, slab.dim);
     // we will also fill the margins (of width=eps) around the added space
     double rd = r[slab.dim];
-    int rsign = (rd > 0 ? 1 : -1);
-    double x0 = slab.x0 - rsign * eps;
-    double delta = extra_width + 2 * eps;
     // first count the new atoms
     vector<pair<int, int> > cc;// pairs (original atom index, number of copies)
     int sum = 0;
     for (int i = 0; i != aconf.n; ++i) {
         dbr_real x = aconf.atoms[i].xyz[slab.dim];
-        int n = 0;
-        while ((rd > 0 ? dist_forward(x + (n+1)*rd, x0, pbcd)
-                       : dist_forward(x0, x + (n+1)*rd, pbcd)) < delta)
-            ++n;
+        double dist_to_x0 = (rd >= 0 ? dist_forward(slab.x0, x, pbcd)
+                                     : dist_forward(x, slab.x0, pbcd));
+        if (dist_to_x0 > fabs(rd) + eps)
+            continue;
+        int n = (int) (dist_to_x0 + extra_width + 2*eps) / fabs(rd);
         if (n > 0) {
             cc.push_back(make_pair(i, n));
             sum += n;
@@ -1036,8 +1035,12 @@ void add_by_translation(dbr_aconf& aconf, Slab const& slab,
     add_vacuum(aconf, slab.dim, slab.x0, fabs(extra_width));
 
     // add new atoms to aconf
+    if (verbosity > 1)
+        printf("%d atom from original system will be used to add %d images.\n",
+               (int) cc.size(), sum);
     resize_atoms_table(aconf, aconf.n + sum);
     int pos = aconf.n;
+    aconf.n += sum;
     for (vector<pair<int, int> >::const_iterator i = cc.begin();
             i != cc.end(); ++i)
         for (int j = 0; j < i->second; ++j) {
@@ -1046,8 +1049,7 @@ void add_by_translation(dbr_aconf& aconf, Slab const& slab,
                 aconf.atoms[pos].xyz[k] += (j+1) * r[k];
             ++pos;
     }
-    assert (pos == aconf.n + sum);
-    aconf.n += sum;
+    assert (pos == aconf.n);
 
     // remove duplicates
     wrap_to_pbc(aconf);
@@ -1093,10 +1095,12 @@ void multiply_pbc(dbr_aconf& aconf, int x, int y, int z)
     string comment = "configuration multiplied by " + S(x) + "x" + S(y)
                      + "x" + S(z);
     aconf.comments.insert(aconf.comments.begin(), comment);
-    aconf.auxiliary.resize(new_n);
-    for (int img = 1; img < x*y*z; ++img)
-        for (int i = 0; i != aconf.n; ++i)
-            aconf.auxiliary[img * aconf.n + i] = aconf.auxiliary[i];
+    if (!aconf.auxiliary.empty()) {
+        aconf.auxiliary.resize(new_n);
+        for (int img = 1; img < x*y*z; ++img)
+            for (int i = 0; i != aconf.n; ++i)
+                aconf.auxiliary[img * aconf.n + i] = aconf.auxiliary[i];
+    }
     aconf.n = new_n;
 }
 
