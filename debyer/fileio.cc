@@ -199,29 +199,29 @@ dbr_aconf read_atoms_from_file(LineInput &in, bool reduced_coords)
 
     char const* cfg_magic = "Number of particles =";
     if (!strncmp(in.get_buffer(), cfg_magic, strlen(cfg_magic))) {
-        if (dbr_verbosity >= 0)
+        if (dbr_verbosity > 0)
             mcerr << "Detected AtomEye CFG format" << endl;
         read_atomeye(in, &aconf, reduced_coords);
     }
     else if (endswith(in.get_orig_filename(), "CONFIG")
              || endswith(in.get_orig_filename(), "REVCON")) {
-        if (dbr_verbosity >= 0)
+        if (dbr_verbosity > 0)
             mcerr << "DL_POLY CONFIG format" << endl;
         read_dlpoly_config(in, &aconf);
     }
     else if (endswith(in.get_orig_filename(), ".lammps")
              || endswith(in.get_orig_filename(), ".lmps")) {
-        if (dbr_verbosity >= 0)
+        if (dbr_verbosity > 0)
             mcerr << "LAMMPS data input format" << endl;
         read_lammps_data(in, &aconf, reduced_coords);
     }
     else if (is_xyz_format(in.get_buffer())) {
-        if (dbr_verbosity >= 0)
+        if (dbr_verbosity > 0)
             mcerr << "Detected XMol XYZ format" << endl;
         read_xyz(in, &aconf);
     }
     else if (is_plain_format(in.get_buffer())) {
-        if (dbr_verbosity >= 0)
+        if (dbr_verbosity > 0)
             mcerr << "Detected plain format with atom coordinates" << endl;
         read_plain(in, &aconf);
     }
@@ -266,7 +266,7 @@ void read_atomeye(LineInput& in, dbr_aconf *aconf, bool reduced_coords)
     aconf->reduced_coordinates = reduced_coords;
     assert(!strncmp(line, cfg_magic, magic_len));
     sscanf(line + magic_len, "%i", &aconf->n);
-    if (dbr_verbosity >= 0)
+    if (dbr_verbosity > 0)
         mcerr << aconf->n << " atoms." << endl;
     aconf->atoms = new dbr_atom[aconf->n];
     int counter = 0;
@@ -422,7 +422,7 @@ void write_atoms_to_atomeye_file(dbr_aconf const& aconf, string const& filename)
     if (dbr_nid != 0)
         return;
     if (dbr_verbosity >= 0)
-        mcerr << "Writing atoms to AtomEye extended cfg file: "
+        mcerr << "Writing " << aconf.n << " atoms to AtomEye file: "
               << filename << endl;
     ofstream f(filename.c_str(), ios::out|ios::binary);
     if (!f) {
