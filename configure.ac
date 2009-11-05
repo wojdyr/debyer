@@ -16,13 +16,13 @@ AC_ARG_ENABLE(double,
  [  --enable-double               use double precision for atom coordinates],,enable_double=no)
 
 # optional zlib and bzlib libraries
-AC_ARG_WITH(zlib, 
+AC_ARG_WITH(zlib,
  [  --without-zlib                disable zlib support (reading .gz files)])
-test -z "$with_zlib" && with_zlib="yes"  
+test -z "$with_zlib" && with_zlib="yes"
 
-AC_ARG_WITH(bzlib, 
+AC_ARG_WITH(bzlib,
  [  --without-bzlib               disable bzlib support (reading .bz2 files)])
-test -z "$with_bzlib" && with_bzlib="yes"  
+test -z "$with_bzlib" && with_bzlib="yes"
 
 # We are checking for compilers in the same way as GROMACS does. They say:
 # We cannot set that [MPICC] in the PROG_CC macro [...], 
@@ -61,29 +61,27 @@ if test "$with_zlib" = "yes"; then
   AC_CHECK_LIB([z], [gzopen],
                [AC_DEFINE([HAVE_ZLIB], [1], [Define if zlib is available])],
  	       [AC_MSG_ERROR(
-  [zlib library was not found. 
+  [zlib library was not found.
    Either use flag --without-zlib or install the library.
  ])])
   LIBS="$LIBS -lz"
   AC_CHECK_HEADER([zlib.h], [], [AC_MSG_ERROR([
-   zlib.h header was not found. Either use flag --without-zlib or install 
-   zlib library with development files (some Linux distros have development
-   files in a separate you may find them in a separate -dev or -devel package).
+   zlib.h header was not found. Either use flag --without-zlib or install
+   zlib library (including header files).
  ])])
 fi
 
 if test "$with_bzlib" = "yes"; then
-  AC_CHECK_LIB([bz2], [BZ2_bzReadOpen], 
+  AC_CHECK_LIB([bz2], [BZ2_bzReadOpen],
 	       [AC_DEFINE([HAVE_BZLIB], [1], [Define if bzlib is available])],
 	       [AC_MSG_ERROR(
-  [bzlib library was not found. 
+  [bzlib library was not found.
    Either use flag --without-bzlib or install the library.
  ])])
   LIBS="$LIBS -lbz2"
   AC_CHECK_HEADER([bzlib.h], [], [AC_MSG_ERROR([
-   bzlib.h header was not found. Either use flag --without-bzlib or install 
-   bzlib library with development files (some Linux distros have development
-   files in a separate you may find them in a separate -dev or -devel package).
+   bzlib.h header was not found. Either use flag --without-bzlib or install
+   bzlib library (including header files).
  ])])
 fi
 

@@ -38,7 +38,7 @@ using namespace std;
 bool is_xyz_format(char const* buffer)
 {
     // find new lines
-    char *e[5];
+    const char *e[5];
     for (int i = 0; i < 5; ++i) {
         char const* start = i > 0 ? e[i-1]+1 : buffer;
         e[i] = strchr(start, '\n');
@@ -52,7 +52,7 @@ bool is_xyz_format(char const* buffer)
     if (endptr < e[0])
         return false;
     for (int i = 2; i < 5; ++i) {
-        char *ptr = e[i-1];
+        const char *ptr = e[i-1];
         while (isspace(*ptr))
             ++ptr;
         if (!isalpha(*ptr)) //should it start with letter?
@@ -295,7 +295,7 @@ void read_atomeye(LineInput& in, dbr_aconf *aconf, bool reduced_coords)
 
         // entry_count line
         else if (!strncmp(nonblank, extended_mark, strlen(extended_mark))) {
-            char *eq = strchr(nonblank, '=');
+            const char *eq = strchr(nonblank, '=');
             ASSERT_FORMAT(*eq);
             int r = sscanf(eq+1, "%i", &entry_count);
             ASSERT_FORMAT(r == 1);
@@ -692,15 +692,15 @@ void read_lammps_data(LineInput& in, dbr_aconf* aconf, bool reduced_coords)
     aconf->reduced_coordinates = reduced_coords;
     // read header
     vector<string> symbols;
-    const char* line = NULL;
+    char* line = NULL;
     int counter = 0;
     while ((line = in.get_line())) {
         ++counter;
-        char const* nonblank = line;
+        char* nonblank = line;
         while (isspace(*nonblank))
             ++nonblank;
 
-        if (*nonblank == 0) // blank line
+        if (*nonblank == '\0') // blank line
             continue;
 
         // comment line
@@ -714,7 +714,7 @@ void read_lammps_data(LineInput& in, dbr_aconf* aconf, bool reduced_coords)
 
         char *trailing_comment = strchr(nonblank, '#');
         if (trailing_comment) {
-            *trailing_comment = 0;
+            *trailing_comment = '\0';
         }
 
         if (strstr(nonblank, "atoms")) {
@@ -786,7 +786,7 @@ void read_lammps_data(LineInput& in, dbr_aconf* aconf, bool reduced_coords)
         const char *nonblank = line;
         while (isspace(*nonblank))
             ++nonblank;
-        if (*nonblank == 0) // blank line
+        if (*nonblank == '\0') // blank line
             continue;
         int number, symbol_nr;
         double ax, ay, az;

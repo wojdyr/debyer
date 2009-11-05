@@ -59,7 +59,7 @@ public:
 
     // returns pointer to 0-terminated array (without a new line character).
     // The string can be changed.
-    const char* get_line();
+    char* get_line();
 
     std::string const& get_filename() const { return filename; }
     std::string const& get_orig_filename() const { return orig_filename; }

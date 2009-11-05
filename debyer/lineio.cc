@@ -134,7 +134,7 @@ int LineInput::fill_buffer(size_t offset)
     return n;
 }
 
-const char* LineInput::get_line()
+char* LineInput::get_line()
 {
     if (next_line == NULL) {
         buffer[0] = 0;
@@ -147,7 +147,7 @@ const char* LineInput::get_line()
     // full next line was found in buffer
         *p = 0;
         ++line_number;
-        const char* line = next_line;
+        char* line = next_line;
         next_line = p+1;
         return line;
     }
@@ -161,7 +161,7 @@ const char* LineInput::get_line()
             return NULL;
         }
         ++line_number;
-        const char* line = next_line;
+        char* line = next_line;
         next_line = NULL;
         return line;
     }

@@ -1091,7 +1091,8 @@ int write_diffraction_to_file(output_kind c, irdfs rdfs,
 
     for (i = 0; i < n; ++i)
         fprintf(f, "%g %g\n", pattern_from + (i+0.5)*pattern_step, result[i]);
-    fclose(f); /*FIXME fclose stdout? */
+    if (f != stdout)
+        fclose(f);
     free(result);
     return 0;
 }
@@ -1158,7 +1159,8 @@ int write_pdfkind_to_file(output_kind c, irdfs rdfs,
         fprintf(f, "%g %g\n", r, y);
     }
 
-    fclose(f); /*FIXME fclose stdout? */
+    if (f != stdout)
+        fclose(f);
     free(result);
     return 0;
 }
