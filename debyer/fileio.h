@@ -61,6 +61,22 @@ struct dbr_aconf
     std::string auxiliary_header;
 };
 
+inline double get_real_pbc(dbr_aconf const& aconf, int dim)
+{
+    switch (dim) {
+        case 0: return aconf.pbc.v00;
+        case 1: return aconf.pbc.v11;
+        case 2: return aconf.pbc.v22;
+        default: return 0;
+    }
+}
+
+inline double get_pbc(dbr_aconf const& aconf, int dim)
+{
+    double p = get_real_pbc(aconf, dim);
+    return aconf.reduced_coordinates && p != 0. ? 1. : p;
+}
+
 
 bool is_xyz_format(char const* buffer);
 bool is_plain_format(char const* /*buffer*/);

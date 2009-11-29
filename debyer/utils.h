@@ -45,7 +45,7 @@ public:
     double variance() const { return S_ / (n_ - 1); }
     double stddev() const { return sqrt(variance()); }
     double mean() const { return mean_; }
-    double n() const { return n_; }
+    int n() const { return n_; }
 
 private:
     int n_;

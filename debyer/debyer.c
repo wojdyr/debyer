@@ -1277,8 +1277,10 @@ dbr_cells prepare_cells(dbr_pbc pbc, dbr_real rcut, dbr_atoms* xa)
     for (i = 0; i < 3; ++i) {
         if (cells.v[i] == 0)  /* no pbc, put all in one cell */
             cells.n[i] = 1;
-        else /* cell dimension must be smaller than rcut */
-            cells.n[i] = (int) floor(pbc_prop.widths[i] / rcut);
+        else { /* cell dimension must be smaller than rcut */
+            int t = (int) floor(pbc_prop.widths[i] / rcut);
+            cells.n[i] = t > 0 ? t : 1;
+        }
     }
     cells.vectors.v00 = pbc.v00 / cells.n[0];
     cells.vectors.v01 = pbc.v01 / cells.n[0];

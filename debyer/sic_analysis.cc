@@ -454,9 +454,9 @@ int main(int argc, char **argv)
     if (dbr_verbosity > 0)
         cerr << "Elapsed " << dbr_get_elapsed()
             <<" s. Memory for neighbours reserved." << endl;
-    assert(tc == 2);
     if (dbr_verbosity > 0)
         cerr << "max. bondlength is " << rcut << endl;
+    assert (tc >= 2);
 
     const int nbins = 360;
     vector<int> ang1(nbins, 0);

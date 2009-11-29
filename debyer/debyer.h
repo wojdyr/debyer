@@ -65,7 +65,8 @@ typedef enum output_kind {
     output_none
 } output_kind;
 
-/* structure used for passing atom name and coordinates */
+/* Structure used for passing atom name and coordinates.
+ * It can be null, see is_null() and nullify(). */
 struct dbr_atom
 {
     dbr_xyz xyz;

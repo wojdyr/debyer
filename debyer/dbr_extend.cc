@@ -18,17 +18,15 @@
 // $Id$
 
 // TODO: 
-// * it doesn't work when there are two cells in given direction,
-//   ./dbr_extend -r  -e0.02 -c2.99 -M0.03  -v -v  -z0.5 mydisl.cfg.gz
 // * option -cN with N>1 should change PBC only once
 
 #include <algorithm>
 #include <cstring>
 
 #include "fileio.h"
-#include "iloops.h"
 #include "utils.h"
 #include "extend_cmd.h"
+#include "cells.h"
 
 using namespace std;
 
@@ -78,13 +76,6 @@ struct Trans // translation vector
 };
 
 
-int mod(int a, int n)
-{
-    // pre: n > 0
-    int r = a % n;
-    return r >= 0 ? r : r + n;
-}
-
 dbr_real dist_forward(dbr_real x2, dbr_real x1, dbr_real pbc)
 {
     return x2 >= x1 ? x2 - x1 : x2 - x1 + pbc;
@@ -97,16 +88,6 @@ double* get_pbc_ptr(dbr_aconf& aconf, int dim)
         case 1: return &aconf.pbc.v11;
         case 2: return &aconf.pbc.v22;
         default: return NULL;
-    }
-}
-
-double get_real_pbc(dbr_aconf const& aconf, int dim)
-{
-    switch (dim) {
-        case 0: return aconf.pbc.v00;
-        case 1: return aconf.pbc.v11;
-        case 2: return aconf.pbc.v22;
-        default: return 0;
     }
 }
 
@@ -164,12 +145,6 @@ void expand_pbc(dbr_aconf& aconf, int dim, double delta)
         printf("new PBC[%d]=%g (was: %g)\n", dim, new_p, old_p);
 }
 
-double get_pbc(dbr_aconf const& aconf, int dim)
-{
-    double p = get_real_pbc(aconf, dim);
-    return aconf.reduced_coordinates && p != 0. ? 1. : p;
-}
-
 
 class SlabInPBC
 {
@@ -186,385 +161,6 @@ private:
     int dim_;
     double pbcd_, delta_, x0_;
 };
-
-
-// supports only orthorhombic PBC
-class CellMethod
-{
-public:
-    CellMethod(dbr_aconf const& aconf, double r)
-        : aconf_(aconf), data_(NULL) { init(r); }
-    ~CellMethod() { delete [] data_; }
-    void init(double r);
-
-    // Gets one atom (in unspecified order) in distance r < epsilon from given
-    // point xyz. Returns NULL if there are no such atoms.
-    dbr_atom const* get_atom_at(dbr_real const* xyz, double epsilon) const;
-
-    int find_nearest(dbr_real const* xyz) const;
-    int find_nearest_to_atom(int atom_idx, double min_sq_dist) const;
-
-    double get_dist(dbr_real const* a, dbr_real const* b) const;
-    void get_shortest_vec(dbr_real const* a, dbr_real const* b,
-                          dbr_real *r) const;
-
-    double half_cell() const
-        { return min(min(cell_size(0), cell_size(1)), cell_size(2)); }
-
-    double const* pbc() const { return pbc_; }
-    dbr_aconf const& aconf() const { return aconf_; }
-
-    double find_min_distance() const;
-
-    // returns atom of the same kind as atom atom_nr located at x+r,
-    // where x is the position of atom atom_nr
-    dbr_atom const* get_image(dbr_real const* r, int atom_nr,
-                              double epsilon, dbr_real* delta=NULL) const;
-
-    vector<Trans> get_translations(int atom_nr,
-                                   SlabInPBC const& pslab,
-                                   DeltaLim const& lim,
-                                   double epsilon) const;
-
-private:
-    void fill();
-
-    int* cell_start(int a0, int a1, int a2) const
-        { return data_ +  cell_capacity_ * (a0*n_[1]*n_[2] + a1*n_[2] + a2); }
-
-    int* cell_start(int *a) const { return cell_start(a[0], a[1], a[2]); }
-
-    int* cell_start_safe(int a0, int a1, int a2) const
-        { return cell_start(mod(a0, n_[0]), mod(a1, n_[1]), mod(a2, n_[2])); }
-
-    int cpos(dbr_real const* xyz, int d) const
-        { return xyz[d] / pbc_[d] * n_[d]; }
-
-    double cell_size(int dim) const { return pbc_[dim] / n_[dim]; }
-
-    double real_cell_size(int dim) const
-        { return get_real_pbc(aconf_, dim) / n_[dim]; }
-
-    double cx0(int cell_idx, int d) const { return cell_idx * cell_size(d); }
-
-    int* find_cell_for_atom(const dbr_real *xyz) const
-        { return cell_start_safe(cpos(xyz, 0), cpos(xyz, 1), cpos(xyz, 2)); }
-
-    void find_cell_indices(const dbr_real *xyz, int* cell_index) const {
-        for (int i = 0; i < 3; ++i)
-            cell_index[i] = (int) (xyz[i] / cell_size(i));
-    }
-
-    int const* adjust_atom(int idx0, int idx1, int idx2, dbr_real* xyz) const;
-
-    dbr_atom const* find_one_in_cell(int const* idx,
-                                dbr_real const* xyz, double epsilon) const;
-
-    dbr_aconf const& aconf_;
-    double pbc_[3];
-    int cell_capacity_;
-    int data_size_;
-    int n_[3];
-    int *data_;
-};
-
-void CellMethod::init(double r)
-{
-    delete [] data_;
-
-    for (int i = 0; i < 3; ++i) {
-        double p = get_real_pbc(aconf_, i);
-        n_[i] = p > r ? (int) (p / r) : 1;
-        pbc_[i] = get_pbc(aconf_, i);
-    }
-    int number_of_cells = n_[0] * n_[1] * n_[2];
-
-    cell_capacity_ = 1 + (int) ceil(4. * aconf_.n / number_of_cells);
-    data_size_ = (number_of_cells + 1) * cell_capacity_;
-    data_ = new int[data_size_];
-    for (int i = 0; i != data_size_; ++i)
-        data_[i] = -1;
-    if (verbosity > 1)
-        printf("%d x %d x %d = %d cells created, cell capacity: %d\n",
-                n_[0], n_[1], n_[2], number_of_cells, cell_capacity_);
-
-    fill();
-}
-
-void CellMethod::fill()
-{
-    bool normalized = true;
-    for (int i = 0; i < aconf_.n; ++i) {
-        dbr_real* x = aconf_.atoms[i].xyz;
-        if (x[1] < 0 || x[1] > pbc_[1]
-                || x[1] < 0 || x[1] > pbc_[1]
-                || x[2] < 0 || x[2] > pbc_[2])
-            normalized = false;
-        //assert (x[0] >= 0 && x[1] >= 0 && x[2] >= 0);
-        int *p = find_cell_for_atom(x);
-        while (*p != -1)
-            ++p;
-        *p = i;
-    }
-    if (!normalized)
-        printf("Warning: atom coordinates are not wrapped to PBC box,\n"
-               "         calculation of distances may not work.\n");
-}
-
-double CellMethod::get_dist(dbr_real const* a, dbr_real const* b) const
-{
-    double sum = 0.;
-    for (int i = 0; i < 3; ++i) {
-        double r = fabs(a[i] - b[i]);
-        if (r > pbc_[i]/2.)
-            r = pbc_[i] - r;
-        sum += r * r;
-    }
-    return sqrt(sum);
-}
-
-// get vector v=b-a (in PBC) such that |v| is minimal
-void CellMethod::get_shortest_vec(dbr_real const* a, dbr_real const* b,
-                                  dbr_real *r) const
-{
-    for (int i = 0; i < 3; ++i) {
-        r[i] = b[i] - a[i];
-        if (r[i] >= pbc_[i] / 2.)
-            r[i] -= pbc_[i];
-        else if (r[i] < -pbc_[i] / 2.)
-            r[i] += pbc_[i];
-    }
-}
-
-// gets cell and atom coordinates; 
-// if the cell indices are correct returns pointer to data of this cell,
-// otherwise wraps the cell indices and shifts the atom.
-int const* CellMethod::adjust_atom(int idx0, int idx1, int idx2,
-                                   dbr_real* xyz) const
-{
-    int a[3] = { idx0, idx1, idx2 };
-    for (int i = 0; i < 3; ++i) {
-        int t = mod(a[i], n_[i]);
-        if (t != a[i]) {
-            xyz[i] += pbc_[i] * ((t - a[i]) / n_[i]);
-            a[i] = t;
-        }
-    }
-    return cell_start(a);
-}
-
-// search for atom in distance < epsilon from point xyz,
-// returns pointer to the first atom found or NULL if not found.
-dbr_atom const* CellMethod::find_one_in_cell(int const* idx,
-                                    dbr_real const* xyz, double epsilon) const
-{
-    dbr_real x[3] = { xyz[0], xyz[1], xyz[2] };
-    int const* p = adjust_atom(idx[0], idx[1], idx[2], x);
-    while (*p != -1) {
-        if (get_sq_dist(x, aconf_.atoms[*p].xyz) < epsilon * epsilon)
-            return &aconf_.atoms[*p];
-        ++p;
-    }
-    return NULL;
-}
-
-int CellMethod::find_nearest(dbr_real const* xyz) const
-{
-    int closest_atom = -1;
-    double min_sq_dist = 1e9;
-    int idx[3];
-    find_cell_indices(xyz, idx);
-    for (int i = idx[0]-1; i <= idx[0]+1; ++i)
-        for (int j = idx[1]-1; j <= idx[1]+1; ++j)
-            for (int k = idx[2]-1; k <= idx[2]+1; ++k) {
-                dbr_real x[3] = { xyz[0], xyz[1], xyz[2] };
-                int const* p = adjust_atom(i, j, k, x);
-                while (*p != -1) {
-                    double sq_dist = get_sq_dist(x, aconf_.atoms[*p].xyz);
-                    if (sq_dist < min_sq_dist) {
-                        closest_atom = *p;
-                        min_sq_dist = sq_dist;
-                    }
-                    ++p;
-                }
-            }
-    return closest_atom;
-}
-
-int CellMethod::find_nearest_to_atom(int atom_idx, double min_sq_dist) const
-{
-    // very similar to find_nearest()
-    dbr_real const* xyz = aconf_.atoms[atom_idx].xyz; // this line was added
-    int closest_atom = -1;
-    int idx[3];
-    find_cell_indices(xyz, idx);
-    for (int i = idx[0]-1; i <= idx[0]+1; ++i)
-        for (int j = idx[1]-1; j <= idx[1]+1; ++j)
-            for (int k = idx[2]-1; k <= idx[2]+1; ++k) {
-                dbr_real x[3] = { xyz[0], xyz[1], xyz[2] };
-                int const* p = adjust_atom(i, j, k, x);
-                while (*p != -1) {
-                    // this condition was added
-                    if (*p != atom_idx && !is_null(aconf_.atoms[*p])) {
-                        double sq_dist = get_sq_dist(x, aconf_.atoms[*p].xyz);
-                        if (sq_dist < min_sq_dist) {
-                            closest_atom = *p;
-                            min_sq_dist = sq_dist;
-                        }
-                    }
-                    ++p;
-                }
-            }
-    return closest_atom;
-}
-
-double CellMethod::find_min_distance() const
-{
-    double min_dist = 1e9;
-    for (int i = 0; i < aconf_.n; ++i) {
-        int k = find_nearest_to_atom(i, min_dist*min_dist);
-        if (k != -1) {
-            min_dist = get_dist(aconf_.atoms[i].xyz, aconf_.atoms[k].xyz);
-        }
-    }
-    return min_dist;
-}
-
-dbr_atom const*
-CellMethod::get_atom_at(dbr_real const* xyz, double epsilon) const
-{
-    // pre: epsilon < r/2, where r=pbc_[i]/n_[i]
-    int idx[3];
-    find_cell_indices(xyz, idx);
-
-    //int *p = cell_start(idx);
-    //while (*p != -1) {
-    //    if (get_sq_dist(xyz, aconf_.atoms[*p].xyz) < epsilon * epsilon)
-    //        return &aconf_.atoms[*p];
-    //    ++p;
-    //}
-    dbr_atom const* ret = find_one_in_cell(idx, xyz, epsilon);
-    if (ret != NULL)
-        return ret;
-
-    int nb[3] = { 0, 0, 0 };
-    for (int i = 0; i < 3; ++i) {
-        double x0 = cx0(idx[i], i);
-        if (xyz[i] - epsilon < x0)
-            nb[i] = -1;
-        else if (xyz[i] + epsilon > x0 + cell_size(i))
-            nb[i] = 1;
-        else
-            continue;
-        // side neighbours
-        idx[i] += nb[i];
-        dbr_atom const* ret = find_one_in_cell(idx, xyz, epsilon);
-        if (ret != NULL)
-            return ret;
-        idx[i] -= nb[i];
-    }
-    if (abs(nb[0]) + abs(nb[1]) + abs(nb[2]) < 2)
-        return NULL;
-
-    for (int i = 0; i < 3; ++i)
-        idx[i] += nb[i];
-    // edge neighbours
-    if (nb[0] != 0 && nb[1] != 0) {
-        idx[2] -= nb[2];
-        dbr_atom const* ret = find_one_in_cell(idx, xyz, epsilon);
-        if (ret != NULL)
-            return ret;
-        idx[2] += nb[2];
-    }
-    if (nb[0] != 0 && nb[2] != 0) {
-        idx[1] -= nb[1];
-        dbr_atom const* ret = find_one_in_cell(idx, xyz, epsilon);
-        if (ret != NULL)
-            return ret;
-        idx[1] += nb[1];
-    }
-    if (nb[1] != 0 && nb[2] != 0) {
-        idx[0] -= nb[0];
-        dbr_atom const* ret = find_one_in_cell(idx, xyz, epsilon);
-        if (ret != NULL)
-            return ret;
-        idx[0] += nb[0];
-    }
-
-    // corner neighbours
-    if (nb[0] != 0 && nb[1] != 0 && nb[2] != 0)
-        return find_one_in_cell(idx, xyz, epsilon);
-
-    return NULL;
-}
-
-
-
-dbr_atom const*
-CellMethod::get_image(dbr_real const* r, int atom_nr, double epsilon,
-                      dbr_real* delta) const
-{
-    dbr_atom const& atom = aconf_.atoms[atom_nr];
-    dbr_real x[3] = { atom.xyz[0]+r[0], atom.xyz[1]+r[1], atom.xyz[2]+r[2] };
-    //wrap_one(aconf, x);
-    dbr_atom const* img = get_atom_at(x, epsilon);
-    if (img == NULL || strcmp(img->name, atom.name) != 0)
-        return NULL;
-    else {
-        if (delta != NULL)
-            get_shortest_vec(x, img->xyz, delta);
-        return img;
-    }
-}
-
-// get distances from atom atom_nr to its images that are in distance d
-// lim.lo < d < lim.hi, but only if all atoms in the slab (or in whole system)
-// have images in the same relative position.
-vector<Trans> CellMethod::get_translations(int atom_nr,
-                                           SlabInPBC const& pslab,
-                                           DeltaLim const& lim,
-                                           double epsilon) const
-{
-    vector<Trans> ret;
-    dbr_atom const& atom0 = aconf_.atoms[atom_nr];
-    dbr_real const* xyz0 = atom0.xyz;
-    for (int i = 0; i != aconf_.n; ++i) {
-        if (i == atom_nr || strcmp(atom0.name, aconf_.atoms[i].name) != 0)
-            continue;
-        double dist = get_dist(xyz0, aconf_.atoms[i].xyz);
-        if (dist < lim.lo || dist > lim.hi)
-            continue;
-        dbr_real r[3];
-        //dbr_diff3(aconf_.atoms[i].xyz, xyz0, r);
-        get_shortest_vec(xyz0, aconf_.atoms[i].xyz, r);
-        // check for the translation symmetry and calculate average
-        bool ok = true;
-        StdDev sd[3];
-        for (int j = 0; j != aconf_.n; ++j) {
-            if (pslab.ok() && !pslab.has(aconf_.atoms[j].xyz))
-                continue;
-            dbr_real delta[3];
-            dbr_atom const* img = get_image(r, j, epsilon, delta);
-            if (img == NULL) {
-                ok = false;
-                break;
-            }
-            for (int k = 0; k < 3; ++k)
-                sd[k].add_x(r[k] + delta[k]);
-        }
-        if (ok) {
-            Trans trans;
-            for (int k = 0; k < 3; ++k) {
-                trans.r[k] = sd[k].mean();
-                trans.stddev[k] = sd[k].stddev();
-            }
-            trans.dist = dbr_len3(sd[0].mean(), sd[1].mean(), sd[2].mean());
-            ret.push_back(trans);
-            //printf("debug: %d r=(%f %f %f)\n", i, r[0], r[1], r[2]);
-        }
-    }
-    return ret;
-}
 
 void merge_atoms(dbr_aconf& aconf, gengetopt_args_info const& args, bool quiet)
 {
@@ -815,6 +411,56 @@ double search_for_translation(dbr_aconf const& aconf,
     return 0.;
 }
 
+// get distances from atom atom_nr to its images that are in distance d
+// lim.lo < d < lim.hi, but only if all atoms in the slab (or in the whole
+// system) have images in the same relative position.
+vector<Trans> get_translations(CellMethod const& cm,
+                               int atom_nr,
+                               SlabInPBC const& pslab,
+                               DeltaLim const& lim,
+                               double epsilon)
+{
+    vector<Trans> ret;
+    dbr_atom const& atom0 = cm.aconf().atoms[atom_nr];
+    dbr_real const* xyz0 = atom0.xyz;
+    for (int i = 0; i != cm.aconf().n; ++i) {
+        if (i == atom_nr || strcmp(atom0.name, cm.aconf().atoms[i].name) != 0)
+            continue;
+        double dist = cm.get_dist(xyz0, cm.aconf().atoms[i].xyz);
+        if (dist < lim.lo || dist > lim.hi)
+            continue;
+        dbr_real r[3];
+        //dbr_diff3(cm.aconf().atoms[i].xyz, xyz0, r);
+        cm.get_shortest_vec(xyz0, cm.aconf().atoms[i].xyz, r);
+        // check for the translation symmetry and calculate average
+        bool ok = true;
+        StdDev sd[3];
+        for (int j = 0; j != cm.aconf().n; ++j) {
+            if (pslab.ok() && !pslab.has(cm.aconf().atoms[j].xyz))
+                continue;
+            dbr_real delta[3];
+            dbr_atom const* img = cm.get_image(r, j, epsilon, delta);
+            if (img == NULL) {
+                ok = false;
+                break;
+            }
+            for (int k = 0; k < 3; ++k)
+                sd[k].add_x(r[k] + delta[k]);
+        }
+        if (ok) {
+            Trans trans;
+            for (int k = 0; k < 3; ++k) {
+                trans.r[k] = sd[k].mean();
+                trans.stddev[k] = sd[k].stddev();
+            }
+            trans.dist = dbr_len3(sd[0].mean(), sd[1].mean(), sd[2].mean());
+            ret.push_back(trans);
+            //printf("debug: %d r=(%f %f %f)\n", i, r[0], r[1], r[2]);
+        }
+    }
+    return ret;
+}
+
 // search for translational symmetry in all directions
 vector<Trans> find_trans_sym(dbr_aconf const& aconf, Slab const& slab,
                              gengetopt_args_info const& args)
@@ -833,7 +479,7 @@ vector<Trans> find_trans_sym(dbr_aconf const& aconf, Slab const& slab,
     SlabInPBC pslab(aconf, slab);
     int atom0_nr = get_any_atom_in_slab(aconf, slab);
 
-    vector<Trans> tt = cm.get_translations(atom0_nr, pslab, lim, eps);
+    vector<Trans> tt = get_translations(cm, atom0_nr, pslab, lim, eps);
 
     if (tt.empty()) {
         printf("Translation symmetry not found in the %s.\n",
@@ -1293,7 +939,7 @@ int main(int argc, char **argv)
         printf("Min. interatomic distance: %g\n", min_dist);
 
         // if epsilon is larger than half of cell, increase cell sizes
-        if (args.epsilon_arg >= cm.half_cell()) {
+        if (args.epsilon_arg >= cm.min_cell_size() / 2.) {
             fprintf(stderr, "Epsilon too large.\n");
             return EXIT_FAILURE;
         }
