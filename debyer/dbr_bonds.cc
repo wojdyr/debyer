@@ -31,16 +31,13 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
+    if (argc != 2 && argc != 3) {
+        printf("Usage: dbr_bonds filename max-bond-length\n");
+        return -1;
+    }
     bool reduced_coords = false;
-    assert (argc == 3);
     dbr_aconf aconf = read_atoms_from_file(argv[1], reduced_coords);
 
-    char *endptr;
-    double rcut = strtod(argv[2], &endptr);
-    if (*endptr != 0 || rcut <= 0) {
-        fprintf(stderr, "Wrong value for max_bondlength\n");
-        return EXIT_FAILURE;
-    }
 
     // check PBC
     if (aconf.pbc.v01 != 0 || aconf.pbc.v02 != 0 || aconf.pbc.v10 != 0 ||
@@ -70,6 +67,18 @@ int main(int argc, char **argv)
     }
     printf("\n");
     fflush(stdout);
+
+    if (argc == 2) {
+        printf("To show info about bonds, specify max. bond length.\n");
+        return 0;
+    }
+
+    char *endptr;
+    double rcut = strtod(argv[2], &endptr);
+    if (*endptr != 0 || rcut <= 0) {
+        fprintf(stderr, "Wrong value for max_bondlength\n");
+        return EXIT_FAILURE;
+    }
 
     // put atoms into cells and find bonds
     CellMethod cm(aconf, rcut); //args.min_cell_arg);
