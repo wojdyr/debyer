@@ -2,6 +2,8 @@ EXTRA_DIST = debyer.ggo extend_cmd.ggo
 
 noinst_LIBRARIES = libdebyer.a
 
+BUILT_SOURCES = extend_cmd.c cmdline.c
+
 bin_PROGRAMS = debyer sic_analysis sic_orient dbr_diffus dbr_volume \
 	       dbr_symmetry dbr_extend dbr_bonds
 
