@@ -153,14 +153,32 @@ public:
         : dim_(slab.dim),
           pbcd_(get_pbc(aconf, slab.dim)),
           delta_(fabs(slab.delta)),
-          x0_(slab.delta >= 0 ? slab.x0 : slab.x0 - delta_) {}
+          x0_(wrapped(slab.delta >= 0 ? slab.x0 : slab.x0 - delta_)) {}
+
+    // if reduced coordinates are used, pbcd_==1 and x-floor(x) is returned
+    double wrapped(double x) const { return x - floor(x / pbcd_) * pbcd_; }
+
     bool has(dbr_real const* xyz) const
         { return dist_forward(xyz[dim_], x0_, pbcd_) < delta_; }
     bool ok() const { return dim_ >= 0; }
+    int dim() const { return dim_; }
+    double x0() const { return x0_; }
+    double delta() const { return delta_; }
+
 private:
     int dim_;
     double pbcd_, delta_, x0_;
 };
+
+int get_any_atom_in_slab(dbr_aconf const& aconf, SlabInPBC const& pslab)
+{
+    if (pslab.dim() == -1 && aconf.n > 0)
+        return 0;
+    for (int i = 0; i != aconf.n; ++i)
+        if (pslab.has(aconf.atoms[i].xyz))
+            return i;
+    return -1;
+}
 
 void merge_atoms(dbr_aconf& aconf, gengetopt_args_info const& args, bool quiet)
 {
@@ -245,17 +263,6 @@ int select_atom(dbr_aconf const& aconf, int dim, double x0)
         }
     }
     return a0;
-}
-
-int get_any_atom_in_slab(dbr_aconf const& aconf, Slab const& slab)
-{
-    if (slab.dim == -1 && aconf.n > 0)
-        return 0;
-    SlabInPBC pslab(aconf, slab);
-    for (int i = 0; i != aconf.n; ++i)
-        if (pslab.has(aconf.atoms[i].xyz))
-            return i;
-    return -1;
 }
 
 const char* atom_to_str(dbr_aconf const& aconf, int n)
@@ -462,24 +469,19 @@ vector<Trans> get_translations(CellMethod const& cm,
 }
 
 // search for translational symmetry in all directions
-vector<Trans> find_trans_sym(dbr_aconf const& aconf, Slab const& slab,
-                             gengetopt_args_info const& args)
+vector<Trans> find_trans_sym(CellMethod const& cm, SlabInPBC const& pslab,
+                             double epsilon, DeltaLim const& lim)
 {
-    CellMethod cm(aconf, args.min_cell_arg);
-
     // print min. interatomic distance
     double min_dist = cm.find_min_distance();
-    double eps = args.epsilon_arg;
-    if (eps >= min_dist / 2.) {
+    if (epsilon >= min_dist / 2.) {
         printf("WARNING: Min. interatomic distance is: %g.\n", min_dist);
         printf("WARNING: Epsilon should be smaller than %g.\n", min_dist/2);
     }
 
-    DeltaLim lim = parse_delta_lim(args);
-    SlabInPBC pslab(aconf, slab);
-    int atom0_nr = get_any_atom_in_slab(aconf, slab);
+    int atom0_nr = get_any_atom_in_slab(cm.aconf(), pslab);
 
-    vector<Trans> tt = get_translations(cm, atom0_nr, pslab, lim, eps);
+    vector<Trans> tt = get_translations(cm, atom0_nr, pslab, lim, epsilon);
 
     if (tt.empty()) {
         printf("Translation symmetry not found in the %s.\n",
@@ -491,7 +493,10 @@ vector<Trans> find_trans_sym(dbr_aconf const& aconf, Slab const& slab,
 void print_trans_sym(dbr_aconf const& aconf, Slab const& slab,
                      gengetopt_args_info const& args)
 {
-    vector<Trans> tt = find_trans_sym(aconf, slab, args);
+    SlabInPBC pslab(aconf, slab);
+    CellMethod cm(aconf, args.min_cell_arg);
+    vector<Trans> tt = find_trans_sym(cm, pslab, args.epsilon_arg,
+                                      parse_delta_lim(args));
 
     //// make the first index non-negative (if x < 0: x=-x, y=-y, z=-z)
     //for (vector<Trans>::iterator i = tt.begin(); i != tt.end(); ++i)
@@ -583,14 +588,51 @@ void resize_atoms_table(dbr_aconf& aconf, int new_size)
         aconf.auxiliary.resize(new_size);
 }
 
-void add_copy(dbr_aconf& aconf, Slab const& slab,
-              CellMethod const& cm, double epsilon, int N)
+void find_translation_vector(CellMethod const& cm,
+                             SlabInPBC const& pslab,
+                             double epsilon,
+                             DeltaLim const& lim,
+                             int tr_sign,
+                             double *r)
 {
-    // bookmark atoms that are to be copied
+    vector<Trans> tt = find_trans_sym(cm, pslab, epsilon, lim);
+    if (tt.empty()) {
+        exit(EXIT_FAILURE);
+    }
+    // we choose the vector in direction closest to slab normal
+    Trans const* t = NULL;
+    for (vector<Trans>::const_iterator i = tt.begin(); i != tt.end(); ++i) {
+        double norm_r = fabs(i->r[pslab.dim()]);
+        if (norm_r < 1e-9)
+            continue;
+        if (t == NULL || norm_r / i->dist > fabs(t->r[pslab.dim()]) / t->dist)
+            t = &(*i);
+    }
+    if (t == NULL) {
+        printf("Can not find translation vector.\n");
+        exit(EXIT_FAILURE);
+    }
+    // in the case of surface, translation is possible only in toward
+    // the system, and we want translation (to extend the system)
+    // toward the vacuum.
+    int sign = t->r[pslab.dim()] > 0 ? 1 : -1;
+    for (int i = 0; i < 3; ++i)
+        r[i] = (sign == tr_sign ? t->r[i] : -t->r[i]);
+
+    if (t && verbosity > -1)
+        printf("T = (% f % f % f) +/- (%g %g %g)\n",
+               r[0], r[1], r[2],
+               t->stddev[0], t->stddev[1], t->stddev[2]);
+}
+
+// bookmark atoms that are to be copied
+vector<int> bookmark_slab_atoms(dbr_aconf const& aconf, Slab const& slab,
+                                CellMethod const& cm, double epsilon)
+{
     vector<int> orig;
+    double pbcd = get_pbc(aconf, slab.dim);
     for (int i = 0; i != aconf.n; ++i) {
         dbr_real* xyz = aconf.atoms[i].xyz;
-        double pbcd = get_pbc(aconf, slab.dim);
         double dist = dist_forward(slab.x0, xyz[slab.dim], pbcd);
         if (dist < slab.delta - epsilon)
             orig.push_back(i);
@@ -605,7 +647,137 @@ void add_copy(dbr_aconf& aconf, Slab const& slab,
                 orig.push_back(i);
         }
     }
+    return orig;
+}
 
+vector<int> bookmark_one_shift_group(dbr_aconf const& aconf, double const* r,
+                                     int dim, double x0,
+                                     CellMethod const& cm, double epsilon)
+{
+    vector<int> orig;
+    double pbcd = get_pbc(aconf, dim);
+    x0 -= floor(x0 / pbcd) * pbcd;
+    double rd = r[dim];
+    for (int i = 0; i != aconf.n; ++i) {
+        dbr_real* xyz = aconf.atoms[i].xyz;
+        double dist = (rd >= 0 ? dist_forward(x0, xyz[dim], pbcd)
+                               : dist_forward(xyz[dim], x0, pbcd));
+        if (dist < fabs(rd) - epsilon)
+            orig.push_back(i);
+        // we must ensure that of every pair original-image in this area,
+        // exactly one atom is bookmarked
+        else if (dist < fabs(rd) + epsilon) {
+            dbr_real x[3] = { xyz[0]+r[0], xyz[1]+r[1], xyz[2]+r[2] };
+            dbr_atom const* img = cm.get_atom_at(x, epsilon);
+            if (!img)
+                continue;
+            double di = (rd >= 0 ? dist_forward(x0, img->xyz[dim], pbcd)
+                                 : dist_forward(img->xyz[dim], x0, pbcd));
+            if (di > fabs(rd))
+                orig.push_back(i);
+        }
+    }
+    return orig;
+}
+
+double calc_avg_coordinate(dbr_aconf const& aconf, vector<int> const& sel,
+                           int dim)
+{
+    StdDev sd;
+    double pbcd = get_pbc(aconf, dim);
+    for (vector<int>::const_iterator i = sel.begin(); i != sel.end(); ++i) {
+        double t = aconf.atoms[*i].xyz[dim];
+        if (sd.n() != 0 && fabs(t - sd.mean()) > pbcd/2.) {
+            if (t < sd.mean())
+                t += pbcd;
+            else
+                t -= pbcd;
+        }
+        sd.add_x(t);
+    }
+    printf("DEBUG: %s\n", sd.str().c_str());
+    return sd.mean();
+}
+
+void print_density(dbr_aconf const& aconf, Slab const& slab,
+                   CellMethod const& cm, gengetopt_args_info const& args)
+{
+    if (aconf.reduced_coordinates) {
+        printf("Reduced coordinates can not be used with --density option\n");
+        exit(EXIT_FAILURE);
+    }
+    int dim = slab.dim;
+    SlabInPBC pslab(aconf, slab);
+    double x0 = pslab.x0();
+    double delta = pslab.delta();
+    double pbc_area = cm.pbc()[(dim+1) % 3] * cm.pbc()[(dim+2) % 3];
+
+    if (verbosity > -1) {
+        int atom_count = 0;
+        for (int i = 0; i != aconf.n; ++i)
+            if (pslab.has(aconf.atoms[i].xyz))
+                ++atom_count;
+        double vol = pbc_area * delta;
+        printf("N / V = %d / %g = %g\n", atom_count, vol, atom_count / vol);
+    }
+
+    double epsilon = args.epsilon_arg;
+    double d = 1.0;
+    DeltaLim lim = parse_delta_lim(args);
+    if (!args.max_delta_given)
+        lim.hi = 4*d;
+    vector<bool> margin_atoms(aconf.n, false);
+    double r[3];
+
+    Slab right = { dim, x0 + delta, -d };
+    find_translation_vector(cm, SlabInPBC(aconf, right), epsilon, lim, 1, r);
+    vector<int> bright =
+                bookmark_one_shift_group(aconf, r, dim, x0+delta, cm, epsilon);
+    double r_avg = calc_avg_coordinate(aconf, bright, dim);
+    for (vector<int>::const_iterator i = bright.begin(); i != bright.end(); ++i)
+        margin_atoms[*i] = true;
+    double vol_marginr = pbc_area * fabs(r[dim]);
+    printf("right (%g) ok: %d\n", x0+delta, (int) bright.size());
+
+    Slab left = { dim, x0, d };
+    find_translation_vector(cm, SlabInPBC(aconf, left), epsilon, lim, -1, r);
+    vector<int> bleft =
+                bookmark_one_shift_group(aconf, r, dim, x0, cm, epsilon);
+    double l_avg = calc_avg_coordinate(aconf, bleft, dim);
+    for (vector<int>::const_iterator i = bleft.begin(); i != bleft.end(); ++i)
+        margin_atoms[*i] = true;
+    double vol_marginl = pbc_area * fabs(r[dim]);
+    printf("left (%g) ok: %d\n", x0, (int) bleft.size());
+
+    double pbcd = get_pbc(aconf, dim);
+    double center_to_center = dist_forward(r_avg, l_avg, pbcd);
+    if (verbosity > -1) {
+        printf("margins density: %g, %g\n", bright.size() / vol_marginr,
+                                            bleft.size() / vol_marginl);
+        printf("margin centers: %g, %g, delta=%g\n", r_avg, l_avg,
+                                                     center_to_center);
+    }
+
+    Slab center = { dim, x0 + d/2., delta - d };
+    SlabInPBC pcenter(aconf, center);
+    int center_counter = 0;
+    for (int i = 0; i != aconf.n; ++i)
+        if (pcenter.has(aconf.atoms[i].xyz) && !margin_atoms[i])
+            ++center_counter;
+    double count = center_counter + (bleft.size() + bright.size()) / 2.;
+    double vol = pbc_area * center_to_center;
+    printf("numeric density: %g\n", count / vol);
+    double reference_density = 8 / pow(4.321035, 3); // at. / A^3
+    double ref_vol = count / reference_density;
+    double extra_vol = vol - ref_vol;
+    double vacuum_width = extra_vol / pbc_area;
+    printf("equivalent of vacuum width: %g\n", vacuum_width);
+}
+
+void add_copy(dbr_aconf& aconf, Slab const& slab,
+              CellMethod const& cm, double epsilon, int N)
+{
+    vector<int> orig = bookmark_slab_atoms(aconf, slab, cm, epsilon);
     if (!orig.empty())
         resize_atoms_table(aconf, aconf.n + N * orig.size());
 
@@ -636,25 +808,10 @@ void add_by_translation(dbr_aconf& aconf, Slab const& slab,
         printf("WARNING: WIDTH in --add=WIDTH should be positive.\n");
     }
     double eps = args.epsilon_arg;
-    // find translation vector
-    vector<Trans> tt = find_trans_sym(aconf, slab, args);
-    if (tt.empty()) {
-        exit(EXIT_FAILURE);
-    }
-    // we choose the vector in direction closest to slab normal
-    Trans const* t = NULL;
-    for (vector<Trans>::const_iterator i = tt.begin(); i != tt.end(); ++i) {
-        double norm_r = fabs(i->r[slab.dim]);
-        if (norm_r < 1e-9)
-            continue;
-        if (t == NULL || norm_r / i->dist > fabs(t->r[slab.dim]) / t->dist)
-            t = &(*i);
-    }
-    double r[3] = { -t->r[0], -t->r[1], -t->r[2] };
-    if (t && verbosity > -1)
-        printf("T = (% f % f % f) +/- (%g %g %g)\n",
-               r[0], r[1], r[2],
-               t->stddev[0], t->stddev[1], t->stddev[2]);
+    double r[3];
+    find_translation_vector(CellMethod(aconf, args.min_cell_arg),
+                            SlabInPBC(aconf, slab),
+                            eps, parse_delta_lim(args), 0, r);
 
     int orig_n = aconf.n;
     // fill the added space with atoms
@@ -920,6 +1077,8 @@ int main(int argc, char **argv)
         double pbcd = get_pbc(aconf, slab.dim);
         if (verbosity > 1)
             printf("PBC[%d]=%g\n", slab.dim, pbcd);
+        if (slab.x0 < 0)
+            slab.x0 += pbcd;
         if (slab.x0 < 0) {
             fprintf(stderr,
              "The given point (%g) should be in PBC (non-negative)\n", slab.x0);
@@ -958,6 +1117,8 @@ int main(int argc, char **argv)
                 }
             }
         }
+        if (args.density_given)
+            print_density(aconf, slab, cm, args);
         if (args.delete_given)
             delete_atoms(aconf, slab, /*del_outside=*/false);
         if (args.add_vacuum_given)

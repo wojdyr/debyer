@@ -52,6 +52,9 @@ option "find-trans" F "find translation symmetries" optional
 option "merge" - "merge atoms that are closer to each other than epsilon" optional
 option "t1" - "transformation defined in the code as tranform1()" optional
 
+text "\n"
+option "density" D "calculate numeric density of the slab" optional
+
 text "\nOutput file. Default is a dry run."
 option "in-place" i "replace input file with output" optional
 option "output" o "output file" string typestr="FILENAME"  optional
