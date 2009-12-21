@@ -40,14 +40,17 @@ const char* usage_examples[] = {
 "    with z0 < z < z1 has a periodic image with",
 "    x'=x, y'=y, z'=z+delta, delta=z1-z0.",
 "    Comparisons of coordinates are done with epsilon=0.2.",
+"",
 "  dbr_extend -c10 -z41.5 -e0.2 -i file.cfg",
 "    Extend PBC box by in z direction by 10 x the value reported",
 "    in the previous try run, copy atoms to the created space,",
 "    write the configuration back to file.cfg.",
+"",
 "  dbr_extend -bz -w3 -d -i file.cfg",
 "  dbr_extend -bZ -w-3 -d -i file.cfg",
 "    (Initially, file.cfg contained a slab with surfaces normal to z axis.)",
 "    Delete surfaces (3A deep) of the slab.",
+"",
 "  dbr_extend -v -bz -w2 -a3 -o tmp2.cfg tmp1.cfg",
 "  dbr_extend -v -bZ -w-2 -a3 -o tmp3.cfg tmp2.cfg",
 "    (Initially, tmp1.cfg contained a slab with surfaces normal to z axis.)",
@@ -180,7 +183,8 @@ int get_any_atom_in_slab(dbr_aconf const& aconf, SlabInPBC const& pslab)
     return -1;
 }
 
-void merge_atoms(dbr_aconf& aconf, gengetopt_args_info const& args, bool quiet)
+// returns the number of removed atoms
+int merge_atoms(dbr_aconf& aconf, gengetopt_args_info const& args, bool quiet)
 {
     CellMethod cm(aconf, args.min_cell_arg);
     int new_n = aconf.n;
@@ -216,12 +220,13 @@ void merge_atoms(dbr_aconf& aconf, gengetopt_args_info const& args, bool quiet)
     if (!aconf.auxiliary.empty())
         aconf.auxiliary.resize(new_n);
 
+    int n_removed = aconf.n - new_n;
     if (!quiet) {
         string comment = "merging atoms, " + S(aconf.n) + " -> " + S(new_n);
         aconf.comments.insert(aconf.comments.begin(), comment);
     }
-
     aconf.n = new_n;
+    return n_removed;
 }
 
 void rotate_atoms(dbr_aconf& aconf, double angle, double axis[3])
@@ -801,6 +806,7 @@ void add_copy(dbr_aconf& aconf, Slab const& slab,
 }
 
 void add_by_translation(dbr_aconf& aconf, Slab const& slab,
+                        CellMethod const& cm,
                         gengetopt_args_info const& args)
 {
     double extra_width = args.add_arg;
@@ -809,7 +815,7 @@ void add_by_translation(dbr_aconf& aconf, Slab const& slab,
     }
     double eps = args.epsilon_arg;
     double r[3];
-    find_translation_vector(CellMethod(aconf, args.min_cell_arg),
+    find_translation_vector(cm,
                             SlabInPBC(aconf, slab),
                             eps, parse_delta_lim(args), 0, r);
 
@@ -827,20 +833,39 @@ void add_by_translation(dbr_aconf& aconf, Slab const& slab,
                                      : dist_forward(x, slab.x0, pbcd));
         if (dist_to_x0 > fabs(rd) + eps)
             continue;
-        int n = (int) (dist_to_x0 + extra_width + 2*eps) / fabs(rd);
+        int n = (int) ((dist_to_x0 + extra_width + 2*eps) / fabs(rd));
         if (n > 0) {
             cc.push_back(make_pair(i, n));
             sum += n;
         }
+    }
+    if (verbosity > 1)
+        printf("%d total copies of %d original atoms are considered.\n",
+               sum, (int) cc.size());
+
+    // if option -b is given, the outer margin is not filled
+    if (args.bound_given) {
+        int n_rej = 0;
+        for (vector<pair<int, int> >::iterator i = cc.begin();
+                i != cc.end(); ++i) {
+            double new_x = aconf.atoms[i->first].xyz[slab.dim] + i->second * rd;
+            double dist = (rd >= 0 ? dist_forward(new_x, slab.x0, pbcd)
+                                   : dist_forward(slab.x0, new_x, pbcd));
+            if (dist > extra_width) {
+                --(i->second);
+                ++n_rej;
+            }
+        }
+        sum -= n_rej;
+        if (verbosity > 1)
+            printf("%d copies rejected: in distance > %g from %c=%g.\n",
+                   n_rej, extra_width, 'x'+slab.dim, slab.x0);
     }
 
     // resize PBC and shift atoms
     add_vacuum(aconf, slab.dim, slab.x0, fabs(extra_width));
 
     // add new atoms to aconf
-    if (verbosity > 1)
-        printf("%d atom from original system will be used to add %d images.\n",
-               (int) cc.size(), sum);
     resize_atoms_table(aconf, aconf.n + sum);
     int pos = aconf.n;
     aconf.n += sum;
@@ -856,7 +881,10 @@ void add_by_translation(dbr_aconf& aconf, Slab const& slab,
 
     // remove duplicates
     wrap_to_pbc(aconf);
-    merge_atoms(aconf, args, true);
+    int n_dups = merge_atoms(aconf, args, true);
+    if (verbosity > 1)
+        printf("%d copies rejected: duplicates.\n", n_dups);
+
     if (verbosity > -1)
         printf("%d atoms were added (%d -> %d).\n", aconf.n - orig_n,
                                                     orig_n, aconf.n);
@@ -1126,7 +1154,7 @@ int main(int argc, char **argv)
         if (args.add_copy_given)
             add_copy(aconf, slab, cm, args.epsilon_arg, args.add_copy_arg);
         if (args.add_given)
-            add_by_translation(aconf, slab, args);
+            add_by_translation(aconf, slab, cm, args);
         if (args.cut_given) {
             delete_atoms(aconf, slab, /*del_outside=*/true);
             expand_pbc(aconf, slab.dim, slab.delta-pbcd);
