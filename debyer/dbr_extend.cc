@@ -79,6 +79,21 @@ struct Trans // translation vector
 };
 
 
+bool parse_n_numbers(const char* arg, int n, double* d)
+{
+    const char *start = arg;
+    char *endptr = NULL;
+
+    for (int i = 0; i != n; ++i) {
+        d[i] = strtod(start, &endptr);
+        if (endptr == start || *endptr != (i < n-1 ? ',' : '\0'))
+            return false;
+        start = endptr + 1;
+    }
+    return true;
+}
+
+
 dbr_real dist_forward(dbr_real x2, dbr_real x1, dbr_real pbc)
 {
     return x2 >= x1 ? x2 - x1 : x2 - x1 + pbc;
@@ -495,11 +510,11 @@ vector<Trans> find_trans_sym(CellMethod const& cm, SlabInPBC const& pslab,
     return tt;
 }
 
-void print_trans_sym(dbr_aconf const& aconf, Slab const& slab,
-                     gengetopt_args_info const& args)
+// returns (sorted) translation vectors T that are not T=n*T'
+vector<Trans> get_basic_trans(CellMethod const& cm, SlabInPBC const& pslab,
+                              gengetopt_args_info const& args)
 {
-    SlabInPBC pslab(aconf, slab);
-    CellMethod cm(aconf, args.min_cell_arg);
+    vector<Trans> basic;
     vector<Trans> tt = find_trans_sym(cm, pslab, args.epsilon_arg,
                                       parse_delta_lim(args));
 
@@ -529,24 +544,194 @@ void print_trans_sym(dbr_aconf const& aconf, Slab const& slab,
                 break;
             }
         }
-
-#if 0
-        // remove translations that are n * base_translation (in PBC)
-        while (n != 0) { // n == 0 means we got back to the original atom
-            dbr_real* xyz = aconf.atoms[n].xyz;
-            dbr_real x[3] = { xyz[0]+r[0], xyz[1]+r[1], xyz[2]+r[2] };
-            n = cm.find_nearest(x);
-            dd[n] = 0.;
-        }
-#endif
     }
+    for (vector<Trans>::const_iterator i = tt.begin(); i != tt.end(); ++i)
+        if (i->dist > 0) // i->dist is also a flag for duplicates
+            basic.push_back(*i);
+    return basic;
+}
+
+void print_trans_sym(dbr_aconf const& aconf, Slab const& slab,
+                     gengetopt_args_info const& args)
+{
+    SlabInPBC pslab(aconf, slab);
+    CellMethod cm(aconf, args.min_cell_arg);
+    vector<Trans> tt = get_basic_trans(cm, pslab, args);
 
     for (vector<Trans>::const_iterator i = tt.begin(); i != tt.end(); ++i) {
-        if (i->dist > 0) // i->dist is also a flag for duplicates
-            printf("T = (% f % f % f) +/- (%g %g %g)\n",
-                   i->r[0], i->r[1], i->r[2],
-                   i->stddev[0], i->stddev[1], i->stddev[2]);
+        printf("T = (% f % f % f) +/- (%.2g %.2g %.2g)  |T|=%g\n",
+               i->r[0], i->r[1], i->r[2],
+               i->stddev[0], i->stddev[1], i->stddev[2],
+               i->dist);
     }
+}
+
+// returns true if the angle is 90 +- 3 degrees
+bool is_orthogonal(vector<Trans>::const_iterator u,
+                   vector<Trans>::const_iterator v)
+{
+    double dot = u->r[0] * v->r[0] + u->r[1] * v->r[1] + u->r[2] * v->r[2];
+    double cos_angle = dot / (u->dist * v->dist);
+    return fabs(cos_angle) < cos(87*M_PI/180.);
+}
+
+double find_vector_for_cubic_cell(vector<Trans> const& tt, double eps,
+                                  const double* a[3])
+{
+    for (vector<Trans>::const_iterator i = tt.begin(); i != tt.end(); ) {
+        vector<Trans>::const_iterator begin = i;
+        for (i = begin; i != tt.end() && fabs(i->dist - begin->dist) < eps; ++i)
+            ;
+        if (verbosity > 1)
+            printf("checking for cell parameter a=%g +- %g (%d vectors)\n",
+                   begin->dist, eps, (int) (i - begin));
+        if (i - begin < 3)
+            continue;
+        // find 3 orthogonal vectors
+        for (vector<Trans>::const_iterator u = begin; u != i; ++u)
+            for (vector<Trans>::const_iterator v = u+1; v != i; ++v) {
+                if (!is_orthogonal(u, v))
+                    continue;
+                for (vector<Trans>::const_iterator w = v+1; w != i; ++w)
+                    if (is_orthogonal(u, w) && is_orthogonal(v, w)) {
+                        a[0] = u->r;
+                        a[1] = v->r;
+                        a[2] = w->r;
+                        return (u->dist + v->dist + w->dist) / 3.;
+                    }
+            }
+    }
+    return 0.;
+}
+
+void change_order_and_sign_of_vectors(const double** v, double a[][3])
+{
+    int ax_idx = 0;
+    for (int i = 1; i != 3; ++i)
+        if (fabs(v[i][0]) > fabs(v[ax_idx][0]))
+            ax_idx = i;
+    int ay_idx = (ax_idx + 1) % 3;
+    int az_idx = (ax_idx + 2) % 3;
+    if (fabs(v[az_idx][1]) > fabs(v[ay_idx][1]))
+        swap(ay_idx, az_idx);
+    for (int i = 0; i != 3; ++i) {
+        a[0][i] = v[ax_idx][i];
+        a[1][i] = v[ay_idx][i];
+        a[2][i] = v[az_idx][i];
+    }
+
+    for (int i = 0; i != 3; ++i)
+        if (a[i][0] < 0)
+            for (int j = 0; j != 3; ++j)
+                a[i][j] = -a[i][j];
+}
+
+struct AtomNewPos
+{
+    int atom_idx;
+    double xyz[3]; // in not normalized coordinates
+};
+
+void make_cubic(dbr_aconf& aconf, Slab const& slab,
+                gengetopt_args_info const& args)
+{
+    if (aconf.reduced_coordinates) {
+        printf("Reduced coordinates cannot be used with --make-cubic option\n");
+        exit(EXIT_FAILURE);
+    }
+    SlabInPBC pslab(aconf, slab);
+    double eps = args.epsilon_arg;
+    double cell_param = 0.;
+    double a[3][3];
+
+    if (args.make_cubic_arg == NULL)
+    {
+        CellMethod cm(aconf, args.min_cell_arg);
+        vector<Trans> tt = get_basic_trans(cm, pslab, args);
+        const double* v[3];
+        cell_param = find_vector_for_cubic_cell(tt, eps, v);
+        if (cell_param == 0.) {
+            printf("Cubic cell not found.\n");
+            return;
+        }
+
+        change_order_and_sign_of_vectors(v, a);
+    }
+    else {
+        bool r = parse_n_numbers(args.make_cubic_arg, 9, (double*) a);
+        if (!r) {
+            printf("Wrong argument to --make-cubic option.\n");
+            return;
+        }
+        cell_param = (dbr_len3v(a[0]) + dbr_len3v(a[1]) + dbr_len3v(a[2])) / 3.;
+    }
+
+    if (verbosity > 1) {
+        printf("Making cubic cell with a=%g and vectors:\n", cell_param);
+        for (int i = 0; i != 3; ++i)
+            printf("\t(%.9g, %.9g, %.9g)\n", a[i][0], a[i][1], a[i][2]);
+    }
+
+    // pick a reference atom
+    const dbr_real* ref_xyz = NULL;
+    for (int i = 0; i != aconf.n; ++i) {
+        if (!pslab.ok() || pslab.has(aconf.atoms[i].xyz)) {
+            ref_xyz = aconf.atoms[i].xyz;
+            break;
+        }
+    }
+    assert (ref_xyz != NULL);
+
+    // find sites of atoms in the unit cell
+    double b[3][3];
+    inverse_3x3_matrix(a, b);
+
+    vector<AtomNewPos> new_positions;
+    // shift_sd is used to calculate a correction to the reference atom
+    // position, that minimizes shifts of atoms
+    StdDev shift_sd[3];
+    for (int i = 0; i != aconf.n; ++i) {
+        if (pslab.ok() && !pslab.has(aconf.atoms[i].xyz))
+            continue;
+        AtomNewPos newpos;
+        newpos.atom_idx = i;
+        const dbr_real *ax = aconf.atoms[i].xyz;
+        const dbr_real xyz[3] = { ax[0] - ref_xyz[0],
+                                  ax[1] - ref_xyz[1],
+                                  ax[2] - ref_xyz[2] };
+        dbr_real r[3];
+        vec3_dot_matrix(xyz, b, r);
+        double normalized_pos[3];
+        for (int j = 0; j != 3; ++j) {
+            normalized_pos[j] = floor(r[j] * 4 + 0.5) / 4.;
+            double diff = (normalized_pos[j] - r[j]) * cell_param;
+            if (fabs(diff) > eps) {
+                printf("Atom %d in unexpected site (%g %g %g) -> "
+                        "(%.2f %.2f %.2f)\n",
+                        i, ax[0], ax[1], ax[2], r[0], r[1], r[2]);
+                return;
+            }
+            shift_sd[j].add_x(diff);
+        }
+        vec3_dot_matrix(normalized_pos, a, newpos.xyz);
+        for (int j = 0; j != 3; ++j)
+            newpos.xyz[j] += ref_xyz[j];
+        new_positions.push_back(newpos);
+        //// it doesn't include shift_sd:
+        //printf("Atom %d: (%g %g %g) -> (%.2f %.2f %.2f) -> (%g %g %g)\n",
+        //        i, ax[0], ax[1], ax[2], r[0], r[1], r[2],
+        //        newpos.xyz[0], newpos.xyz[1], newpos.xyz[2]);
+    }
+    if (verbosity > 1)
+      printf("Changing %d atoms, std. dev. of distortions: %.3g, %.3g, %.3g\n",
+             (int) new_positions.size(),
+             shift_sd[0].stddev(), shift_sd[1].stddev(), shift_sd[2].stddev());
+
+    // change atom coordinates
+    for (vector<AtomNewPos>::const_iterator i = new_positions.begin();
+                                               i != new_positions.end(); ++i)
+        for (int j = 0; j != 3; ++j)
+            aconf.atoms[i->atom_idx].xyz[j] = i->xyz[j] - shift_sd[j].mean();
 }
 
 // If output is false:
@@ -959,20 +1144,9 @@ bool multiply_pbc(dbr_aconf& aconf, const char* mult)
 
 bool shift_under_pbc(dbr_aconf& aconf, const char* arg)
 {
-    // parse string
-    const char *start = arg;
-    char *endptr = NULL;
     double d[3];
-    d[0] = strtod(start, &endptr);
-    if (endptr == start || *endptr != ',')
-        return false;
-    start = endptr + 1;
-    d[1] = strtod(start, &endptr);
-    if (endptr == start || *endptr != ',')
-        return false;
-    start = endptr + 1;
-    d[2] = strtod(start, &endptr);
-    if (endptr == start || *endptr != '\0')
+    bool r = parse_n_numbers(arg, 3, d);
+    if (!r)
         return false;
 
     // shift atoms
@@ -980,6 +1154,29 @@ bool shift_under_pbc(dbr_aconf& aconf, const char* arg)
         for (int j = 0; j < 3; ++j)
             aconf.atoms[i].xyz[j] += d[j];
     wrap_to_pbc(aconf);
+    return true;
+}
+
+bool resize_system(dbr_aconf& aconf, const char* arg)
+{
+    double d[3];
+    bool r = parse_n_numbers(arg, 3, d);
+    // if arg is not x,y,z it must be a filename
+    if (!r) {
+        dbr_aconf ref = read_atoms_from_file(arg, false);
+        for (int i = 0; i != 3; ++i)
+            d[i] = *get_pbc_ptr(ref, i);
+    }
+
+    for (int i = 0; i != 3; ++i) {
+        if (d[i] <= 0)
+            continue;
+        double* pp = get_pbc_ptr(aconf, i);
+        if (!aconf.reduced_coordinates)
+            for (int j = 0; j != aconf.n; ++j)
+                aconf.atoms[j].xyz[i] *= (d[i] / *pp);
+        *pp = d[i];
+    }
     return true;
 }
 
@@ -1045,7 +1242,8 @@ int main(int argc, char **argv)
     }
     if (!args.x_given && !args.y_given && !args.z_given && !args.bound_given
             && !args.multiply_given && !args.shift_given
-            && !args.find_trans_given && !args.merge_given && !args.t1_given) {
+            && !args.find_trans_given && !args.make_cubic_given
+            && !args.merge_given && !args.t1_given && !args.resize_given) {
         fprintf(stderr, "One of -x, -y, -z, -b, -N, -S, -F options must be "
                         "given (-h will show all valid options).\n");
         return EXIT_FAILURE;
@@ -1122,8 +1320,10 @@ int main(int argc, char **argv)
         CellMethod cm(aconf, args.min_cell_arg);
 
         // print min. interatomic distance
-        double min_dist = cm.find_min_distance();
-        printf("Min. interatomic distance: %g\n", min_dist);
+        if (verbosity > 1) {
+            double min_dist = cm.find_min_distance();
+            printf("Min. interatomic distance: %g\n", min_dist);
+        }
 
         // if epsilon is larger than half of cell, increase cell sizes
         if (args.epsilon_arg >= cm.min_cell_size() / 2.) {
@@ -1167,8 +1367,14 @@ int main(int argc, char **argv)
     if (args.shift_given)
         shift_under_pbc(aconf, args.shift_arg);
 
+    if (args.resize_given)
+        resize_system(aconf, args.resize_arg);
+
     if (args.find_trans_given)
         print_trans_sym(aconf, slab, args);
+
+    if (args.make_cubic_given)
+        make_cubic(aconf, slab, args);
 
     if (args.t1_given)
         transform1(aconf, args);

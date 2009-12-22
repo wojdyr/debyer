@@ -48,7 +48,9 @@ option "add" a "extend PBC by WIDTH and fill the new space using translation sym
 
 option "multiply" N "multiply configuration in x y and z" string typestr="NxNxN" optional
 option "shift" S "shift the system (all atoms) under PBC" string typestr="x,y,z" optional
+option "resize" R "resize the system, changing interatomic distances; the argument is either new size (0 means no change) or another filename" string typestr="x,y,z" optional
 option "find-trans" F "find translation symmetries" optional
+option "make-cubic" U "remove small distortions from perfect cubic lattice" string typestr="a1,a2,a3,b1,b2,b3,c1,c2,c3" optional argoptional
 option "merge" - "merge atoms that are closer to each other than epsilon" optional
 option "t1" - "transformation defined in the code as tranform1()" optional
 

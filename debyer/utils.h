@@ -90,5 +90,33 @@ inline void matrix_dot_vec3(const dbr_real mat[3][3], const dbr_real v[3],
         r[i] = mat[i][0] * v[0] + mat[i][1] * v[1] + mat[i][2] * v[2];
 }
 
+inline void vec3_dot_matrix(const dbr_real v[3], const dbr_real mat[3][3],
+                            dbr_real r[3])
+{
+    for (int i = 0; i < 3; ++i)
+        r[i] = mat[0][i] * v[0] + mat[1][i] * v[1] + mat[2][i] * v[2];
+}
+
+inline
+void inverse_3x3_matrix(const double a[][3], double b[][3])
+{
+    int i, j;
+    b[0][0] =  (a[1][1] * a[2][2] - a[1][2] * a[2][1]);
+    b[0][1] = -(a[0][1] * a[2][2] - a[0][2] * a[2][1]);
+    b[0][2] =  (a[0][1] * a[1][2] - a[0][2] * a[1][1]);
+    b[1][0] = -(a[1][0] * a[2][2] - a[1][2] * a[2][0]);
+    b[1][1] =  (a[0][0] * a[2][2] - a[0][2] * a[2][0]);
+    b[1][2] = -(a[0][0] * a[1][2] - a[0][2] * a[1][0]);
+    b[2][0] =  (a[1][0] * a[2][1] - a[1][1] * a[2][0]);
+    b[2][1] = -(a[0][0] * a[2][1] - a[0][1] * a[2][0]);
+    b[2][2] =  (a[0][0] * a[1][1] - a[0][1] * a[1][0]);
+
+    double s = 1. / (a[0][0]*b[0][0] + a[0][1]*b[1][0] + a[0][2]*b[2][0]);
+
+    for (i = 0; i < 3; ++i)
+        for (j = 0; j < 3; ++j)
+            b[i][j] *= s;
+}
+
 
 #endif // DEBYER_UTILS_H_
