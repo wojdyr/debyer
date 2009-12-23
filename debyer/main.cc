@@ -386,6 +386,8 @@ int main(int argc, char **argv)
         dbr_picker picker = prepare_picker(args, aconf.n);
 
         if (output_atoms) {
+            aconf.comments.insert(aconf.comments.begin(),
+                                  argv_as_str(argc, argv));
             if (picker.cut) {
                 // write to file only selected atoms
                 dbr_atom *all = aconf.atoms;

@@ -1204,21 +1204,6 @@ double find_extreme_coord(dbr_aconf const& aconf, int dim, bool upper)
     return v[pos] + margin;
 }
 
-string argv_as_str(int argc, char **argv)
-{
-    string s;
-    for (int i = 0; i < argc; ++i) {
-        if (i != 0)
-            s += " ";
-        // TODO
-        //if (should be quoted)
-        //    s += str('"') + argv[i] + '"';
-        //else
-            s += argv[i];
-    }
-    return s;
-}
-
 int main(int argc, char **argv)
 {
     // processing cmd line args

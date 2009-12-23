@@ -35,6 +35,26 @@ using namespace std;
     if (dbr_nid == 0) \
         cerr
 
+string argv_as_str(int argc, char **argv)
+{
+    string s;
+    for (int i = 0; i < argc; ++i) {
+        if (i != 0)
+            s += " ";
+        bool need_quote = false;
+        for (const char* c = argv[i]; *c != '\0'; ++c)
+            if (strchr("|&;<>()$`\\' \t\n*?[#~%", *c) != NULL) {
+                need_quote = true;
+                break;
+            }
+        if (need_quote)
+            s += string("\"") + argv[i] + "\"";
+        else
+            s += argv[i];
+    }
+    return s;
+}
+
 bool is_xyz_format(char const* buffer)
 {
     // find new lines
@@ -393,9 +413,6 @@ void read_atomeye(LineInput& in, dbr_aconf *aconf, bool reduced_coords)
 
 void write_comments_with_hashes(dbr_aconf const& aconf, ostream &f)
 {
-    f << "# converted by debyer\n";
-    if (!aconf.orig_filename.empty())
-        f << "# original filename: " << aconf.orig_filename << "\n";
     for (vector<string>::const_iterator i = aconf.comments.begin();
             i != aconf.comments.end(); ++i)
         f << "# " << *i << "\n";

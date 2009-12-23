@@ -178,6 +178,7 @@ void dbr_copy_atom(dbr_aconf& aconf, int source_pos, int dest_pos)
         aconf.auxiliary[dest_pos] = aconf.auxiliary[source_pos];
 }
 
+std::string argv_as_str(int argc, char **argv);
 
 
 #endif /* __cplusplus */
