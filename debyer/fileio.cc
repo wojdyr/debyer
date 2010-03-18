@@ -907,14 +907,14 @@ void write_pdb(dbr_aconf const& aconf, string const& filename)
         return;
     if (dbr_verbosity >= 0)
         mcerr << "Writing atoms to PBC data file: " << filename << endl;
-    ofstream f(filename.c_str(), ios::out|ios::binary);
-    if (!f) {
+    FILE *f = fopen(filename.c_str(), "wb");
+    if (f == NULL) {
         mcerr << "Error. Can't open file " << filename << " for writing.\n";
         return;
     }
 
-
-    f << "HEADER    converted by debyer; " << aconf.n << " atoms\n";
+    fprintf(f,"HEADER    converted by debyer; %10d atoms"
+              "                                 \n", aconf.n);
 
     // "The CRYST1 record presents the unit cell parameters, space group,
     // and Z value. If the structure was not determined by crystallographic
@@ -934,12 +934,12 @@ void write_pdb(dbr_aconf const& aconf, string const& filename)
     //
     //   here CRYST1 is used for PBC, space group is set as P1
     dbr_pbc_prop p = get_pbc_properties(aconf.pbc);
-    f << "CRYST1" << fixed;
-    for (int i = 0; i < 3; ++i)
-        f << setw(9) << setprecision(3) << p.lengths[i];
-    for (int i = 0; i < 3; ++i)
-        f << setw(7) << setprecision(2) << acos(p.cosines[i]) * 180 / M_PI;
-    f << " P 1       " << "   1\n";
+    fprintf(f, "CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f"
+               " P 1          1           \n",
+               p.lengths[0], p.lengths[1], p.lengths[2],
+               acos(p.cosines[0]) * 180 / M_PI,
+               acos(p.cosines[1]) * 180 / M_PI,
+               acos(p.cosines[2]) * 180 / M_PI);
 
     // "The ATOM records present the atomic coordinates for standard residues."
     // COLUMNS        DATA TYPE       FIELD         DEFINITION
@@ -961,14 +961,15 @@ void write_pdb(dbr_aconf const& aconf, string const& filename)
     // 77-78    LString(2)     element     Element symbol, right-justified.
     // 79-80    LString(2)     charge      Charge on the atom.
     for (int i = 0; i < aconf.n; ++i) {
-        f << "ATOM  " << setw(5) << i+1
-            << " " << setw(3) << left << aconf.atoms[i].name
-            <<  "          1    " << right;
-        for (int j = 0; j < 3; ++j)
-            f  << setw(8) << setprecision(3) << fixed << aconf.atoms[i].xyz[j];
-        f << "\n";
+        const dbr_atom& atom = aconf.atoms[i];
+        fprintf(f, "ATOM  %5d %-3s          1    %8.3f%8.3f%8.3f"
+                   "                      %2s  \n",
+                i+1, atom.name, atom.xyz[0], atom.xyz[1], atom.xyz[2],
+                atom.name);
     }
-    f.close();
+    fprintf(f, "END                                                        "
+           "                     \n");
+    fclose(f);
 }
 
 void write_xyza(dbr_aconf const& aconf, string const& filename)
