@@ -13,7 +13,7 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-// $Id: $
+// $Id$
 
 #ifndef DEBYER_CELLS_H_
 #define DEBYER_CELLS_H_

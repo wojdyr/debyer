@@ -22,9 +22,9 @@ option "verbose" v "increase verbosity level (can be used 3x)" optional multiple
 option "min-cell" s "(internal) size (lower limit) of cells used for searching atoms [A]" float default="2.0" optional
 option "reduced" r "use reduced coordinates (between 0 and 1)" optional
 
-text "\nMost of actions requires a defined `slab'."
-text "\nThe slab is constructe by a bounding plane (must be normal to one of"
-text "\nthe x, y, z axes) and width."
+text "\nMost of the actions in this program requires a defined `slab'."
+text "\nThe slab is constructed by a bounding plane (which must be normal"
+text "\nto one of the x, y, z axes) and width."
 text ""
 option "x" x "defines a plane x=FLOAT" float optional
 option "y" y "defines a plane y=FLOAT" float optional
@@ -39,7 +39,7 @@ option "min-delta" m "min length of translation vector" float optional
 option "max-delta" M "max length of translation vector" float optional
 option "periodic" p "require translational symmetry of all the system" optional
 
-text "\nActions to be performed on configuration file."
+text "\nActions to be performed on atomic configuration file."
 option "delete" d "delete atoms in the slab" optional
 option "cut" C "cut out the slab and change PBC accordingly" optional
 option "add-vacuum" u "add vacuum 'slab'; extends PBC" optional
@@ -54,12 +54,12 @@ option "make-cubic" U "remove small distortions from perfect cubic lattice" stri
 option "merge" - "merge atoms that are closer to each other than epsilon" optional
 option "t1" - "transformation defined in the code as tranform1()" optional
 
-text "\n"
+text ""
 option "density" D "calculate numeric density of the slab" optional
 
 text "\nOutput file. Default is a dry run."
 option "in-place" i "replace input file with output" optional
 option "output" o "output file" string typestr="FILENAME"  optional
 
-text "\nFor usage examples, invoke the progam with --show-examples option.\n"
+text "\nFor usage examples, invoke the program with --show-examples option.\n"
 

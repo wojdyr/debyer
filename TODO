@@ -16,3 +16,4 @@ optimize (id -> pattern) phase (FFT)
 
 calculate automatically ro from data by fitting 4*pi*ro*x^2 to RDF
 
+write a separate tool to convert files (dbr_convert)

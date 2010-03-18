@@ -1,6 +1,7 @@
-// dbr_extend -- tool to extend a system (configuration for atomistic
-// simulation) in x, y or z direction by increasing PBC and filling the
-// new space with periodic structure, a copy of the structure around it.
+// dbr_extend -- a tool originally written to extend a system (configuration
+// for atomistic simulation) in x, y or z direction by increasing PBC and
+// filling the new space with periodic structure, a copy of the structure
+// around it. Now it can also do several other things.
 // Works only with orthorhombic PBC.
 
 // Copyright (C) 2009 Marcin Wojdyr
@@ -54,7 +55,22 @@ const char* usage_examples[] = {
 "  dbr_extend -v -bz -w2 -a3 -o tmp2.cfg tmp1.cfg",
 "  dbr_extend -v -bZ -w-2 -a3 -o tmp3.cfg tmp2.cfg",
 "    (Initially, tmp1.cfg contained a slab with surfaces normal to z axis.)",
-"    Extend the slab in z direction, 3A from each surface."
+"    Extend the slab in z direction, 3A from each surface.",
+"",
+"  dbr_extend -S0,0,0.5 -r -i file.cfg",
+"    Shift object under PBC, by half of the PBC box, in the z direction,",
+"    write the configuration back to file.cfg.",
+"",
+"  dbr_extend -N1x2x1 -o out.cfg file.cfg",
+"    Duplicate the system in the y direction (create a supercell).",
+"",
+"  dbr_extend -z-7  -w12. --density file.cfg",
+"    Calculate (in a smart way) numeric density of the slab defined by planes",
+"    z=-7 and z=5 (its in PBC, so it's continuus region that includes z=0).",
+"    Designed to calculate density of GBs in bicrystal geometry.",
+"",
+"  dbr_extend --resize=ref.cfg -o output.cfg input.cfg",
+"    Resize the PBC size, make it the same as the size of the file ref.cfg."
 };
 
 
@@ -809,7 +825,7 @@ void find_translation_vector(CellMethod const& cm,
     for (int i = 0; i < 3; ++i)
         r[i] = (sign == tr_sign ? t->r[i] : -t->r[i]);
 
-    if (t && verbosity > -1)
+    if (t && verbosity > 0)
         printf("T = (% f % f % f) +/- (%g %g %g)\n",
                r[0], r[1], r[2],
                t->stddev[0], t->stddev[1], t->stddev[2]);
@@ -885,7 +901,7 @@ double calc_avg_coordinate(dbr_aconf const& aconf, vector<int> const& sel,
         }
         sd.add_x(t);
     }
-    printf("DEBUG: %s\n", sd.str().c_str());
+    //printf("DEBUG: %s\n", sd.str().c_str());
     return sd.mean();
 }
 
@@ -927,7 +943,6 @@ void print_density(dbr_aconf const& aconf, Slab const& slab,
     for (vector<int>::const_iterator i = bright.begin(); i != bright.end(); ++i)
         margin_atoms[*i] = true;
     double vol_marginr = pbc_area * fabs(r[dim]);
-    printf("right (%g) ok: %d\n", x0+delta, (int) bright.size());
 
     Slab left = { dim, x0, d };
     find_translation_vector(cm, SlabInPBC(aconf, left), epsilon, lim, -1, r);
@@ -937,15 +952,21 @@ void print_density(dbr_aconf const& aconf, Slab const& slab,
     for (vector<int>::const_iterator i = bleft.begin(); i != bleft.end(); ++i)
         margin_atoms[*i] = true;
     double vol_marginl = pbc_area * fabs(r[dim]);
-    printf("left (%g) ok: %d\n", x0, (int) bleft.size());
 
     double pbcd = get_pbc(aconf, dim);
     double center_to_center = dist_forward(r_avg, l_avg, pbcd);
-    if (verbosity > -1) {
-        printf("margins density: %g, %g\n", bright.size() / vol_marginr,
-                                            bleft.size() / vol_marginl);
+    if (verbosity > 0) {
+        printf("-- Margins of sizes defined by translation vectors T are used"
+                " to --\n");
+        printf("-- make density independent from small changes of slab size."
+                "     --\n");
+        printf("right margin at %g has %d atoms\n", x0+delta,
+                                                    (int) bright.size());
+        printf("left margin at %g has %d atoms\n", x0, (int) bleft.size());
         printf("margin centers: %g, %g, delta=%g\n", r_avg, l_avg,
                                                      center_to_center);
+        printf("margins density: %g, %g\n", bright.size() / vol_marginr,
+                                            bleft.size() / vol_marginl);
     }
 
     Slab center = { dim, x0 + d/2., delta - d };
@@ -957,11 +978,13 @@ void print_density(dbr_aconf const& aconf, Slab const& slab,
     double count = center_counter + (bleft.size() + bright.size()) / 2.;
     double vol = pbc_area * center_to_center;
     printf("numeric density: %g\n", count / vol);
+#if 0
     double reference_density = 8 / pow(4.321035, 3); // at. / A^3
     double ref_vol = count / reference_density;
     double extra_vol = vol - ref_vol;
     double vacuum_width = extra_vol / pbc_area;
     printf("equivalent of vacuum width: %g\n", vacuum_width);
+#endif
 }
 
 void add_copy(dbr_aconf& aconf, Slab const& slab,
@@ -1346,8 +1369,14 @@ int main(int argc, char **argv)
         }
     }
 
-    if (args.multiply_given)
-        multiply_pbc(aconf, args.multiply_arg);
+    if (args.multiply_given) {
+        bool r = multiply_pbc(aconf, args.multiply_arg);
+        if (!r) {
+            fprintf(stderr,
+                    "error parsing -N arguments, expected e.g. -N2x1x1\n");
+            return EXIT_FAILURE;
+        }
+    }
 
     if (args.shift_given)
         shift_under_pbc(aconf, args.shift_arg);

@@ -12,7 +12,7 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-// $Id: $
+// $Id$
 
 #include <cstdio>
 #include <cstring>
@@ -150,7 +150,7 @@ int main(int argc, char **argv)
         for (int j = 0; j != i; ++j)
             bond_stats[i][j] = bond_stats[j][i];
 
-#if 1
+#if 0
     // GB statistics
     double gb_area = aconf.pbc.v00 * aconf.pbc.v11;
     printf("\nGB area: %g", gb_area);
@@ -197,7 +197,6 @@ int main(int argc, char **argv)
                 }
             }
         }
-
     }
     printf("\nbond angle statistics: # angles, avg angle, std. dev.\n");
     printf("b.a.s. for cn=4  %8d  %.2f   %.3g\n",
@@ -206,7 +205,6 @@ int main(int argc, char **argv)
             all_angles.n(), all_angles.mean(), all_angles.stddev());
     //for (size_t i = 0; i != cn4_histogram.size(); ++i)
     //    printf("%g: %d\n", 1.0 * i, cn4_histogram[i]);
-
 }
 
 
