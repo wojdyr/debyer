@@ -37,7 +37,7 @@ const char* usage[] = {
 "  -m          Convert multiple files. Output files have only file extension",
 "              changed.",
 "",
-"Supported format names: atomeye, dlpoly, lammps, xyz, xyza.",
+"Supported format names: atomeye, dlpoly, lammps, pdb, xyz, xyza.",
 "Compressed files (.gz, .bz2) can be read, but not written."
 };
 

@@ -1,7 +1,7 @@
 
-/// utility to calculate coordination numbers of atoms,
-/// so-called ring distribution and other things
-/// in SiC structure
+/// dbr_sic - utility to calculate coordination numbers of atoms,
+/// so-called ring distribution and other features of zinc-blende structure.
+/// Named 'sic' because it was used to study SiC structure.
 
 #include <vector>
 #include <utility>
