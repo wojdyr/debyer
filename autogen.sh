@@ -1,5 +1,5 @@
 #!/bin/sh
 
 # keep it simple
-autoreconf -iv
+autoreconf -iv && \
 ./configure "$@"

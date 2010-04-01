@@ -7,7 +7,7 @@ BUILT_SOURCES = extend_cmd.c cmdline.c
 bin_PROGRAMS = debyer dbr_conv dbr_extend dbr_bonds sic_analysis dbr_symmetry
 
 # programs that will likely be deleted in future
-noinst_PROGRAMS = sic_orient dbr_volume dbr_diffus
+noinst_PROGRAMS = dbr_volume dbr_diffus
 
 libdebyer_a_SOURCES = debyer.c lineio.cc fileio.cc atomtables.c \
  		      debyer.h lineio.h fileio.h  iloops.h atomtables.h
@@ -17,9 +17,6 @@ debyer_LDADD = libdebyer.a
 
 sic_analysis_SOURCES = sic_analysis.cc
 sic_analysis_LDADD = libdebyer.a
-
-sic_orient_SOURCES = sic_orient.cc utils.h
-sic_orient_LDADD = libdebyer.a
 
 dbr_diffus_SOURCES = dbr_diffus.cc utils.h
 dbr_diffus_LDADD = libdebyer.a
