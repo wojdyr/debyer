@@ -267,10 +267,12 @@ void rotate_atoms(dbr_aconf& aconf, double angle, double axis[3])
     rodrigues(angle, axis, rot);
     for (int i = 0; i != aconf.n; ++i) {
         dbr_real* x = aconf.atoms[i].xyz;
+        // x = rot . x
         dbr_real r[3];
-        matrix_dot_vec3(rot, x, r);
-        for (int i = 0; i < 3; ++i)
-            x[i] = r[i];
+        for (int j = 0; j < 3; ++j)
+            r[j] = rot[j][0] * x[0] + rot[j][1] * x[1] + rot[j][2] * x[2];
+        for (int j = 0; j < 3; ++j)
+            x[j] = r[j];
     }
 }
 
@@ -716,8 +718,11 @@ void make_cubic(dbr_aconf& aconf, Slab const& slab,
         const dbr_real xyz[3] = { ax[0] - ref_xyz[0],
                                   ax[1] - ref_xyz[1],
                                   ax[2] - ref_xyz[2] };
-        dbr_real r[3];
-        vec3_dot_matrix(xyz, b, r);
+        // r = xyz . b
+        double r[3];
+        for (int j = 0; j != 3; ++j)
+            r[j] = b[0][j] * xyz[0] + b[1][j] * xyz[1] + b[2][j] * xyz[2];
+
         double normalized_pos[3];
         for (int j = 0; j != 3; ++j) {
             normalized_pos[j] = floor(r[j] * 4 + 0.5) / 4.;
@@ -730,9 +735,11 @@ void make_cubic(dbr_aconf& aconf, Slab const& slab,
             }
             shift_sd[j].add_x(diff);
         }
-        vec3_dot_matrix(normalized_pos, a, newpos.xyz);
+        // newpos.xyz = ref_xyz + normalized_pos . a
         for (int j = 0; j != 3; ++j)
-            newpos.xyz[j] += ref_xyz[j];
+            newpos.xyz[j] = ref_xyz[j] + a[0][j] * normalized_pos[0] +
+                a[1][j] * normalized_pos[1] + a[2][j] * normalized_pos[2];
+
         new_positions.push_back(newpos);
         //// it doesn't include shift_sd:
         //printf("Atom %d: (%g %g %g) -> (%.2f %.2f %.2f) -> (%g %g %g)\n",
@@ -1187,7 +1194,7 @@ bool resize_system(dbr_aconf& aconf, const char* arg)
     bool r = parse_n_numbers(arg, 3, d);
     // if arg is not x,y,z it must be a filename
     if (!r) {
-        dbr_aconf ref = read_atoms_from_file(arg, false);
+        dbr_aconf ref = read_atoms_from_file(arg, false, "");
         for (int i = 0; i != 3; ++i)
             d[i] = *get_pbc_ptr(ref, i);
     }
@@ -1275,7 +1282,7 @@ int main(int argc, char **argv)
 
     // reading configuration file
     bool reduced_coords = args.reduced_given;
-    dbr_aconf aconf = read_atoms_from_file(args.inputs[0], reduced_coords);
+    dbr_aconf aconf = read_atoms_from_file(args.inputs[0], reduced_coords, "");
 
     Slab slab;
     slab.dim = -1;
@@ -1399,9 +1406,9 @@ int main(int argc, char **argv)
 
     aconf.comments.insert(aconf.comments.begin(), argv_as_str(argc, argv));
     if (args.in_place_given)
-        write_file_with_atoms(aconf, aconf.orig_filename);
+        write_file_with_atoms(aconf, aconf.orig_filename, "");
     else if (args.output_given)
-        write_file_with_atoms(aconf, args.output_arg);
+        write_file_with_atoms(aconf, args.output_arg, "");
 
     return EXIT_SUCCESS;
 }

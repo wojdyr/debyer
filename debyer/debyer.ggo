@@ -34,7 +34,6 @@ text " (if FILENAME is not given, it will be generated based on the input filena
 option "write-xyz" - "XMOL .xyz file" string typestr="FILENAME" optional argoptional
 option "write-cfg" - "AtomEye extended .cfg file" string typestr="FILENAME" optional argoptional
 option "write-dlpoly" - "DL_POLY CONFIG file" string typestr="FILENAME" optional argoptional
-option "write-dlpoly-s" - "same, but sort atoms using symbols " string typestr="FILENAME" optional argoptional
 option "write-lammps-data" - "LAMMPS data file" string typestr="FILENAME" optional argoptional
 option "write-pdb" - "PDB file" string typestr="FILENAME" optional argoptional
 option "write-xyza" - "TSV format: x y z atom" string typestr="FILENAME" optional argoptional

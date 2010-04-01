@@ -319,7 +319,7 @@ void check_symmetry(const char *filename)
 {
     // used to compare coordinates of real and perfect atom images
     const dbr_real epsilon = 1e-2;
-    dbr_aconf aconf = read_atoms_from_file(filename, true);
+    dbr_aconf aconf = read_atoms_from_file(filename, true, "");
     //normalize_coordinates(aconf.n, aconf.atoms);
     assert_coordinates_normalized(aconf);
     dbr_atom *coords = aconf.atoms;
@@ -683,7 +683,7 @@ void find_lowest_energy(char axis, int nparts,
     int dir = axis2dir(axis);
     int dir2 = axis2 ? axis2dir(axis2) : -1;
 
-    dbr_aconf aconf = read_atoms_from_file(input_file, true);
+    dbr_aconf aconf = read_atoms_from_file(input_file, true, "");
     assert_coordinates_normalized(aconf);
     dbr_atom *coords = aconf.atoms;
     //normalize_coordinates(n, coords);
@@ -824,7 +824,7 @@ void find_lowest_energy(char axis, int nparts,
         //check_for_dups(aconf, min_dist);
         print_stoichiometry_info(get_stoichiometry(aconf));
         //print_stoichiometry_info(get_stoichiometry_of(aconf, sel2));
-        write_file_with_atoms(aconf, output_file);
+        write_file_with_atoms(aconf, output_file, "");
     }
 }
 

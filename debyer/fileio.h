@@ -95,8 +95,7 @@ void write_atoms_to_atomeye_file(dbr_aconf const& aconf,
                                  std::string const& filename);
 /// write atomistic configuration aconf to file in DL_POLY format
 /// if sorted is true, atoms will be sorted using symbol strings
-void write_dlpoly_file(dbr_aconf const& aconf,
-                       std::string const& filename, bool sorted);
+void write_dlpoly_file(dbr_aconf const& aconf, std::string const& filename);
 /// write atomistic configuration aconf to file in LAMMPS input format
 void write_lammps_data(dbr_aconf const& aconf, std::string const& filename);
 
@@ -107,11 +106,13 @@ void write_pdb(dbr_aconf const& aconf, std::string const& filename);
 /// x y z atom-symbol
 void write_xyza(dbr_aconf const& aconf, std::string const& filename);
 
-void write_file_with_atoms(dbr_aconf const& aconf, std::string const& filename);
+void write_file_with_atoms(dbr_aconf const& aconf, std::string const& filename,
+                           std::string const& format);
 
 // if reduced_coords is true, store reduced coordinates in <0,1) range 
 // (relative to PBC box). Not all reading/writing functions respect it.
-dbr_aconf read_atoms_from_file(LineInput &in, bool reduced_coords);
+dbr_aconf read_atoms_from_file(LineInput &in, bool reduced_coords,
+                               std::string const& format);
 
 class SimpleLineInput : public LineInput
 {
@@ -120,10 +121,11 @@ public:
 };
 
 inline
-dbr_aconf read_atoms_from_file(const char* filename, bool reduced_coords)
+dbr_aconf read_atoms_from_file(const char* filename, bool reduced_coords,
+                               std::string const& format)
 {
     SimpleLineInput lineinp(filename);
-    return read_atoms_from_file(lineinp, reduced_coords);
+    return read_atoms_from_file(lineinp, reduced_coords, format);
 }
 
 inline

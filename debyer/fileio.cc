@@ -66,7 +66,8 @@ bool is_xyz_format(char const* buffer)
             return false;
     }
     char* endptr = 0;
-    strtol(buffer, &endptr, 10);
+    int dummy_int = strtol(buffer, &endptr, 10);
+    dummy_int; // unused
     while (isspace(*endptr))
         ++endptr;
     if (endptr < e[0])
@@ -79,11 +80,11 @@ bool is_xyz_format(char const* buffer)
             return false;
         while (isalnum(*ptr)) //atom name
             ++ptr;
-        strtod(ptr, &endptr); //x
+        double dummy = strtod(ptr, &endptr); //x
         ptr = endptr;
-        strtod(ptr, &endptr); //y
+        dummy = strtod(ptr, &endptr); //y
         ptr = endptr;
-        strtod(ptr, &endptr); //z
+        dummy = strtod(ptr, &endptr); //z
         ptr = endptr;
         if (ptr > e[i])
             return false;
@@ -206,7 +207,44 @@ static bool endswith(string const& s, char const* e)
     return slen >= elen && strcmp(s.c_str() + slen - elen, e) == 0;
 }
 
-dbr_aconf read_atoms_from_file(LineInput &in, bool reduced_coords)
+string detect_input_format(LineInput &in)
+{
+    char const* cfg_magic = "Number of particles =";
+    if (!strncmp(in.get_buffer(), cfg_magic, strlen(cfg_magic))) {
+        if (dbr_verbosity > 0)
+            mcerr << "Detected AtomEye CFG format" << endl;
+        return "atomeye";
+    }
+    else if (endswith(in.get_orig_filename(), "CONFIG")
+             || endswith(in.get_orig_filename(), "REVCON")) {
+        if (dbr_verbosity > 0)
+            mcerr << "DL_POLY CONFIG format" << endl;
+        return "dlpoly";
+    }
+    else if (endswith(in.get_orig_filename(), ".lammps")
+             || endswith(in.get_orig_filename(), ".lmps")) {
+        if (dbr_verbosity > 0)
+            mcerr << "LAMMPS data input format" << endl;
+        return "lammps";
+    }
+    else if (is_xyz_format(in.get_buffer())) {
+        if (dbr_verbosity > 0)
+            mcerr << "Detected XMol XYZ format" << endl;
+        return "xyz";
+    }
+    else if (is_plain_format(in.get_buffer())) {
+        if (dbr_verbosity > 0)
+            mcerr << "Detected plain format with atom coordinates" << endl;
+        return "xyza";
+    }
+    else {
+        mcerr << "Error. Unknown format of input file" << endl;
+        dbr_abort(EXIT_FAILURE);
+    }
+}
+
+dbr_aconf read_atoms_from_file(LineInput &in, bool reduced_coords,
+                               string const& format)
 {
     dbr_aconf aconf;
     // initialize dbr_aconf
@@ -217,38 +255,19 @@ dbr_aconf read_atoms_from_file(LineInput &in, bool reduced_coords)
     aconf.pbc.v10 = aconf.pbc.v11 = aconf.pbc.v12 = 0.;
     aconf.pbc.v20 = aconf.pbc.v21 = aconf.pbc.v22 = 0.;
 
-    char const* cfg_magic = "Number of particles =";
-    if (!strncmp(in.get_buffer(), cfg_magic, strlen(cfg_magic))) {
-        if (dbr_verbosity > 0)
-            mcerr << "Detected AtomEye CFG format" << endl;
+    string fmt = format.empty() ? detect_input_format(in) : format;
+
+    if (fmt == "atomeye")
         read_atomeye(in, &aconf, reduced_coords);
-    }
-    else if (endswith(in.get_orig_filename(), "CONFIG")
-             || endswith(in.get_orig_filename(), "REVCON")) {
-        if (dbr_verbosity > 0)
-            mcerr << "DL_POLY CONFIG format" << endl;
+    else if (fmt == "dlpoly")
         read_dlpoly_config(in, &aconf);
-    }
-    else if (endswith(in.get_orig_filename(), ".lammps")
-             || endswith(in.get_orig_filename(), ".lmps")) {
-        if (dbr_verbosity > 0)
-            mcerr << "LAMMPS data input format" << endl;
+    else if (fmt == "lammps")
         read_lammps_data(in, &aconf, reduced_coords);
-    }
-    else if (is_xyz_format(in.get_buffer())) {
-        if (dbr_verbosity > 0)
-            mcerr << "Detected XMol XYZ format" << endl;
+    else if (fmt == "xyz")
         read_xyz(in, &aconf);
-    }
-    else if (is_plain_format(in.get_buffer())) {
-        if (dbr_verbosity > 0)
-            mcerr << "Detected plain format with atom coordinates" << endl;
+    else if (fmt == "xyza")
         read_plain(in, &aconf);
-    }
-    else {
-        mcerr << "Error. Unknown format of input file" << endl;
-        dbr_abort(EXIT_FAILURE);
-    }
+
     if (dbr_verbosity > 0)
         mcerr << "Elapsed " << dbr_get_elapsed() << " s. Atoms were read."
             << endl;
@@ -256,21 +275,46 @@ dbr_aconf read_atoms_from_file(LineInput &in, bool reduced_coords)
     return aconf;
 }
 
-void write_file_with_atoms(dbr_aconf const& aconf, string const& filename)
+string get_format_from_filename(string const& filename)
 {
     if (endswith(filename, ".cfg"))
-        write_atoms_to_atomeye_file(aconf, filename);
+        return "cfg";
     else if (endswith(filename, ".lammps") || endswith(filename, ".lmps"))
-        write_lammps_data(aconf, filename);
+        return "lammps";
     else if (endswith(filename, ".xyz"))
-        write_atoms_to_xyz_file(aconf, filename);
+        return "xyz";
+    else if (endswith(filename, ".xyza"))
+        return "xyza";
     else if (endswith(filename, ".pdb"))
-        write_pdb(aconf, filename);
+        return "pdb";
+    else if (endswith(filename, "CONFIG") || endswith(filename, "REVCON"))
+        return "dlpoly";
     else {
         mcerr << "Can't guess filetype of atoms output file from filename"
             << endl;
         dbr_abort(EXIT_FAILURE);
     }
+}
+
+void write_file_with_atoms(dbr_aconf const& aconf, string const& filename,
+                           string const& format)
+{
+    string fmt = format.empty() ? get_format_from_filename(filename) : format;
+
+    if (fmt == "xyz")
+        write_atoms_to_xyz_file(aconf, filename);
+    else if (fmt == "atomeye")
+        write_atoms_to_atomeye_file(aconf, filename);
+    else if (fmt == "dlpoly")
+        write_dlpoly_file(aconf, filename);
+    else if (fmt == "lammps")
+        write_lammps_data(aconf, filename);
+    else if (fmt == "pdb")
+        write_pdb(aconf, filename);
+    else if (fmt == "xyza")
+        write_xyza(aconf, filename);
+    else
+        assert(!"Unknown format");
 }
 
 //=============   AtomEye file reading and writing    ==================
@@ -615,19 +659,7 @@ map<string,int> get_symbol_map(dbr_aconf const& aconf)
     return m;
 }
 
-template<typename T1, typename T2>
-vector<T1> get_sorted_keys(map<T1,T2> const& m)
-{
-    vector<T1> keys;
-    for (typename map<T1, T2>::const_iterator i = m.begin(); i != m.end(); ++i)
-        keys.push_back(i->first);
-    sort(keys.begin(), keys.end());
-    return keys;
-}
-
-
-void write_dlpoly_file(dbr_aconf const& aconf,
-                       string const& filename, bool sorted)
+void write_dlpoly_file(dbr_aconf const& aconf, string const& filename)
 {
     if (dbr_nid != 0)
         return;
@@ -657,31 +689,11 @@ void write_dlpoly_file(dbr_aconf const& aconf,
         fprintf(f, "%20.10f%20.10f%20.10f\n", pbc.v10, pbc.v11, pbc.v12);
         fprintf(f, "%20.10f%20.10f%20.10f\n", pbc.v20, pbc.v21, pbc.v22);
     }
-    if (sorted) {
-        map<string,int> m = get_symbol_map(aconf);
-        vector<string> keys = get_sorted_keys(m);
-        mcerr << "Atoms in " << filename << " are in order:";
-        for (vector<string>::const_iterator k = keys.begin();
-                                                        k != keys.end(); ++k) {
-            mcerr << "  " << *k << ": " << m[*k];
-            //it may be inefficient for many atom species
-            for (int i = 0; i < aconf.n; ++i) {
-                dbr_atom const& a = aconf.atoms[i];
-                if (strcmp(k->c_str(), a.name) == 0) {
-                    fprintf(f, "%s\n", a.name);
-                    fprintf(f, "%20.8f%20.8f%20.8f\n", a.xyz[0], a.xyz[1],
-                                                                a.xyz[2]);
-                }
-            }
-        }
-        mcerr << endl;
+    for (int i = 0; i < aconf.n; ++i) {
+        dbr_atom const& a = aconf.atoms[i];
+        fprintf(f, "%s\n", a.name);
+        fprintf(f, "%20.8f%20.8f%20.8f\n", a.xyz[0], a.xyz[1], a.xyz[2]);
     }
-    else
-        for (int i = 0; i < aconf.n; ++i) {
-            dbr_atom const& a = aconf.atoms[i];
-            fprintf(f, "%s\n", a.name);
-            fprintf(f, "%20.8f%20.8f%20.8f\n", a.xyz[0], a.xyz[1], a.xyz[2]);
-        }
     fclose(f);
 }
 
@@ -872,7 +884,11 @@ void write_lammps_data(dbr_aconf const& aconf, string const& filename)
     f << "#atom_style      atomic\n";
     f << "#read_data       " << filename << "\n";
     map<string,int> m = get_symbol_map(aconf);
-    vector<string> keys = get_sorted_keys(m);
+    vector<string> keys;
+    for (map<string,int>::const_iterator i = m.begin(); i != m.end(); ++i)
+        keys.push_back(i->first);
+    sort(keys.begin(), keys.end());
+
     for (size_t i = 0; i != keys.size(); ++i) {
         const t_pse *pse = find_in_pse(keys[i].c_str());
         f << "#mass            " << i+1 << " ";
@@ -1006,7 +1022,7 @@ int read_atoms_c(const char* filename, dbr_atom **atoms, dbr_pbc *pbc,
         mcerr << in.get_error();
         dbr_abort(EXIT_FAILURE);
     }
-    dbr_aconf aconf = read_atoms_from_file(in, (bool)reduced);
+    dbr_aconf aconf = read_atoms_from_file(in, (bool)reduced, "");
     *atoms = aconf.atoms;
     *pbc = aconf.pbc;
     return aconf.n;

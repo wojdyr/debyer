@@ -427,7 +427,7 @@ int main(int argc, char **argv)
     }
 
     // read atoms
-    dbr_aconf aconf = read_atoms_from_file(in, false);
+    dbr_aconf aconf = read_atoms_from_file(in, false, "");
     dbr_pbc_prop pbc_prop = get_pbc_properties(aconf.pbc);
     cerr << "Numeric density: " << aconf.n / pbc_prop.volume << endl;
 

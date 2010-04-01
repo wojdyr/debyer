@@ -36,7 +36,7 @@ int main(int argc, char **argv)
         return -1;
     }
     bool reduced_coords = false;
-    dbr_aconf aconf = read_atoms_from_file(argv[1], reduced_coords);
+    dbr_aconf aconf = read_atoms_from_file(argv[1], reduced_coords, "");
 
 
     // check PBC

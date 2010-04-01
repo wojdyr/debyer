@@ -4,8 +4,10 @@ noinst_LIBRARIES = libdebyer.a
 
 BUILT_SOURCES = extend_cmd.c cmdline.c
 
-bin_PROGRAMS = debyer sic_analysis sic_orient dbr_diffus dbr_volume \
-	       dbr_symmetry dbr_extend dbr_bonds
+bin_PROGRAMS = debyer dbr_conv dbr_extend dbr_bonds sic_analysis dbr_symmetry
+
+# programs that will likely be deleted in future
+noinst_PROGRAMS = sic_orient dbr_volume dbr_diffus
 
 libdebyer_a_SOURCES = debyer.c lineio.cc fileio.cc atomtables.c \
  		      debyer.h lineio.h fileio.h  iloops.h atomtables.h
@@ -34,6 +36,8 @@ dbr_extend_LDADD = libdebyer.a
 dbr_bonds_SOURCES = dbr_bonds.cc cells.cc cells.h
 dbr_bonds_LDADD = libdebyer.a
 
+dbr_conv_SOURCES = conv.cc
+dbr_conv_LDADD = libdebyer.a
 
 cmdline.c: debyer.ggo
 	gengetopt -i debyer.ggo

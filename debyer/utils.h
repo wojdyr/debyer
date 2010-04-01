@@ -60,14 +60,14 @@ inline std::string S(T k) {
     return static_cast<std::ostringstream&>(std::ostringstream() << k).str();
 }
 
-inline void rodrigues(dbr_real theta, dbr_real axis[3], dbr_real mat[3][3])
+inline void rodrigues(double theta, double axis[3], double mat[3][3])
 {
-    dbr_real alen = sqrt(axis[0]*axis[0] + axis[1]*axis[1] + axis[2]*axis[2]);
+    double alen = sqrt(axis[0]*axis[0] + axis[1]*axis[1] + axis[2]*axis[2]);
     for (int i = 0; i < 3; ++i)
         axis[i] /= alen;
 
-    dbr_real c = cos(theta);
-    dbr_real s = sin(theta);
+    double c = cos(theta);
+    double s = sin(theta);
 
     mat[0][0] = (1-c)*axis[0]*axis[0] + c;
     mat[0][1] = (1-c)*axis[0]*axis[1] - s*axis[2];
@@ -80,21 +80,6 @@ inline void rodrigues(dbr_real theta, dbr_real axis[3], dbr_real mat[3][3])
     mat[2][0] = (1-c)*axis[2]*axis[0] - s*axis[1];
     mat[2][1] = (1-c)*axis[2]*axis[1] + s*axis[0];
     mat[2][2] = (1-c)*axis[2]*axis[2] + c;
-}
-
-// r - result
-inline void matrix_dot_vec3(const dbr_real mat[3][3], const dbr_real v[3],
-                            dbr_real r[3])
-{
-    for (int i = 0; i < 3; ++i)
-        r[i] = mat[i][0] * v[0] + mat[i][1] * v[1] + mat[i][2] * v[2];
-}
-
-inline void vec3_dot_matrix(const dbr_real v[3], const dbr_real mat[3][3],
-                            dbr_real r[3])
-{
-    for (int i = 0; i < 3; ++i)
-        r[i] = mat[0][i] * v[0] + mat[1][i] * v[1] + mat[2][i] * v[2];
 }
 
 inline

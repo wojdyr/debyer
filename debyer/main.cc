@@ -165,13 +165,7 @@ void write_atoms_to_file(dbr_aconf const& aconf,
     if (args.write_dlpoly_given)
         write_dlpoly_file(aconf, args.write_dlpoly_arg
                                  ? args.write_dlpoly_arg
-                                 : default_fn(args, "dlpoly"),
-                          false);
-    if (args.write_dlpoly_s_given)
-        write_dlpoly_file(aconf, args.write_dlpoly_s_arg
-                                 ? args.write_dlpoly_s_arg
-                                 : default_fn(args, "dlpoly"),
-                          true);
+                                 : default_fn(args, "dlpoly"));
     if (args.write_lammps_data_given)
         write_lammps_data(aconf, args.write_lammps_data_arg
                                  ? args.write_lammps_data_arg
@@ -193,7 +187,7 @@ void write_atoms_to_file(dbr_aconf const& aconf,
 // atoms array in the dbr_aconf needs to be delete'd [] later
 dbr_aconf prepare_aconf(LineInput &in, gengetopt_args_info const& args)
 {
-    dbr_aconf aconf = read_atoms_from_file(in, false);
+    dbr_aconf aconf = read_atoms_from_file(in, false, "");
     if (args.pbc_a_given)
         aconf.pbc.v00 = args.pbc_a_arg;
     if (args.pbc_b_given)
@@ -331,7 +325,7 @@ int main(int argc, char **argv)
         dbr_abort(EXIT_FAILURE);
     }
     bool output_atoms = (args.write_xyz_given || args.write_cfg_given
-            || args.write_dlpoly_given || args.write_dlpoly_s_given
+            || args.write_dlpoly_given
             || args.write_lammps_data_given || args.write_pdb_given
             || args.write_xyza_given);
     if (args.output_group_counter == 0 && !args.id_file_given && !output_atoms){

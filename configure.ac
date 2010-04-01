@@ -1,6 +1,8 @@
 
 AC_PREREQ(2.59)
-AC_INIT([debyer], [0.3], [])
+AC_INIT([debyer],
+	[m4_esyscmd([echo -n "r" && svnversion | tr -d '\n'])],
+	[])
 AC_CONFIG_SRCDIR([debyer/debyer.c])
 AC_CONFIG_HEADER([config.h])
 
