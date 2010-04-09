@@ -278,7 +278,7 @@ dbr_aconf read_atoms_from_file(LineInput &in, bool reduced_coords,
 string get_format_from_filename(string const& filename)
 {
     if (endswith(filename, ".cfg"))
-        return "cfg";
+        return "atomeye";
     else if (endswith(filename, ".lammps") || endswith(filename, ".lmps"))
         return "lammps";
     else if (endswith(filename, ".xyz"))
