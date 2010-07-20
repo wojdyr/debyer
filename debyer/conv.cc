@@ -75,7 +75,15 @@ string get_extension_for_format(const string& format)
 string change_extension(const string& filename, const string& new_ext)
 {
     size_t p = filename.rfind('.');
-    return filename.substr(0, p) + "." + new_ext;
+    if (p == 0 || p == string::npos)
+        return filename + "." + new_ext;
+    string old_ext = filename.substr(p);
+    if (old_ext == ".gz" || old_ext == ".bz2") {
+        size_t prev = filename.rfind('.', p-1);
+        if (prev != 0 && prev != string::npos)
+            p = prev;
+    }
+    return filename.substr(0, p+1) + new_ext;
 }
 
 struct atom_compare: public binary_function<int, int, bool>
