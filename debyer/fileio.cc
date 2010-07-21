@@ -67,7 +67,6 @@ bool is_xyz_format(char const* buffer)
     }
     char* endptr = 0;
     int dummy_int = strtol(buffer, &endptr, 10);
-    dummy_int; // unused
     while (isspace(*endptr))
         ++endptr;
     if (endptr < e[0])
@@ -240,6 +239,7 @@ string detect_input_format(LineInput &in)
     else {
         mcerr << "Error. Unknown format of input file" << endl;
         dbr_abort(EXIT_FAILURE);
+        return ""; // suppress warning
     }
 }
 
@@ -293,6 +293,7 @@ string get_format_from_filename(string const& filename)
         mcerr << "Can't guess filetype of atoms output file from filename"
             << endl;
         dbr_abort(EXIT_FAILURE);
+        return ""; // suppress warning
     }
 }
 

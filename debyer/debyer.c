@@ -93,12 +93,12 @@ static int mod(int a, int b)
     return r >= 0 ? r : r + b;
 }
 
-int dbr_is_direct(output_kind k)
+int dbr_is_direct(OutputKind k)
 {
     return k == output_rdf || k == output_pdf || k == output_rpdf;
 }
 
-int dbr_is_inverse(output_kind k)
+int dbr_is_inverse(OutputKind k)
 {
     return k == output_xray || k == output_neutron || k == output_sf;
 }
@@ -875,47 +875,48 @@ dbr_real count_all_atoms(const irdfs* rdfs)
     return count;
 }
 
-dbr_real* dbr_get_RDF(const irdfs* rdfs, char weight,
-                      dbr_real pattern_from, dbr_real pattern_to,
-                      dbr_real pattern_step)
+dbr_real* dbr_get_RDF(const irdfs* rdfs, int rdf_index, struct dbr_pdf_args* p)
 {
     dbr_real *pattern;
     int i, j, m, n;
     int first_ibin, end_ibin;
-    dbr_real avg = calculate_avg_b(weight, rdfs, 0);
+    dbr_real avg = calculate_avg_b(p->weight, rdfs, 0);
     int all_count = count_all_atoms(rdfs);
 
-    n = (pattern_to - pattern_from) / pattern_step;
+    n = (p->pattern_to - p->pattern_from) / p->pattern_step;
     pattern = (dbr_real*) xmalloc(n*sizeof(dbr_real));
     for (i = 0; i < n; ++i)
         pattern[i] = 0;
-    first_ibin = pattern_from / rdfs->step;
-    end_ibin = pattern_to / rdfs->step;
+    first_ibin = p->pattern_from / rdfs->step;
+    end_ibin = p->pattern_to / rdfs->step;
     if (end_ibin > rdfs->rdf_bins)
         end_ibin = rdfs->rdf_bins;
 
     for (i = 0; i < rdfs->pair_count; ++i) {
+        if (rdf_index != -1 && rdf_index != i)
+            continue;
         /* prepare weighting factor... */
         dbr_real w = 1.;
         irdf *rdf = &rdfs->data[i];
         dbr_real sampled_fraction = (rdf->sample > 0 ?
                                          (dbr_real) rdf->sample / rdf->c1 : 1.);
-        if (weight == 'x')
+        if (p->weight == 'x')
             w = get_xray_scattering_factor(rdf->at1, 0)
                   * get_xray_scattering_factor(rdf->at2, 0) / (avg * avg);
-        else if (weight == 'n')
+        else if (p->weight == 'n')
             w = get_neutron_scattering_factor(rdf->at1)
                 * get_neutron_scattering_factor(rdf->at2) / (avg * avg);
         /* ...and calculate RDF */
         for (j = first_ibin; j < end_ibin; ++j) {
-            m = (int) (((j + 0.5) * rdfs->step - pattern_from) / pattern_step);
+            m = (int) (((j + 0.5) * rdfs->step - p->pattern_from)
+                       / p->pattern_step);
             assert(m >= 0 && m < n);
             /* take twice every pair distance (i,j and j,i) */
             pattern[m] += 2 * w * rdf->nn[j] / sampled_fraction;
         }
     }
     for (i = 0; i < n; ++i)
-        pattern[i] /= (pattern_step * all_count);
+        pattern[i] /= (p->pattern_step * all_count);
     return pattern;
 }
 
@@ -932,42 +933,42 @@ dbr_real get_density(dbr_real given_density, dbr_real auto_density)
         return auto_density;
 }
 
-double* get_pattern(const irdfs* rdfs, output_kind c, dbr_real lambda,
-                    dbr_real pattern_from, dbr_real pattern_to,
-                    dbr_real pattern_step,
-                    dbr_real ro, dbr_real cutoff)
+dbr_real* get_pattern(const irdfs* rdfs, struct dbr_diffract_args* dargs)
 {
-    double *pattern;
+    dbr_real *pattern;
     int i, j, k, n;
     irdf *p = 0;
     dbr_real ff=1., r;
     const char *at;
     int all_count = count_all_atoms(rdfs);
+    int neutron = (dargs->c == output_neutron);
 
-    assert(c == output_xray || c == output_neutron || c == output_sf);
-    assert(cutoff > 0.);
+    assert(dargs->c == output_xray || dargs->c == output_neutron ||
+           dargs->c == output_sf);
+    assert(dargs->cutoff > 0.);
     for (i = 0; i < rdfs->pair_count; ++i) {
         at = rdfs->data[i].at1;
-        if (!has_scattering_factor(rdfs->data[i].at1, c==output_neutron)
-            || !has_scattering_factor(rdfs->data[i].at2, c==output_neutron))
+        if (!has_scattering_factor(rdfs->data[i].at1, neutron)
+            || !has_scattering_factor(rdfs->data[i].at2, neutron))
             return 0;
     }
 
-    n = (pattern_to - pattern_from) / pattern_step;
-    pattern = (double*) xmalloc(n*sizeof(double));
+    n = (dargs->pattern_to - dargs->pattern_from) / dargs->pattern_step;
+    pattern = (dbr_real*) xmalloc(n*sizeof(dbr_real));
     for (i = 0; i < n; ++i)
         pattern[i] = 0.;
     for (i = 0; i < rdfs->pair_count; ++i) {
         p = &rdfs->data[i];
-        if (c == output_neutron) {
+        if (neutron) {
             ff = get_neutron_scattering_factor(p->at1)
                                 * get_neutron_scattering_factor(p->at2);
         }
         for (j = 0; j < n; ++j) {
-            double t;
-            dbr_real x = pattern_from + (j+0.5) * pattern_step;
-            dbr_real q = lambda <= 0. ? x : 4*M_PI*sin(M_PI/180.*x/2)/lambda;
-            if (c == output_xray)
+            dbr_real t;
+            dbr_real x = dargs->pattern_from + (j+0.5) * dargs->pattern_step;
+            dbr_real q = dargs->lambda <= 0. ? x
+                                 : 4*M_PI * sin(M_PI/180.*x/2) / dargs->lambda;
+            if (dargs->c == output_xray)
                 ff = get_xray_scattering_factor(p->at1, q)
                                     * get_xray_scattering_factor(p->at2, q);
             t = 2 * ff / q / all_count;
@@ -986,19 +987,21 @@ double* get_pattern(const irdfs* rdfs, output_kind c, dbr_real lambda,
         }
     }
     /* cut-off error is large and increases with r_cutoff */
-    ro = get_density(ro, rdfs->density);
-    if (ro > 0.) {
+    dargs->ro = get_density(dargs->ro, rdfs->density);
+    if (dargs->ro > 0.) {
         char weight = '1';
-        if (c == output_xray)
+        if (dargs->c == output_xray)
             weight = 'x';
-        else if (c == output_neutron)
+        else if (dargs->c == output_neutron)
             weight = 'n';
         for (j = 0; j < n; ++j) {
-            dbr_real x = pattern_from + (j+0.5) * pattern_step;
-            dbr_real q = lambda <= 0. ? x : 4*M_PI * sin(M_PI/180.*x/2) / lambda;
+            dbr_real x = dargs->pattern_from + (j+0.5) * dargs->pattern_step;
+            dbr_real q = dargs->lambda <= 0. ? x
+                                : 4*M_PI * sin(M_PI/180.*x/2) / dargs->lambda;
             dbr_real avg = calculate_avg_b(weight, rdfs, q);
-            pattern[j] += avg * avg * 4 * M_PI * ro / (q * q) * (
-                               cutoff * cos(q*cutoff) - sin(q*cutoff) / q);
+            dbr_real qc = q * dargs->cutoff;
+            pattern[j] += avg * avg * 4 * M_PI * dargs->ro / (q * q) * (
+                                       dargs->cutoff * cos(qc) - sin(qc) / q);
         }
     }
     return pattern;
@@ -1036,132 +1039,152 @@ int process_output_step(dbr_real pattern_from, dbr_real pattern_to,
 }
 
 /* returns non-zero on failure */
-int write_diffraction_to_file(output_kind c, irdfs rdfs,
-                              dbr_real pattern_from, dbr_real pattern_to,
-                              dbr_real pattern_step,
-                              dbr_real lambda,
-                              dbr_real ro,
-                              dbr_real cutoff,
+int write_diffraction_to_file(struct dbr_diffract_args* dargs, irdfs rdfs,
                               const char *ofname)
 {
     FILE *f;
     int i, n;
-    double *result=0;
+    dbr_real *result=NULL;
     dbr_real irdf_max = rdfs.rdf_bins * rdfs.step;
-    assert(dbr_is_inverse(c));
+    assert(dbr_is_inverse(dargs->c));
     if (dbr_nid != 0)
         return 0;
     f = start_pattern_output(ofname);
-    if (c == output_xray)
+    if (dargs->c == output_xray)
         fprintf(f, "x-ray");
-    else if (c == output_neutron)
+    else if (dargs->c == output_neutron)
         fprintf(f, "neutron");
-    else if (c == output_sf)
+    else if (dargs->c == output_sf)
         fprintf(f, "scattering-function");
-    if (lambda > 0.)
-        fprintf(f, " lambda=%g", lambda);
+    if (dargs->lambda > 0.)
+        fprintf(f, " lambda=%g", dargs->lambda);
     else
         fprintf(f, " Q");
-    if (cutoff <= 0.)
-        cutoff = irdf_max;
+    if (dargs->cutoff <= 0.)
+        dargs->cutoff = irdf_max;
     else {
-        int nb = get_number_of_bins(cutoff, rdfs.step);
+        int nb = get_number_of_bins(dargs->cutoff, rdfs.step);
         if (nb < rdfs.rdf_bins) {
             rdfs.rdf_bins = nb;
         }
         else if (nb > rdfs.rdf_bins) {
-            cutoff = irdf_max;
-            dbr_mesg("WARNING: can't set cut-off larger than %g\n", cutoff);
+            dargs->cutoff = irdf_max;
+            dbr_mesg("WARNING: can't set cut-off larger than %g\n",
+                     dargs->cutoff);
         }
     }
-    fprintf(f, " cut-off=%g", cutoff);
-    if (pattern_from <= 0.)
-        pattern_from = lambda <= 0. ? 0.5 : 5;
-    if (pattern_to <= 0.)
-        pattern_to = lambda <= 0. ? 10 : 170;
-    if (pattern_step <= 0.) {/*TODO Nyquist */
-        pattern_step = lambda <= 0. ? 0.01 : 0.1;
+    fprintf(f, " cut-off=%g", dargs->cutoff);
+    if (dargs->pattern_from <= 0.)
+        dargs->pattern_from = dargs->lambda <= 0. ? 0.5 : 5;
+    if (dargs->pattern_to <= 0.)
+        dargs->pattern_to = dargs->lambda <= 0. ? 10 : 170;
+    if (dargs->pattern_step <= 0.) {/*TODO Nyquist */
+        dargs->pattern_step = dargs->lambda <= 0. ? 0.01 : 0.1;
     }
 
-    n = process_output_step(pattern_from, pattern_to, pattern_step, f);
+    n = process_output_step(dargs->pattern_from, dargs->pattern_to,
+                            dargs->pattern_step, f);
 
-    result = get_pattern(&rdfs, c, lambda,
-                         pattern_from, pattern_to, pattern_step,
-                         ro, cutoff);
+    result = get_pattern(&rdfs, dargs);
 
     for (i = 0; i < n; ++i)
-        fprintf(f, "%g %g\n", pattern_from + (i+0.5)*pattern_step, result[i]);
+        fprintf(f, "%g %g\n", dargs->pattern_from + (i+0.5)*dargs->pattern_step,
+                              result[i]);
     if (f != stdout)
         fclose(f);
     free(result);
     return 0;
 }
 
+dbr_real scale_rdf(dbr_real y, OutputKind c, dbr_real r, dbr_real ro)
+{
+    if (c == output_pdf)
+        return y / (4 * M_PI * r * r * ro);
+    else if (c == output_rpdf)
+        return y / r - (4 * M_PI * r * ro);
+    else // output_rdf
+        return y;
+}
+
 /* returns non-zero on failure */
-int write_pdfkind_to_file(output_kind c, irdfs rdfs,
-                          dbr_real pattern_from, dbr_real pattern_to,
-                          dbr_real pattern_step,
-                          dbr_real ro,
-                          char weight,
+int write_pdfkind_to_file(struct dbr_pdf_args* pargs, irdfs rdfs,
                           const char *ofname)
 {
     FILE *f;
-    int i, n;
-    dbr_real *result=0;
+    int i, j, n, pc;
+    dbr_real *result = NULL;
+    dbr_real **partial_results = NULL;
     dbr_real irdf_max = rdfs.rdf_bins * rdfs.step;
-    assert(dbr_is_direct(c));
+    assert(dbr_is_direct(pargs->c));
     if (dbr_nid != 0)
         return 0;
     f = start_pattern_output(ofname);
 
-    if (c == output_rdf)
+    if (pargs->c == output_rdf)
         fprintf(f, "RDF");
-    else if (c == output_pdf)
+    else if (pargs->c == output_pdf)
         fprintf(f, "PDF");
-    else if (c == output_rpdf)
+    else if (pargs->c == output_rpdf)
         fprintf(f, "reduced-PDF");
 
-    if (c != output_rdf) {
-        ro = get_density(ro, rdfs.density);
-        if (ro <= 0.) {
+    if (pargs->c != output_rdf) {
+        pargs->ro = get_density(pargs->ro, rdfs.density);
+        if (pargs->ro <= 0.) {
             dbr_mesg("Error: Unknown value of density (ro).\n");
             dbr_abort(1);
         }
-        fprintf(f, " ro=%g", ro);
+        fprintf(f, " ro=%g", pargs->ro);
     }
 
-    fprintf(f, " weight=%c", weight);
+    fprintf(f, " weight=%c", pargs->weight);
 
-    if (pattern_from <= 0.)
-        pattern_from = 0.;
-    if (pattern_to <= 0.)
-        pattern_to = irdf_max;
-    else if (pattern_to > irdf_max) {
+    if (pargs->pattern_from <= 0.)
+        pargs->pattern_from = 0.;
+    if (pargs->pattern_to <= 0.)
+        pargs->pattern_to = irdf_max;
+    else if (pargs->pattern_to > irdf_max) {
         dbr_mesg("WARNING: ID is calculated only to: %g\n", irdf_max);
-        pattern_to = irdf_max;
+        pargs->pattern_to = irdf_max;
     }
-    if (pattern_step <= 0.)
-        pattern_step = rdfs.step;
+    if (pargs->pattern_step <= 0.)
+        pargs->pattern_step = rdfs.step;
 
-    n = process_output_step(pattern_from, pattern_to, pattern_step, f);
+    n = process_output_step(pargs->pattern_from, pargs->pattern_to,
+                            pargs->pattern_step, f);
 
-    result = dbr_get_RDF(&rdfs, weight, pattern_from, pattern_to, pattern_step);
+    result = dbr_get_RDF(&rdfs, -1, pargs);
+    if (pargs->include_partials) {
+        pc = rdfs.pair_count;
+        partial_results = (dbr_real**) xmalloc(pc * sizeof(dbr_real*));
+        fprintf(f, "# sum");
+        for (i = 0; i != pc; ++i) {
+            partial_results[i] = dbr_get_RDF(&rdfs, i, pargs);
+            fprintf(f, " %s-%s", rdfs.data[i].at1, rdfs.data[i].at2);
+        }
+        fprintf(f, "\n");
+    }
 
     for (i = 0; i < n; ++i) {
-        dbr_real r = pattern_from + (i+0.5) * pattern_step;
-        dbr_real y = result[i];
-        if (c == output_rdf)
-            ;
-        else if (c == output_pdf)
-            y /= (4 * M_PI * r * r * ro);
-        else if (c == output_rpdf)
-            y = y / r - (4 * M_PI * r * ro);
-        fprintf(f, "%g %g\n", r, y);
+        dbr_real r = pargs->pattern_from + (i+0.5) * pargs->pattern_step;
+        dbr_real y = scale_rdf(result[i], pargs->c, r, pargs->ro);
+        fprintf(f, "%g %g", r, y);
+        if (pargs->include_partials) {
+            for (j = 0; j != pc; ++j) {
+                y = scale_rdf(partial_results[j][i], pargs->c, r, pargs->ro);
+                fprintf(f, " %g", y);
+            }
+        }
+        fprintf(f, "\n");
     }
 
     if (f != stdout)
         fclose(f);
     free(result);
+    if (pargs->include_partials) {
+        for (i = 0; i != pc; ++i)
+            free(partial_results[i]);
+        free(partial_results);
+    }
     return 0;
 }
 

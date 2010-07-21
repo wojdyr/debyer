@@ -55,7 +55,7 @@ typedef struct dbr_pbc_prop dbr_pbc_prop;
 typedef struct dbr_picker dbr_picker;
 
 
-typedef enum output_kind {
+typedef enum OutputKind {
     output_xray,
     output_neutron,
     output_sf, /*scattering factor, a.k.a. total scattering structure function*/
@@ -63,7 +63,7 @@ typedef enum output_kind {
     output_pdf,  /* PDF, g(r) */
     output_rpdf, /* reduced PDF, G(r) */
     output_none
-} output_kind;
+} OutputKind;
 
 /* Structure used for passing atom name and coordinates.
  * It can be null, see is_null() and nullify(). */
@@ -162,6 +162,28 @@ struct dbr_picker
     double x_min, x_max, y_min, y_max, z_min, z_max;
 };
 
+struct dbr_pdf_args
+{
+    OutputKind c;
+    int include_partials;
+    dbr_real pattern_from;
+    dbr_real pattern_to;
+    dbr_real pattern_step;
+    dbr_real ro;
+    char weight;
+};
+
+struct dbr_diffract_args
+{
+    OutputKind c;
+    dbr_real pattern_from;
+    dbr_real pattern_to;
+    dbr_real pattern_step;
+    dbr_real lambda;
+    dbr_real ro;
+    dbr_real cutoff;
+};
+
 extern int dbr_nid; /* rank of process (0 if serial) */
 extern int dbr_noprocs; /* number of processes (1 if serial) */
 extern time_t dbr_starttime; /* initialization time */
@@ -183,19 +205,10 @@ irdfs calculate_irdfs(int n, dbr_atoms* xa, dbr_real rcut, dbr_real rquanta,
 void free_irdfs(irdfs *rdfs);
 void write_irdfs_to_file(irdfs rdfs, const char *filename);
 
-int write_diffraction_to_file(output_kind c, irdfs rdfs,
-                              dbr_real pattern_from, dbr_real pattern_to,
-                              dbr_real pattern_step,
-                              dbr_real lambda,
-                              dbr_real ro,
-                              dbr_real cutoff,
+int write_diffraction_to_file(struct dbr_diffract_args* dargs, irdfs rdfs,
                               const char *ofname);
 
-int write_pdfkind_to_file(output_kind c, irdfs rdfs,
-                          dbr_real pattern_from, dbr_real pattern_to,
-                          dbr_real pattern_step,
-                          dbr_real ro,
-                          char weight,
+int write_pdfkind_to_file(struct dbr_pdf_args* pdf_args, irdfs rdfs,
                           const char *ofname);
 
 irdfs read_irdfs_from_file(const char *filename);
@@ -206,8 +219,8 @@ void free_cells(dbr_cells cells);
 dbr_cells* prepare_cells_all(dbr_pbc pbc, dbr_real rcut, dbr_atoms* xa, int n);
 void free_cells_all(dbr_cells *cells, int n);
 
-int dbr_is_direct(output_kind k);
-int dbr_is_inverse(output_kind k);
+int dbr_is_direct(OutputKind k);
+int dbr_is_inverse(OutputKind k);
 
 dbr_pbc_prop get_pbc_properties(dbr_pbc pbc);
 

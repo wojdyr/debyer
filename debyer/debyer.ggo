@@ -54,6 +54,8 @@ option "step" s "step of calculated pattern" float optional
 option "lambda" l "wavelength for diffraction pattern. If not given, output in Q" float optional
 option "ro" - "numeric density, required for PDF and rPDF calculation" float optional
 option "weight" w "how to weight RDF/PDF - using _x_-ray f(0) or _n_eutron b factor" values="x","n","1" default="1" optional
+option "partials" p "add partials to RDF/PDF/rPDF" optional
+text ""
 
 option "output" o "output filename. If not given, will be auto-generated." string typestr="FILENAME" optional
 

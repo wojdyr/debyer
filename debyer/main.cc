@@ -33,7 +33,7 @@ using namespace std;
     if (dbr_nid == 0) \
         cerr
 
-output_kind get_output_from_args (gengetopt_args_info const& args)
+OutputKind get_output_from_args (gengetopt_args_info const& args)
 {
     if (args.RDF_given)
         return output_rdf;
@@ -279,7 +279,7 @@ string get_output_filename(gengetopt_args_info const& args)
 {
     if (args.output_given)
         return strcmp(args.output_arg, "stdout") != 0 ? args.output_arg : "";
-    output_kind kind = get_output_from_args(args);
+    OutputKind kind = get_output_from_args(args);
     if (kind == output_none)
         return "";
 
@@ -332,10 +332,6 @@ int main(int argc, char **argv)
         mcerr << "No output format specified, nothing to do." << endl;
         dbr_abort(EXIT_SUCCESS);
     }
-    if (args.inputs_num == 0) {
-        mcerr << "Reading from stdin .... TODO" << endl;
-        dbr_abort(EXIT_FAILURE);
-    }
 
     char *infn = args.inputs[0];
     if (dbr_verbosity >= 0)
@@ -343,7 +339,7 @@ int main(int argc, char **argv)
 
     SimpleLineInput in(infn);
 
-    output_kind kind = get_output_from_args(args);
+    OutputKind kind = get_output_from_args(args);
     string ofname = get_output_filename(args);
 
     const char *id_magic = "debyer-id ";
@@ -436,25 +432,27 @@ int main(int argc, char **argv)
             mcerr << "No number density - no cut-off correction.\n";
     if (dbr_verbosity >= 0)
         mcerr << "Writing " << type_desc << " to file " << ofname << " ... ";
-    if (dbr_is_direct(kind))
-        r = write_pdfkind_to_file(kind,
-                                  rdfs,
-                                  args.from_given ? args.from_arg : 0.,
-                                  args.to_given ? args.to_arg : 0.,
-                                  args.step_given ? args.step_arg : 0.,
-                                  args.ro_given ? args.ro_arg : 0.,
-                                  args.weight_arg[0],
-                                  ofname.c_str());
+    if (dbr_is_direct(kind)) {
+        dbr_pdf_args pargs;
+        pargs.c = kind;
+        pargs.include_partials = args.partials_given;
+        pargs.pattern_from = args.from_given ? args.from_arg : 0.;
+        pargs.pattern_to = args.to_given ? args.to_arg : 0.;
+        pargs.pattern_step = args.step_given ? args.step_arg : 0.;
+        pargs.ro = args.ro_given ? args.ro_arg : 0.;
+        pargs.weight = args.weight_arg[0];
+        r = write_pdfkind_to_file(&pargs, rdfs, ofname.c_str());
+    }
     else {
-        r = write_diffraction_to_file(kind,
-                                      rdfs,
-                                      args.from_given ? args.from_arg : 0.,
-                                      args.to_given ? args.to_arg : 0.,
-                                      args.step_given ? args.step_arg : 0.,
-                                      args.lambda_given ? args.lambda_arg : 0.,
-                                      args.ro_given ? args.ro_arg : 0.,
-                                      args.cutoff_given ? args.cutoff_arg : 0.,
-                                      ofname.c_str());
+        dbr_diffract_args dargs;
+        dargs.c = kind;
+        dargs.pattern_from = args.from_given ? args.from_arg : 0.;
+        dargs.pattern_to = args.to_given ? args.to_arg : 0.;
+        dargs.pattern_step = args.step_given ? args.step_arg : 0.;
+        dargs.lambda = args.lambda_given ? args.lambda_arg : 0.;
+        dargs.ro = args.ro_given ? args.ro_arg : 0.;
+        dargs.cutoff = args.cutoff_given ? args.cutoff_arg : 0.;
+        r = write_diffraction_to_file(&dargs, rdfs, ofname.c_str());
     }
     free_irdfs(&rdfs);
     if (dbr_verbosity >= 0)
