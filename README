@@ -57,7 +57,7 @@ Usage: debyer [OPTIONS]... [FILE]...
   -q, --quiet                   silent mode
   -v, --verbose                 verbose mode
 
-calculation of input ID (internal RDF):
+calculation of input ID (Interatomic Distances, or Internal RDF):
   -r, --cutoff=FLOAT            cut-off distance for ID calculation
       --quanta=FLOAT            interatomic distance discretization quanta  
                                   (default=`0.001')

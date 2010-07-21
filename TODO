@@ -1,8 +1,6 @@
 
 warn when lammps input file doesn't have a comment after "n atoms" line
 
-configure option to build only debyer
-
 multiple input files -- only when options -dfile and -o are not given
 
 instrumental broadening - U, V, W, Gaussian/Lorentzian/Pseudo-Voigt
@@ -16,4 +14,3 @@ optimize (id -> pattern) phase (FFT)
 
 calculate automatically ro from data by fitting 4*pi*ro*x^2 to RDF
 
-write a separate tool to convert files (dbr_convert)

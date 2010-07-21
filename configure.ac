@@ -14,8 +14,8 @@ AM_MAINTAINER_MODE
 AC_ARG_ENABLE(mpi,
  [  --enable-mpi                  compile for parallel runs using MPI],,enable_mpi=no)
 
-AC_ARG_ENABLE(double,
- [  --enable-double               use double precision for atom coordinates],,enable_double=no)
+AC_ARG_ENABLE(single,
+ [  --enable-single               use single precision for atom coordinates],,enable_single=no)
 
 # optional zlib and bzlib libraries
 AC_ARG_WITH(zlib,
@@ -54,8 +54,8 @@ if test "$enable_mpi" = "yes"; then
   AC_DEFINE(USE_MPI, 1, [Make a parallel version of Debyer using MPI])
 fi
 
-if test "$enable_double" = "yes"; then
-  AC_DEFINE(USE_DOUBLE, 1, [Use double precision for atom coordinates])
+if test "$enable_single" = "yes"; then
+  AC_DEFINE(USE_SINGLE, 1, [Use single precision for atom coordinates])
 fi
 
 # Checks for libraries.

@@ -92,8 +92,7 @@ void print_irdfs_statistics(irdfs rdfs)
     for (int i = 0; i < rdfs.symbol_count; ++i)
         ac += rdfs.atom_counts[i];
     if (dbr_verbosity >= 0)
-        mcerr << sum << " of " << ac * (ac-1) / 2
-            << " pairs included in internal PDF.\n";
+        mcerr << sum << " of " << ac * (ac-1) / 2 << " pairs included in ID.\n";
 }
 
 void print_min_dist_info(irdfs const& rdfs)
@@ -236,7 +235,7 @@ irdfs calculate_id_from_datafile(dbr_aconf &aconf, dbr_picker const& picker,
             mcerr << "Option `cutoff' set to " << cutoff << endl;
     }
 
-    //calculate internal PDFs - most of computer time is spent here
+    //calculate IDs - most of computer time is spent here
     rdfs = calculate_irdfs(tc, xa, cutoff,
                            quanta, aconf.pbc, &picker, get_id_out_fn(args));
     print_irdfs_statistics(rdfs);

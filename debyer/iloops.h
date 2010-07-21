@@ -15,7 +15,7 @@
  */
 
 /* This file is to be included only by debyer.c
- * and contains inner loops of internal-RDF calculation, where most of
+ * and contains inner loops of ID calculation, where most of
  * computation time is spend. It is put into separate file to make
  * optimization easier.
  */

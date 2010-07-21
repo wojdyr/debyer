@@ -124,20 +124,6 @@ dbr_real get_neutron_scattering_factor(const char* at)
     return nbsl->bond_coh_scatt_length;
 }
 
-/* neutron: 1=neutron, 0=xray */
-int has_scattering_factor(const char* at, int neutron)
-{
-    int found = 0;
-    if (neutron)
-        found = find_in_nn92(at) ? 1 : 0;
-    else
-        found = find_in_it92(at) ? 1 : 0;
-    if (!found)
-        dbr_mesg("Error: %s scattering factor not found for atom: %s\n",
-                 neutron ? "Neutron" : "X-ray", at);
-    return found;
-}
-
 void dbr_init(int *argc, char ***argv)
 {
 #ifdef USE_MPI
@@ -938,19 +924,22 @@ dbr_real* get_pattern(const irdfs* rdfs, struct dbr_diffract_args* dargs)
     dbr_real *pattern;
     int i, j, k, n;
     irdf *p = 0;
-    dbr_real ff=1., r;
-    const char *at;
+    dbr_real ff = 1.;
     int all_count = count_all_atoms(rdfs);
-    int neutron = (dargs->c == output_neutron);
 
     assert(dargs->c == output_xray || dargs->c == output_neutron ||
            dargs->c == output_sf);
     assert(dargs->cutoff > 0.);
-    for (i = 0; i < rdfs->pair_count; ++i) {
-        at = rdfs->data[i].at1;
-        if (!has_scattering_factor(rdfs->data[i].at1, neutron)
-            || !has_scattering_factor(rdfs->data[i].at2, neutron))
-            return 0;
+    for (i = 0; i < rdfs->symbol_count; ++i) {
+        const char* at = rdfs->atom_symbols[i];
+        if (dargs->c == output_xray && find_in_it92(at) == NULL) {
+            dbr_mesg("Error: No x-ray scattering factor for atom: %s\n", at);
+            return NULL;
+        }
+        else if (dargs->c == output_neutron && find_in_nn92(at) == NULL) {
+            dbr_mesg("Error: No neutron scattering factor for atom: %s\n", at);
+            return NULL;
+        }
     }
 
     n = (dargs->pattern_to - dargs->pattern_from) / dargs->pattern_step;
@@ -959,7 +948,7 @@ dbr_real* get_pattern(const irdfs* rdfs, struct dbr_diffract_args* dargs)
         pattern[i] = 0.;
     for (i = 0; i < rdfs->pair_count; ++i) {
         p = &rdfs->data[i];
-        if (neutron) {
+        if (dargs->c == output_neutron) {
             ff = get_neutron_scattering_factor(p->at1)
                                 * get_neutron_scattering_factor(p->at2);
         }
@@ -974,7 +963,7 @@ dbr_real* get_pattern(const irdfs* rdfs, struct dbr_diffract_args* dargs)
             t = 2 * ff / q / all_count;
             for (k = 0; k < rdfs->rdf_bins; ++k) {
                 if (p->nn[k]) {
-                    r = (k+0.5) * rdfs->step;
+                    dbr_real r = (k+0.5) * rdfs->step;
                     /* it's doubled, because in Debye's formula every pair
                      * is taken twice (n,m and m,n) */
                     pattern[j] += t * p->nn[k] * sin(q*r) / r;
@@ -989,7 +978,7 @@ dbr_real* get_pattern(const irdfs* rdfs, struct dbr_diffract_args* dargs)
     /* cut-off error is large and increases with r_cutoff */
     dargs->ro = get_density(dargs->ro, rdfs->density);
     if (dargs->ro > 0.) {
-        char weight = '1';
+        char weight = '1'; // '1' is for output_sf
         if (dargs->c == output_xray)
             weight = 'x';
         else if (dargs->c == output_neutron)
@@ -1488,11 +1477,7 @@ void dbr_print_version()
 #else
           "serial",
 #endif
-#ifdef USE_DOUBLE
-          "double",
-#else
-          "single",
-#endif
+          sizeof(dbr_real) == sizeof(float) ?  "single" : "double",
 #ifdef HAVE_ZLIB
           ", handles .gz",
 #else

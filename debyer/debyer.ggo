@@ -20,9 +20,9 @@ args "-uFILE --no-handle-version"
 option  "quiet" q "silent mode" optional
 option  "verbose" v "increase verbosity level (can be used twice)" optional multiple
 
-section "calculation of input ID (internal RDF)"
+section "calculation of input ID (Interatomic Distances)"
 option  "cutoff" r "cut-off distance for ID calculation" float optional
-option  "quanta" - "interatomic distance discretization quanta" float default="0.001" optional
+option  "quanta" - "ID discretization quanta" float default="0.001" optional
 option "pbc-a" a "PBC box length in x direction" float optional
 option "pbc-b" b "PBC box length in y direction" float optional
 option "pbc-c" c "PBC box length in z direction" float optional

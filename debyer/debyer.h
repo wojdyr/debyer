@@ -30,12 +30,12 @@
 # include "mpi.h"
 #endif
 
-#ifdef USE_DOUBLE
-# define dbr_real double
-# define DBR_F    "%lf"
-#else
+#ifdef USE_SINGLE
 # define dbr_real float
 # define DBR_F    "%f"
+#else
+# define dbr_real double
+# define DBR_F    "%lf"
 #endif
 
 #ifdef __cplusplus
@@ -92,8 +92,8 @@ struct irdf
     int* nn; /* pair correlation function */
 };
 
-/* used for storing internal PDF (data ID), which is than used for
- * calcuation of x-ray/neutron patterns and PDFs.
+/* used for storing ID, which is than used for
+ * calculation of x-ray/neutron patterns and PDFs.
  */
 struct irdfs
 {
