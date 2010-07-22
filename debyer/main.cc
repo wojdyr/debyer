@@ -314,8 +314,8 @@ int main(int argc, char **argv)
     dbr_verbosity = args.verbose_given - args.quiet_given;
     if (dbr_verbosity > 0)
         mcerr << "Verbosity level: " << dbr_verbosity << endl;
-    if (args.ben1_given) {
-        return do_benchmark1(args.ben1_arg);
+    if (args.bench_given) {
+        return do_benchmark1(args.bench_arg);
     }
     //if (args.inputs_num > 1) {
     //    mcerr << "Only one input file can be given.";

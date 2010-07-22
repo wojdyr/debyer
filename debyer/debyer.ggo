@@ -19,26 +19,28 @@ args "-uFILE --no-handle-version"
 
 option  "quiet" q "silent mode" optional
 option  "verbose" v "increase verbosity level (can be used twice)" optional multiple
+option "bench" - "benchmark - reports time of ID calculation for ATOM-COUNT atoms." int typestr="ATOM-COUNT" optional
 
-section "calculation of input ID (Interatomic Distances)"
+section "Stage 1: calculation of ID (Interatomic Distances)"
 option  "cutoff" r "cut-off distance for ID calculation" float optional
 option  "quanta" - "ID discretization quanta" float default="0.001" optional
 option "pbc-a" a "PBC box length in x direction" float optional
 option "pbc-b" b "PBC box length in y direction" float optional
 option "pbc-c" c "PBC box length in z direction" float optional
 option "sample" - "calculate ID by random sampling n atoms" int optional
-option "id-file" d "file in which input ID is to be stored, if any" string typestr="FILENAME" optional argoptional
+option "id-file" d "file in which ID is to be stored, if any" string typestr="FILENAME" optional argoptional
 
-section "file format conversion; write atom positions to..."
-text " (if FILENAME is not given, it will be generated based on the input filename)"
-option "write-xyz" - "XMOL .xyz file" string typestr="FILENAME" optional argoptional
-option "write-cfg" - "AtomEye extended .cfg file" string typestr="FILENAME" optional argoptional
-option "write-dlpoly" - "DL_POLY CONFIG file" string typestr="FILENAME" optional argoptional
-option "write-lammps-data" - "LAMMPS data file" string typestr="FILENAME" optional argoptional
-option "write-pdb" - "PDB file" string typestr="FILENAME" optional argoptional
-option "write-xyza" - "TSV format: x y z atom" string typestr="FILENAME" optional argoptional
+#TODO: replace with 0/1 aux file
+section "cutting, i.e. calculation only for sub-system"
+option "x-gt" - "minimum in x direction" float optional hidden
+option "x-lt" - "maximum in x direction" float optional hidden
+option "y-gt" - "minimum in y direction" float optional hidden
+option "y-lt" - "maximum in y direction" float optional hidden
+option "z-gt" - "minimum in z direction" float optional hidden
+option "z-lt" - "maximum in z direction" float optional hidden
 
-section "calculation of the final result from ID"
+
+section "Stage 2: calculation of the final result from ID"
 defgroup "output" groupdesc="only one of the following options can be selected"
 groupoption "xray" x "x-ray powder pattern" group="output"
 groupoption "neutron" n "neutron powder pattern" group="output"
@@ -51,24 +53,22 @@ text ""
 option "from" f "start of calculated pattern" float optional
 option "to" t "end of calculated pattern" float optional
 option "step" s "step of calculated pattern" float optional
-option "lambda" l "wavelength for diffraction pattern. If not given, output in Q" float optional
-option "ro" - "numeric density, required for PDF and rPDF calculation" float optional
-option "weight" w "how to weight RDF/PDF - using _x_-ray f(0) or _n_eutron b factor" values="x","n","1" default="1" optional
-option "partials" p "add partials to RDF/PDF/rPDF" optional
 text ""
 
+option "lambda" l "wavelength for I(2T) diffractogram. Omit for I(Q)." float optional
+option "ro" - "numeric density, required for (r)PDF and diffractogram with cutoff" float optional
+option "weight" w "RDF/(r)PDF weights: x-ray f(0), neutron b or 1" values="x","n","1" default="1" optional
+option "partials" p "include partials in RDF/PDF/rPDF" optional
+text ""
 option "output" o "output filename. If not given, will be auto-generated." string typestr="FILENAME" optional
 
-section "cutting, i.e. calculation only for sub-system"
-option "x-gt" - "minimum in x direction" float optional
-option "x-lt" - "maximum in x direction" float optional
-option "y-gt" - "minimum in y direction" float optional
-option "y-lt" - "maximum in y direction" float optional
-option "z-gt" - "minimum in z direction" float optional
-option "z-lt" - "maximum in z direction" float optional
-
-section "benchmarks"
-option "ben1" - "calculate ID for SiC pseudo-grain with ATOM-COUNT atoms." int typestr="ATOM-COUNT" optional
+section "file format conversion; write atom positions to..."
+option "write-xyz" - "XMOL .xyz file" string typestr="FILE" optional argoptional hidden
+option "write-cfg" - "AtomEye extended .cfg file" string typestr="FILE" optional argoptional hidden
+option "write-dlpoly" - "DL_POLY CONFIG file" string typestr="FILE" optional argoptional hidden
+option "write-lammps-data" - "LAMMPS data file" string typestr="FILE" optional argoptional hidden
+option "write-pdb" - "PDB file" string typestr="FILE" optional argoptional hidden
+option "write-xyza" - "TSV format: x y z atom" string typestr="FILE" optional argoptional hidden
 
 
 #FILES          files with atoms. If none given, use standard input.
