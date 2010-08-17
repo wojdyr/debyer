@@ -28,7 +28,7 @@ option "pbc-a" a "PBC box length in x direction" float optional
 option "pbc-b" b "PBC box length in y direction" float optional
 option "pbc-c" c "PBC box length in z direction" float optional
 option "sample" - "calculate ID by random sampling n atoms" int optional
-option "id-file" d "file in which ID is to be stored, if any" string typestr="FILENAME" optional argoptional
+option "save-id" d "save ID to file" string typestr="FILENAME" optional argoptional
 
 #TODO: replace with 0/1 aux file
 section "cutting, i.e. calculation only for sub-system"

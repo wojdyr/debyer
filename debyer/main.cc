@@ -114,9 +114,9 @@ void print_min_dist_info(irdfs const& rdfs)
 // get name of file to write ID in
 const char* get_id_out_fn(gengetopt_args_info const& args)
 {
-    if (args.id_file_given) {
-        if (args.id_file_arg)
-            return args.id_file_arg;
+    if (args.save_id_given) {
+        if (args.save_id_arg)
+            return args.save_id_arg;
         else {
             string default_id_file = default_fn(args, "id");
             char *allocated = new char[default_id_file.size() + 1];
@@ -179,7 +179,7 @@ void write_atoms_to_file(dbr_aconf const& aconf,
                          : default_fn(args, "xyza"));
 
     // is that all to do?
-    if (args.output_group_counter == 0 && !args.id_file_given)
+    if (args.output_group_counter == 0 && !args.save_id_given)
         dbr_abort(EXIT_SUCCESS);
 }
 
@@ -222,7 +222,7 @@ irdfs calculate_id_from_datafile(dbr_aconf &aconf, dbr_picker const& picker,
     bool is_direct = dbr_is_direct(get_output_from_args(args));
 
     dbr_real quanta = args.quanta_arg;
-    if (!args.id_file_given && is_direct && args.step_given) {
+    if (!args.save_id_given && is_direct && args.step_given) {
         quanta = args.step_arg;
         if (dbr_verbosity > 0)
             mcerr << "Option `quanta' set to " << quanta << endl;
@@ -327,7 +327,7 @@ int main(int argc, char **argv)
             || args.write_dlpoly_given
             || args.write_lammps_data_given || args.write_pdb_given
             || args.write_xyza_given);
-    if (args.output_group_counter == 0 && !args.id_file_given && !output_atoms){
+    if (args.output_group_counter == 0 && !args.save_id_given && !output_atoms){
         mcerr << "No output format specified, nothing to do." << endl;
         dbr_abort(EXIT_SUCCESS);
     }
@@ -364,7 +364,7 @@ int main(int argc, char **argv)
         rdfs = read_irdfs_from_file(infn);
         if (!rdfs.data)
             dbr_abort(EXIT_FAILURE);
-        if (args.id_file_given) {
+        if (args.save_id_given) {
             mcerr << "Refusing to write ID file when input is also ID file. "
                      "Just copy the file." << endl;
             //write_irdfs_to_file(rdfs, get_id_out_fn(args));
@@ -430,7 +430,7 @@ int main(int argc, char **argv)
         if (dbr_verbosity >= 0)
             mcerr << "No number density - no cut-off correction.\n";
     if (dbr_verbosity >= 0)
-        mcerr << "Writing " << type_desc << " to file " << ofname << " ... ";
+        mcerr << "Writing " << type_desc << " to file " << ofname << " ...\n";
     if (dbr_is_direct(kind)) {
         dbr_pdf_args pargs;
         pargs.c = kind;
@@ -454,8 +454,8 @@ int main(int argc, char **argv)
         r = write_diffraction_to_file(&dargs, rdfs, ofname.c_str());
     }
     free_irdfs(&rdfs);
-    if (dbr_verbosity >= 0)
-        mcerr << (r == 0 ? "OK" : "Failed") << endl;
+    if (dbr_verbosity >= 0 && r != 0)
+        mcerr << "Writing pattern FAILED.\n";
     dbr_finalize();
     cmdline_parser_free(&args);
     if (dbr_verbosity > 0)

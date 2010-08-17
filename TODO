@@ -1,4 +1,11 @@
 
+debyer -v should show automatically determined density
+
+header comments in generated patterns:
+ - put more information (from/to/step) in the first line:
+   #debyer-pattern reduced-PDF [0 : 6 : 0.001] ro=0.0255427 weight=1
+ - put full command line as a comment - useful for reproduction
+
 warn when lammps input file doesn't have a comment after "n atoms" line
 
 multiple input files -- only when options -dfile and -o are not given
@@ -6,7 +13,7 @@ multiple input files -- only when options -dfile and -o are not given
 instrumental broadening - U, V, W, Gaussian/Lorentzian/Pseudo-Voigt
 	       or instrumental pattern from file (like DIFFaX or PowderCell)
 
-use link-cell algorithm without PBC if r_cut < r_max/4 
+use link-cell algorithm without PBC if r_cut < r_max/4
 
 optimize (id -> pattern) phase (FFT)
 

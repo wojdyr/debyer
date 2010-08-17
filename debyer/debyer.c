@@ -908,15 +908,12 @@ dbr_real* dbr_get_RDF(const irdfs* rdfs, int rdf_index, struct dbr_pdf_args* p)
 
 dbr_real get_density(dbr_real given_density, dbr_real auto_density)
 {
-    if (given_density > 0.) {
-        if (auto_density > 0 && given_density != auto_density)
-            dbr_mesg("Overriding number density from ID calculation (%g)"
-                     "with %g", auto_density, given_density);
+    if (dbr_verbosity > 0 && given_density > 0 &&
+            auto_density > 0 && given_density != auto_density)
+        dbr_mesg("Ignoring number density from ID (%g), using %g\n",
+                 auto_density, given_density);
 
-        return given_density;
-    }
-    else
-        return auto_density;
+    return given_density > 0. ? given_density : auto_density;
 }
 
 dbr_real* get_pattern(const irdfs* rdfs, struct dbr_diffract_args* dargs)
