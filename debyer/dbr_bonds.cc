@@ -53,7 +53,7 @@ int main(int argc, char **argv)
     vector<int> species(aconf.n, -1);
     vector<string> symbols;
     for (int i = 0; i != aconf.n; ++i) {
-        string name(aconf.atoms[i].name);
+        string name = aconf.atoms[i].name;
         vector<string>::const_iterator it
             = find(symbols.begin(), symbols.end(), name);
         species[i] = it - symbols.begin();

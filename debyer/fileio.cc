@@ -66,7 +66,7 @@ bool is_xyz_format(char const* buffer)
             return false;
     }
     char* endptr = 0;
-    int dummy_int = strtol(buffer, &endptr, 10);
+    strtol(buffer, &endptr, 10);
     while (isspace(*endptr))
         ++endptr;
     if (endptr < e[0])
@@ -267,6 +267,19 @@ dbr_aconf read_atoms_from_file(LineInput &in, bool reduced_coords,
         read_xyz(in, &aconf);
     else if (fmt == "xyza")
         read_plain(in, &aconf);
+
+    if (reduced_coords && !aconf.reduced_coordinates && aconf.pbc.v00 != 0) {
+        double H_1[3][3]; // inverse of pbc matrix
+        dbr_inverse_3x3_matrix(aconf.pbc, H_1);
+        dbr_xyz reduced;
+        for (int i = 0; i < aconf.n; ++i) {
+            dbr_vec3_mult_mat3x3(aconf.atoms[i].xyz, H_1, reduced);
+            for (int j = 0; j < 3; ++j)
+                // wrap to <0,1)
+                aconf.atoms[i].xyz[j] = (reduced[j] - floor(reduced[j]));
+        }
+        aconf.reduced_coordinates = true;
+    }
 
     if (dbr_verbosity > 0)
         mcerr << "Elapsed " << dbr_get_elapsed() << " s. Atoms were read."
@@ -609,10 +622,9 @@ void read_dlpoly_config(LineInput& in, dbr_aconf *aconf)
     while (1) {
         if (!(line = in.get_line()))
             break;
-        ++counter;
-        if (counter == atoms_size)
+        if (counter + 1 == atoms_size)
             resize_atoms(atoms_size, &aconf->atoms);
-        dbr_atom& atom = aconf->atoms[counter-1];
+        dbr_atom& atom = aconf->atoms[counter];
 
         const char* nonblank = line;
         while (isspace(*nonblank))
@@ -632,16 +644,17 @@ void read_dlpoly_config(LineInput& in, dbr_aconf *aconf)
                 line = in.get_line();
             continue;
         }
-        else {
-            strncpy(atom.name, atom_name, 7);
+
+        strncpy(atom.name, atom_name, 7);
+        line = in.get_line();
+        ASSERT_FORMAT(line);
+        int r = sscanf(line, " " DBR_F " " DBR_F " " DBR_F,
+                             &atom.xyz[0], &atom.xyz[1], &atom.xyz[2]);
+        ASSERT_FORMAT(r == 3);
+        for (int i = 1; i < levcfg+1; ++i)
             line = in.get_line();
-            ASSERT_FORMAT(line);
-            int r = sscanf(line, " " DBR_F " " DBR_F " " DBR_F,
-                                 &atom.xyz[0], &atom.xyz[1], &atom.xyz[2]);
-            ASSERT_FORMAT(r == 3);
-            for (int i = 1; i < levcfg+1; ++i)
-                line = in.get_line();
-        }
+
+        ++counter;
     }
     aconf->n = counter;
 }
