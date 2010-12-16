@@ -54,24 +54,22 @@ OutputKind get_output_from_args (gengetopt_args_info const& args)
 string default_fn(gengetopt_args_info const& args, const char* ext)
 {
     char const* infn = args.inputs[0];
+
+    // set dot to the next char after basename
     char const* dot = strrchr(infn, '.');
+    if (dot == NULL || dot == infn)
+        dot = infn + strlen(infn); // *dot = '\0'
+    else if (strcmp(dot, ".gz") == 0 || strcmp(dot, ".bz2") == 0)
+        for (const char* d = dot - 1; d > infn; --d)
+                if (*d == '.') {
+                    dot = d;
+                    break;
+                }
 
-    if (dot && dot > infn
-            && (strcmp(dot, ".gz") == 0 || strcmp(dot, ".bz2") == 0)) {
-        --dot;
-        while (*dot != '.') {
-            if (dot == infn) {
-                dot = NULL;
-                break;
-            }
-            --dot;
-        }
-    }
-
-    if (strcmp(dot+1, ext) == 0)
-        return infn + string(".new");
-    string base = dot ? string(infn, dot) : string(infn);
-    return base + "." + ext;
+    string name = string(infn, dot) + "." + ext;
+    if (name == infn)
+        name += ".new";
+    return name;
 }
 
 
@@ -438,7 +436,7 @@ int main(int argc, char **argv)
         pargs.pattern_from = args.from_given ? args.from_arg : 0.;
         pargs.pattern_to = args.to_given ? args.to_arg : 0.;
         pargs.pattern_step = args.step_given ? args.step_arg : 0.;
-        pargs.ro = args.ro_given ? args.ro_arg : 0.;
+        pargs.ro = args.ro_given ? args.ro_arg : -1.;
         pargs.weight = args.weight_arg[0];
         r = write_pdfkind_to_file(&pargs, rdfs, ofname.c_str());
     }
@@ -449,7 +447,7 @@ int main(int argc, char **argv)
         dargs.pattern_to = args.to_given ? args.to_arg : 0.;
         dargs.pattern_step = args.step_given ? args.step_arg : 0.;
         dargs.lambda = args.lambda_given ? args.lambda_arg : 0.;
-        dargs.ro = args.ro_given ? args.ro_arg : 0.;
+        dargs.ro = args.ro_given ? args.ro_arg : -1.;
         dargs.cutoff = args.cutoff_given ? args.cutoff_arg : 0.;
         r = write_diffraction_to_file(&dargs, rdfs, ofname.c_str());
     }

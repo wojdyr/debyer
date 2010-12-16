@@ -152,7 +152,7 @@ const t_pse *find_in_pse(const char *label)
         buf[1] = tolower(label[1]);
 
     for (it = pse_table; it->Z != 0; it++)
-        if (strcmp(it->symbol, label) == 0)
+        if (strcmp(it->symbol, buf) == 0)
             return it;
     return NULL;
 }
@@ -1001,7 +1001,7 @@ const t_nn92_record *find_in_nn92(const char *label)
         buf[1] = tolower(label[1]);
 
     for (it = nn92_table; it->symbol != NULL; it++)
-        if (strcmp(it->symbol, label) == 0)
+        if (strcmp(it->symbol, buf) == 0)
             return it;
     return NULL;
 }

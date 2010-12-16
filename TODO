@@ -1,12 +1,8 @@
 
-debyer -v should show automatically determined density
-
 header comments in generated patterns:
  - put more information (from/to/step) in the first line:
    #debyer-pattern reduced-PDF [0 : 6 : 0.001] ro=0.0255427 weight=1
  - put full command line as a comment - useful for reproduction
-
-warn when lammps input file doesn't have a comment after "n atoms" line
 
 multiple input files -- only when options -dfile and -o are not given
 
@@ -18,6 +14,4 @@ use link-cell algorithm without PBC if r_cut < r_max/4
 optimize (id -> pattern) phase (FFT)
 
 --continue option for id calculation (in case the previous job was interrupted)
-
-calculate automatically ro from data by fitting 4*pi*ro*x^2 to RDF
 

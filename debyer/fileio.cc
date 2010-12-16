@@ -79,11 +79,11 @@ bool is_xyz_format(char const* buffer)
             return false;
         while (isalnum(*ptr)) //atom name
             ++ptr;
-        double dummy = strtod(ptr, &endptr); //x
+        strtod(ptr, &endptr); //x
         ptr = endptr;
-        dummy = strtod(ptr, &endptr); //y
+        strtod(ptr, &endptr); //y
         ptr = endptr;
-        dummy = strtod(ptr, &endptr); //z
+        strtod(ptr, &endptr); //z
         ptr = endptr;
         if (ptr > e[i])
             return false;
@@ -775,6 +775,9 @@ void read_lammps_data(LineInput& in, dbr_aconf* aconf, bool reduced_coords)
                 }
             }
             else {
+                mcerr << "Warning: No atomic symbols. "
+                         "You may add the symbols as a comment after "
+                         "the `atom types' line (e.g. '# Si C')" << endl;
                 for (int i = 0; i < ntypes; ++i) {
                     char sym[20];
                     snprintf(sym, 20, "A%d", i);

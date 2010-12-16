@@ -441,6 +441,7 @@ void dbr_inverse_3x3_matrix(const dbr_pbc a, double b[3][3])
             b[i][j] *= s;
 }
 
+/* works properly only with PBC in 3 dimensions */
 dbr_pbc_prop get_pbc_properties(dbr_pbc pbc)
 {
     dbr_pbc_prop p;
@@ -489,18 +490,17 @@ irdfs calculate_irdfs(int n, dbr_atoms* xa, dbr_real rcut, dbr_real rquanta,
     irdfs rdfs;
     dbr_cells *cells = NULL;
     FILE *id = 0;
-    int has_pbc = (pbc.v00 != 0.);
 #ifdef USE_MPI
     int *tmp_nn = NULL;
 #endif /*USE_MPI*/
     dbr_pbc_prop pbc_prop = get_pbc_properties(pbc);
-    if (has_pbc) {
+    if (pbc.v00 != 0. || pbc.v11 != 0. || pbc.v22 != 0.) {
         if (rcut <= 0) {
             dbr_mesg("Error: cut-off must be specified for PBC system\n");
             dbr_abort(1);
         }
         if (rcut >= pbc_prop.widths[0]/2 || rcut >= pbc_prop.widths[1]/2
-                                             || rcut >= pbc_prop.widths[2]/2) {
+                                         || rcut >= pbc_prop.widths[2]/2) {
             dbr_mesg("Error: cut-off must be smaller than half of PBC box\n");
             dbr_abort(1);
         }
@@ -519,7 +519,7 @@ irdfs calculate_irdfs(int n, dbr_atoms* xa, dbr_real rcut, dbr_real rquanta,
     rdfs.pair_count = n * (n+1) / 2;
     rdfs.data = (irdf*) xmalloc(rdfs.pair_count * sizeof(irdf));
     rdfs.density = -1.;
-    if (has_pbc)
+    if (pbc.v00 != 0. && pbc.v11 != 0. && pbc.v22 != 0.)
         rdfs.density = all_atom_count / pbc_prop.volume;
     if (id_filename) {
         if (dbr_verbosity > 0)
@@ -908,12 +908,35 @@ dbr_real* dbr_get_RDF(const irdfs* rdfs, int rdf_index, struct dbr_pdf_args* p)
 
 dbr_real get_density(dbr_real given_density, dbr_real auto_density)
 {
-    if (dbr_verbosity > 0 && given_density > 0 &&
+    if (dbr_verbosity > 0 && given_density >= 0. &&
             auto_density > 0 && given_density != auto_density)
         dbr_mesg("Ignoring number density from ID (%g), using %g\n",
                  auto_density, given_density);
 
-    return given_density > 0. ? given_density : auto_density;
+    return given_density >= 0. ? given_density : auto_density;
+}
+
+static
+void add_cutoff_correction(const irdfs* rdfs,
+                           const struct dbr_diffract_args* dargs,
+                           int n_pattern, dbr_real *pattern)
+{
+    int j;
+    char weight = '1'; // '1' is for output_sf
+
+    if (dargs->c == output_xray)
+        weight = 'x';
+    else if (dargs->c == output_neutron)
+        weight = 'n';
+    for (j = 0; j < n_pattern; ++j) {
+        dbr_real x = dargs->pattern_from + (j+0.5) * dargs->pattern_step;
+        dbr_real q = dargs->lambda <= 0. ? x
+                            : 4*M_PI * sin(M_PI/180.*x/2) / dargs->lambda;
+        dbr_real avg = calculate_avg_b(weight, rdfs, q);
+        dbr_real qc = q * dargs->cutoff;
+        pattern[j] += avg * avg * 4 * M_PI * dargs->ro / (q * q) * (
+                                   dargs->cutoff * cos(qc) - sin(qc) / q);
+    }
 }
 
 dbr_real* get_pattern(const irdfs* rdfs, struct dbr_diffract_args* dargs)
@@ -926,7 +949,6 @@ dbr_real* get_pattern(const irdfs* rdfs, struct dbr_diffract_args* dargs)
 
     assert(dargs->c == output_xray || dargs->c == output_neutron ||
            dargs->c == output_sf);
-    assert(dargs->cutoff > 0.);
     for (i = 0; i < rdfs->symbol_count; ++i) {
         const char* at = rdfs->atom_symbols[i];
         if (dargs->c == output_xray && find_in_it92(at) == NULL) {
@@ -972,24 +994,16 @@ dbr_real* get_pattern(const irdfs* rdfs, struct dbr_diffract_args* dargs)
             }
         }
     }
+
     /* cut-off error is large and increases with r_cutoff */
-    dargs->ro = get_density(dargs->ro, rdfs->density);
-    if (dargs->ro > 0.) {
-        char weight = '1'; // '1' is for output_sf
-        if (dargs->c == output_xray)
-            weight = 'x';
-        else if (dargs->c == output_neutron)
-            weight = 'n';
-        for (j = 0; j < n; ++j) {
-            dbr_real x = dargs->pattern_from + (j+0.5) * dargs->pattern_step;
-            dbr_real q = dargs->lambda <= 0. ? x
-                                : 4*M_PI * sin(M_PI/180.*x/2) / dargs->lambda;
-            dbr_real avg = calculate_avg_b(weight, rdfs, q);
-            dbr_real qc = q * dargs->cutoff;
-            pattern[j] += avg * avg * 4 * M_PI * dargs->ro / (q * q) * (
-                                       dargs->cutoff * cos(qc) - sin(qc) / q);
-        }
+    if (dargs->cutoff > 0) {
+        dargs->ro = get_density(dargs->ro, rdfs->density);
+        if (dbr_verbosity > 0 && dargs->ro >= 0)
+            dbr_mesg("Numeric density: %g\n", dargs->ro);
+        if (dargs->ro > 0.)
+            add_cutoff_correction(rdfs, dargs, n, pattern);
     }
+
     return pattern;
 }
 
@@ -1031,7 +1045,6 @@ int write_diffraction_to_file(struct dbr_diffract_args* dargs, irdfs rdfs,
     FILE *f;
     int i, n;
     dbr_real *result=NULL;
-    dbr_real irdf_max = rdfs.rdf_bins * rdfs.step;
     assert(dbr_is_inverse(dargs->c));
     if (dbr_nid != 0)
         return 0;
@@ -1046,20 +1059,19 @@ int write_diffraction_to_file(struct dbr_diffract_args* dargs, irdfs rdfs,
         fprintf(f, " lambda=%g", dargs->lambda);
     else
         fprintf(f, " Q");
-    if (dargs->cutoff <= 0.)
-        dargs->cutoff = irdf_max;
-    else {
+    if (dargs->cutoff > 0.) {
         int nb = get_number_of_bins(dargs->cutoff, rdfs.step);
         if (nb < rdfs.rdf_bins) {
             rdfs.rdf_bins = nb;
         }
         else if (nb > rdfs.rdf_bins) {
-            dargs->cutoff = irdf_max;
+            dargs->cutoff = rdfs.rdf_bins * rdfs.step;
             dbr_mesg("WARNING: can't set cut-off larger than %g\n",
                      dargs->cutoff);
         }
     }
-    fprintf(f, " cut-off=%g", dargs->cutoff);
+    fprintf(f, " cut-off=%g", dargs->cutoff > 0 ? dargs->cutoff
+                                                : rdfs.rdf_bins * rdfs.step);
     if (dargs->pattern_from <= 0.)
         dargs->pattern_from = dargs->lambda <= 0. ? 0.5 : 5;
     if (dargs->pattern_to <= 0.)
@@ -1420,18 +1432,18 @@ dbr_cells prepare_cells(dbr_pbc pbc, dbr_real rcut, dbr_atoms* xa)
     for (i = 0; i < cells.a[0]; ++i) {
         for (j = 0; j < cells.a[1]; ++j) {
             for (k = 0; k < cells.a[2]; ++k) {
-                if (i == 0 || i == cells.n[0] + 1
-                        || j == 0 || j == cells.n[1] + 1
-                        || k == 0 || k == cells.n[2] + 1) {
+                if (((i == 0 || i == cells.n[0] + 1) && cells.v[0])
+                    || ((j == 0 || j == cells.n[1] + 1) && cells.v[1])
+                    || ((k == 0 || k == cells.n[2] + 1) && cells.v[2])) {
                     /* find original cell indices */
                     dbr_real d[3];
                     n[0] = i;
                     n[1] = j;
                     n[2] = k;
                     for (m = 0; m < 3; ++m) {
-                        if (n[m] == 0)
+                        if (cells.v[m] && n[m] == 0)
                             n[m] = cells.n[m];
-                        else if (n[m] == cells.n[m] + 1)
+                        else if (cells.v[m] && n[m] == cells.n[m] + 1)
                             n[m] = 1;
                     }
 
