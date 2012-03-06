@@ -20,10 +20,15 @@
 
 #include <string>
 #include <sstream>
-#include <iostream>
 #include <math.h>
 #include <cstdlib>
 
+
+/// S() converts to string
+template <typename T>
+inline std::string S(T k) {
+    return static_cast<std::ostringstream&>(std::ostringstream() << k).str();
+}
 
 // popular single-pass algorithm for calculation of variance and mean
 class StdDev
@@ -39,8 +44,7 @@ public:
         S_ += delta * (x - mean_);
     }
 
-    std::string str() const { return static_cast<std::ostringstream&>(
-              std::ostringstream() << mean() << " +- " << stddev()).str(); }
+    std::string str() const { return S(mean()) + " +- " + S(stddev()); }
 
     double variance() const { return S_ / (n_ - 1); }
     double stddev() const { return sqrt(variance()); }
@@ -53,12 +57,6 @@ private:
 };
 
 inline int iround(double d) { return static_cast<int>(floor(d+0.5)); }
-
-/// S() converts to string
-template <typename T>
-inline std::string S(T k) {
-    return static_cast<std::ostringstream&>(std::ostringstream() << k).str();
-}
 
 inline void rodrigues(double theta, double axis[3], double mat[3][3])
 {

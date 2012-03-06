@@ -1040,8 +1040,10 @@ int read_atoms_c(const char* filename, dbr_atom **atoms, dbr_pbc *pbc,
         dbr_abort(EXIT_FAILURE);
     }
     dbr_aconf aconf = read_atoms_from_file(in, (bool)reduced, "");
-    *atoms = aconf.atoms;
-    *pbc = aconf.pbc;
+    if (atoms != NULL)
+        *atoms = aconf.atoms;
+    if (pbc != NULL)
+        *pbc = aconf.pbc;
     return aconf.n;
 }
 
