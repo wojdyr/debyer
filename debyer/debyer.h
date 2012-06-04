@@ -230,10 +230,10 @@ void dbr_inverse_3x3_matrix(const dbr_pbc a, double b[3][3]);
 
 int dbr_is_atom_in_sector(const dbr_real *xyz, const dbr_picker* picker);
 
-inline double dbr_len3(double a, double b, double c)
+static inline double dbr_len3(double a, double b, double c)
     { return sqrt(a*a + b*b + c*c); }
 
-inline double dbr_len3v(double *a)
+static inline double dbr_len3v(double *a)
     { return sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]); }
 
 
