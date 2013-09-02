@@ -1,8 +1,6 @@
 
 AC_PREREQ(2.59)
-AC_INIT([debyer],
-	[m4_esyscmd([echo -n "r" && svnversion | tr -d '\n'])],
-	[])
+AC_INIT([debyer], [0.3], [])
 AC_CONFIG_AUX_DIR(build-aux)
 AC_CONFIG_SRCDIR([debyer/debyer.c])
 AC_CONFIG_HEADER([config.h])
@@ -37,6 +35,7 @@ AC_ARG_WITH(bzlib, AS_HELP_STRING([--without-bzlib],
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_RANLIB
+AM_PROG_AR
 
 if test x$enable_mpi = xyes; then
   AC_CHECK_PROGS(MPICC, mpicc hcc mpcc mpcc_r mpxlc cmpicc, $CC)
