@@ -41,7 +41,7 @@ the Debye scattering equation:
  
 where
  * `Q` is the scattering vector, called also momentum transfer vector
-   (`Q = \left|\boldsymbol{Q}\right| = 4 \pi \sin \theta / \lambda` where
+   (`Q = \left|\boldsymbol{Q}\right| = 4 \pi \sin \theta / \lambda` , where
    `\theta` is diffraction half-angle and `\lambda` is the wavelength),
  * `r_{ij}=\left|\boldsymbol{r}_i - \boldsymbol{r}_j\right|` is the distance
    between atoms *i* and *j*,
@@ -69,16 +69,17 @@ Re-derivation can be found for example in `Farrow & Billinge, Acta Cryst A65
 (2009) 232 <http://dx.doi.org/10.1107/S0108767309009714>`_
 (`pre-print <http://arxiv.org/pdf/0811.1140.pdf>`_).
 
-Let's re-derive it once more. We start with formula for the amplitude of the
+Let's re-derive it once more. We start with the amplitude of the
 scattered wave. If we ignore non-elastic scattering and assume that each photon
-is scattered only once, the formula is a simple sum over all atoms:
+is scattered only once, the amplitude is a simple sum over all atoms:
 
 .. math::
 
     \Psi(\boldsymbol{Q}) = \sum_i \psi_i
     =\sum_i f_i \exp(-i \boldsymbol{Q} \cdot \boldsymbol{r}_i)
 
-(*i* has two meanings here, hopefully it's not confusing).
+(*i* has two unrelated meanings here, index and the imaginary unit,
+hopefully it's not too confusing).
 
 The intensity of the scattered wave is given as
 
@@ -117,8 +118,7 @@ we can take a shortcut and use one integral:
     = 4 \pi r^2
 
 Now, let `\gamma` be the angle between `\boldsymbol{Q}` and
-`\boldsymbol{r}_{ij}`,
-`(\boldsymbol{r}_{ij} = \boldsymbol{r}_i - \boldsymbol{r}_j)`.
+`\boldsymbol{r}_{ij} \, (\equiv \boldsymbol{r}_i - \boldsymbol{r}_j)` .
 
 .. math::
 
@@ -164,47 +164,67 @@ the correlated broadening factor for the atom pair (as mentioned in Farrow 2009)
 Cut-off
 -------
 
-For isolated particles we can directly calculate the intensity.
-In case of bulk material (simulated in periodic boundary conditions)
-we must use a cut-off. Simply discarding all atomic pairs longer
-than a choosen cut-off distance would give a pattern that looks like sinusoid.
+In this section, to simplify notation, we will consider monoatomic system.
+It can be easily generalized to multiple species.
 
-To have simpler notation, let's consider monoatomic system.
-(*TODO: extend it to multiple species later*).
+The Debye formula allows us to directly calculate the intensity
+from an isolated particle.
+But in "infinite" bulk material (simulated in periodic boundary conditions)
+we must somehow limit the number of considered atomic pairs.
 
-It is instructive to write the Debye formula as a function of
-`n(r) \equiv \sum_{i,j} \delta(r-r_{ij})` ,
+The simplest idea could be to pick a cut-off distance and limit the Debye
+formula to atomic pairs not further apart than this distance.
+It would not work, though.
+The termination effect would create a large sinusoid.
+So it needs to be more complicated.
 
-.. math:: I(Q) = f^{2} \int_0^\infty n(r) \frac{\sin(Qr)}{Qr} \, \mathrm{d}r.
+Further calculations will be easier if we write the Debye formula
+as an integral,
 
-To use a simple cut-off, we need to estimate and compensate for the atomic
-pairs beyond the cut-off. Let us approximate the structure beyond the
-cut-off distance with a continuum of the density equal to the average density
-of the structure,
+.. math:: I(Q) = f^{2} \int_0^\infty n(r) \frac{\sin(Qr)}{Qr} \, \mathrm{d}r ,
+    :label: debye-integral
 
-.. math:: n(r) = N \, 4\pi r^{2} \, \rho,
+where
 
-where *N* is the total number of atoms and `\rho` is the numeric density.
-The contribution of the discared pairs would be
+.. math:: n(r) \equiv \sum_{i,j} \delta(r-r_{ij}) .
+
+Compensation
+^^^^^^^^^^^^
+
+Let us compensate for the missing atomic pairs,
+approximating the structure beyond the cut-off distance `r_c` with a continuum:
+
+.. math:: I(Q) \approx I^{r<r_c}(Q) + I_{cont}^{r>r_c}(Q)
+
+The density of the continuum `\rho` is set to the average density of
+the structure, and
+
+.. math:: n_{cont}(r) = N \, 4\pi r^{2} \, \rho,
+
+where *N* is the total number of atoms.
+We need to calculate the second addend.
 
 .. math::
     \begin{eqnarray}
     I_{cont}^{r>r_c}(Q)
     & = &
-    f^{2} \int_{r_c}^\infty n(r) \frac{\sin(Qr)}{Qr} \, \mathrm{d}r \\
+    f^{2} \int_{r_c}^\infty n_{cont}(r) \frac{\sin(Qr)}{Qr} \, \mathrm{d}r \\
     & = &
     \frac{4\pi N \rho f^2}{Q} \int_{r_c}^\infty r \sin(Qr) \mathrm{d}r \\
     & = &
-    \frac{4\pi N \rho f^2}{Q} \left[ \frac{\sin(Qr) - Qr cos(Qr)}{Q^2} \right]_{r_c}^\infty 
+    \frac{4\pi N \rho f^2}{Q} \left[ \frac{\sin(Qr) - Qr \cos(Qr)}{Q^2} \right]_{r_c}^\infty 
     \end{eqnarray}
 
 Oops, it doesn't converge.
 
-It will converge if we subtract from `I(Q)` the intensity diffracted from
-a continuus system with density `\rho`. Since continuum does not
-add to diffraction (at non-zero `Q`), this operation doesn't change `I(Q)`.
-(I haven't seen it explained like this in the literature, but subtracting
-the average density is quite common).
+It will converge if we subtract from *I(Q)* the intensity diffracted from
+a continuus system with density `\rho`.
+
+Since continuum does not add to diffraction (at non-zero *Q*),
+it should not harm to subtract `I_{cont}` from the right side of the
+approximation above.
+(I haven't seen it explained like this in the literature, but this
+operation is quite common).
 
 So now the correction is `I_{cont}^{r>r_c} - I_{cont} = - I_{cont}^{r<r_c}` ,
 
@@ -224,16 +244,53 @@ Finally,
     + \frac{4\pi\rho}{Q^{3}}\left(Qr_{c}\cos(Qr_{c})-\sin(Qr_{c})\right)\right].
  
 That's the simplest correction (and the only one implemented in debyer for now).
-It works well enough for polycrystalline systems, but not for a single crystal.
-Probably a damping function would work better for single crystals, for example
-`Lin & Zhigilei in PRB <http://dx.doi.org/10.1103/PhysRevB.73.184113>`_
-(eq. (8) there and the surrounding text)
+
+This correction can be also applied without the analytical form above.
+If the summation is using eq. :eq:`debye-integral`
+(with histogram approximation, i.e. *n(r)* is counted in finite intervals),
+just subtract *n*:sub:`cont`\ *(r)* from *n(r)* in each interval.
 
 TODO: introduce structure factor S(Q). Would using S(Q) instead of I(Q)
 make things simpler?
 
-Computational approaches
-------------------------
+Damping
+^^^^^^^
+
+The correction above works well enough for polycrystalline systems,
+but may not work for a single crystal.
+It should work fine if the pair correlation function is flat at the cut-off
+distance. If it is not flat, it is necessary to smooth it
+using damping function.
+
+In a few papers
+the `sinc function <http://en.wikipedia.org/wiki/Sinc_function>`_
+is used for this purpose:
+
+* E. Lorch in
+  `J. Phys. C in 1969 <http://dx.doi.org/10.1088/0022-3719/2/2/305>`_.
+  Actually, he was going the opposite way -- from *I(Q)* to *g(r)*,
+  but the truncation effect is similar.
+
+* G. Gutiérrez *et al.* in
+  `PRB in 2002 <http://link.aps.org/doi/10.1103/PhysRevB.65.104202>`_
+  (`copy <http://www.nucleo-milenio.cl/interior/publications/PRB04202.pdf>`__)
+  -- the "window function" in eq. (2) there.
+
+* Z. Lin & L. Zhigilei in
+  `PRB in 2006 <http://dx.doi.org/10.1103/PhysRevB.73.184113>`_
+  (`copy <http://www.dtic.mil/dtic/tr/fulltext/u2/a465173.pdf>`__)
+  -- the "damping function", eq. (8) there.
+
+Together with the continuous density approximation from the previous
+section, the sinc damping function can be added by replacing *n(r)*
+in eq. :eq:`debye-integral` with
+
+.. math:: [n(r) - n_{cont}(r)] \frac{\sin(\pi r / r_c)}{\pi r / r_c}
+
+TBC
+
+Computational approach
+----------------------
 
 TODO: histogram approximation, spherical harmonics approx., ...
 

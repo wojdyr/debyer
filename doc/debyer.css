@@ -1,0 +1,16 @@
+
+@import url("default.css");
+
+div.body {
+    font-family: Georgia,Times,serif !important;
+    color: #222222;
+    max-width: 52em;
+}
+
+div.sphinxsidebar {
+    width: 280px !important;
+}
+
+div.bodywrapper {
+    margin-right: 280px !important;
+}

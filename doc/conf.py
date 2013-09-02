@@ -33,6 +33,8 @@ html_show_sourcelink = True
 #html_show_sphinx = True
 html_show_copyright = False
 #html_file_suffix = None
+html_static_path = ['debyer.css']
+html_style = 'debyer.css'
 
 latex_elements = { 'papersize': 'a4paper', 'pointsize': '11pt',
                     #'preamble': '',
