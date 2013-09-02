@@ -129,23 +129,19 @@ Now, let `\gamma` be the angle between `\boldsymbol{Q}` and
 Avaraging the exponential part gives
 
 .. math::
-
-    \begin{eqnarray}
     \left\langle \exp( -iQr_{ij} \cos \gamma ) \right\rangle
-    & = &
-    \frac{1}{4\pi r_{ij}^2} \int_0^\pi \exp\left( -iQr_{ij} \cos\gamma \right)
-    \, 2\pi r_{ij}^2 \sin\gamma \, \mathrm{d}\gamma \\
-    & = &
-    \frac{1}{2} \int_0^\pi \exp\left( -iQr_{ij}\cos\gamma \right)
-    \sin\gamma \, \mathrm{d}\gamma \\
-    & = &
-    \frac{1}{2} \left[ \frac{\exp\left( -iQr_{ij} \cos\gamma \right)}
-    {iQr_{ij}} \right]_0^\pi \\
-    & = &
-    \frac{\exp(iQr_{ij})-\exp(-iQr_{ij})}{2iQr_{ij}} \\
-    & = &
-    \frac{\sin(Qr_{ij})}{Qr_{ij}}
-    \end{eqnarray}
+    & = \frac{1}{4\pi r_{ij}^2} \int_0^\pi \exp\left( -iQr_{ij} \cos\gamma
+    \right) \, 2\pi r_{ij}^2 \sin\gamma \, \mathrm{d}\gamma
+    \\
+    & = \frac{1}{2} \int_0^\pi \exp\left( -iQr_{ij} \cos\gamma \right)
+          \sin\gamma \, \mathrm{d}\gamma
+    \\
+    & = \frac{1}{2} \left[ \frac{\exp\left( -iQr_{ij} \cos\gamma \right)}
+          {iQr_{ij}} \right]_0^\pi
+    \\
+    & = \frac{\exp(iQr_{ij})-\exp(-iQr_{ij})}{2iQr_{ij}}
+    \\
+    & = \frac{\sin(Qr_{ij})}{Qr_{ij}}
 
 which proves the Debye formula.
 
@@ -205,15 +201,13 @@ where *N* is the total number of atoms.
 We need to calculate the second addend.
 
 .. math::
-    \begin{eqnarray}
     I_{cont}^{r>r_c}(Q)
-    & = &
-    f^{2} \int_{r_c}^\infty n_{cont}(r) \frac{\sin(Qr)}{Qr} \, \mathrm{d}r \\
-    & = &
-    \frac{4\pi N \rho f^2}{Q} \int_{r_c}^\infty r \sin(Qr) \mathrm{d}r \\
-    & = &
-    \frac{4\pi N \rho f^2}{Q} \left[ \frac{\sin(Qr) - Qr \cos(Qr)}{Q^2} \right]_{r_c}^\infty 
-    \end{eqnarray}
+    & = f^{2} \int_{r_c}^\infty n_{cont}(r) \frac{\sin(Qr)}{Qr} \, \mathrm{d}r
+    \\
+    & = \frac{4\pi N \rho f^2}{Q} \int_{r_c}^\infty r \sin(Qr) \mathrm{d}r
+    \\
+    & = \frac{4\pi N \rho f^2}{Q}
+          \left[ \frac{\sin(Qr) - Qr \cos(Qr)}{Q^2} \right]_{r_c}^\infty
 
 Oops, it doesn't converge.
 
@@ -232,7 +226,7 @@ So now the correction is `I_{cont}^{r>r_c} - I_{cont} = - I_{cont}^{r<r_c}` ,
 
     I_{cont}^{r<r_c}(Q) = 
     \frac{4\pi N \rho f^2}{Q} \left[ \frac{\sin(Qr) - Qr \cos(Qr)}{Q^2} \right]_0^{r_c}
-    = \frac{4\pi N \rho f^2}{Q^3} \left[ \sin(Qr_c) - Qr \cos(Qr_c) \right]
+    = \frac{4\pi N \rho f^2}{Q^3} \left[ \sin(Qr_c) - Qr_c \cos(Qr_c) \right]
 
 
 Finally,
@@ -269,15 +263,15 @@ is used for this purpose:
 * E. Lorch in
   `J. Phys. C in 1969 <http://dx.doi.org/10.1088/0022-3719/2/2/305>`_.
   Actually, he was going the opposite way -- from *I(Q)* to *g(r)*,
-  but the truncation effect is similar.
+  but the truncation effect is similar,
 
 * G. Gutiérrez *et al.* in
   `PRB in 2002 <http://link.aps.org/doi/10.1103/PhysRevB.65.104202>`_
   (`copy <http://www.nucleo-milenio.cl/interior/publications/PRB04202.pdf>`__)
-  -- the "window function" in eq. (2) there.
+  -- the "window function" in eq. (2) there,
 
 * Z. Lin & L. Zhigilei in
-  `PRB in 2006 <http://dx.doi.org/10.1103/PhysRevB.73.184113>`_
+  `PRB in 2006 <http://link.aps.org/doi/10.1103/PhysRevB.73.184113>`_
   (`copy <http://www.dtic.mil/dtic/tr/fulltext/u2/a465173.pdf>`__)
   -- the "damping function", eq. (8) there.
 
