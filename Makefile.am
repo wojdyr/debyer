@@ -1,2 +1,4 @@
 
 SUBDIRS = debyer
+
+EXTRA_DIST = README.rst
