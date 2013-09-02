@@ -11,8 +11,6 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  $Id$
- *
  *  Functions for access to the following data:
  *   - periodic system of elements
  *   - x-ray scattering factors (based on IT92 data)

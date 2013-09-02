@@ -11,8 +11,6 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  $Id$
- *
  *  Misc utilities (in C++). ATM all functions/methods are inlined.
  */
 #ifndef DEBYER_UTILS_H_

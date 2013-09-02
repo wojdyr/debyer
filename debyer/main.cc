@@ -11,8 +11,6 @@
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 //  GNU General Public License for more details.
 //
-//  $Id$
-//
 //  Main loop of debyer program. Parses command-line arguments (using
 //  gengetopt and debyer.ggo) and uses libdebyer for actual computations.
 
