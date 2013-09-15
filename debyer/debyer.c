@@ -941,7 +941,7 @@ dbr_real* get_pattern(const irdfs* rdfs, struct dbr_diffract_args* dargs)
 {
     dbr_real *pattern;
     int i, j, k, n;
-    irdf *p = 0;
+    irdf *p = NULL;
     dbr_real ff = 1.;
     int all_count = count_all_atoms(rdfs);
 
@@ -958,6 +958,9 @@ dbr_real* get_pattern(const irdfs* rdfs, struct dbr_diffract_args* dargs)
             return NULL;
         }
     }
+    if (dargs->cutoff > 0)
+        /* use calculated density unless different value is explicitly given */
+        dargs->ro = get_density(dargs->ro, rdfs->density);
 
     n = (dargs->pattern_to - dargs->pattern_from) / dargs->pattern_step;
     pattern = (dbr_real*) xmalloc(n*sizeof(dbr_real));
@@ -970,31 +973,45 @@ dbr_real* get_pattern(const irdfs* rdfs, struct dbr_diffract_args* dargs)
                                 * get_neutron_scattering_factor(p->at2);
         }
         for (j = 0; j < n; ++j) {
-            dbr_real t;
             dbr_real x = dargs->pattern_from + (j+0.5) * dargs->pattern_step;
             dbr_real q = dargs->lambda <= 0. ? x
                                  : 4*M_PI * sin(M_PI/180.*x/2) / dargs->lambda;
             if (dargs->c == output_xray)
                 ff = get_xray_scattering_factor(p->at1, q)
                                     * get_xray_scattering_factor(p->at2, q);
-            t = 2 * ff / q / all_count;
-            for (k = 0; k < rdfs->rdf_bins; ++k) {
-                if (p->nn[k]) {
+            if (!dargs->sinc_damp) {
+                for (k = 0; k < rdfs->rdf_bins; ++k) {
+                    if (p->nn[k]) {
+                        dbr_real r = (k+0.5) * rdfs->step;
+                        /* doubled, because in Debye's formula every pair
+                         * is taken twice (n,m and m,n) */
+                        pattern[j] += ff * (2 * p->nn[k]) * sin(q*r) / (q*r);
+                    }
+                }
+            } else {
+                // shell_volume = 4 pi r^2 * rdfs->step
+                // n_cont = shell_volume * ro * c1 * c2 / all_count
+                dbr_real t = 4*M_PI * rdfs->step * // r^2 is below
+                             dargs->ro * p->c1 * p->c2 / all_count;
+                for (k = 0; k < rdfs->rdf_bins; ++k) {
                     dbr_real r = (k+0.5) * rdfs->step;
-                    /* it's doubled, because in Debye's formula every pair
-                     * is taken twice (n,m and m,n) */
-                    pattern[j] += t * p->nn[k] * sin(q*r) / r;
+                    dbr_real r_c = dargs->cutoff;
+                    dbr_real damp_factor = sin(M_PI*r/r_c) / (M_PI*r/r_c);
+                    dbr_real nn = (2 * p->nn[k] - t*r*r) * damp_factor;
+                    pattern[j] += ff * nn * sin(q*r) / (q*r);
                 }
             }
             /* in Debye's formula, in \sum_{n,m}, also n==m counts */
             if (!strcmp(p->at1, p->at2)) {
-                pattern[j] += ff * p->c1 / all_count;
+                pattern[j] += ff * p->c1;
             }
         }
     }
+    for (i = 0; i < n; ++i)
+        pattern[i] /= all_count;
 
-    /* cut-off error is large and increases with r_cutoff */
-    if (dargs->cutoff > 0) {
+    /* this correction has been already applied if sinc_damp is given */
+    if (dargs->cutoff > 0 && !dargs->sinc_damp) {
         dargs->ro = get_density(dargs->ro, rdfs->density);
         if (dbr_verbosity > 0 && dargs->ro >= 0)
             dbr_mesg("Numeric density: %g\n", dargs->ro);

@@ -180,6 +180,7 @@ struct dbr_diffract_args
     dbr_real lambda;
     dbr_real ro;
     dbr_real cutoff;
+    int sinc_damp;
 };
 
 extern int dbr_nid; /* rank of process (0 if serial) */

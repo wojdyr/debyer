@@ -39,24 +39,29 @@ option "z-lt" - "maximum in z direction" float optional hidden
 
 
 section "Stage 2: calculation of the final result from ID"
-defgroup "output" groupdesc="only one of the following options can be selected"
-groupoption "xray" x "x-ray powder pattern" group="output"
-groupoption "neutron" n "neutron powder pattern" group="output"
-groupoption "sf" S "scattering factor (a.k.a total scattering structure function)" group="output"
-groupoption "RDF" R "radial distribution function (RDF)" group="output"
-groupoption "PDF" g "pair distribution function (PDF)" group="output"
-groupoption "rPDF" G "reduced PDF" group="output"
-text ""
+defgroup "mode" groupdesc="what to calculate - pick one"
+groupoption "xray" x "x-ray powder pattern" group="mode"
+groupoption "neutron" n "neutron powder pattern" group="mode"
+groupoption "sf" S "scattering factor (a.k.a total scattering structure function)" group="mode"
+groupoption "RDF" R "radial distribution function (RDF)" group="mode"
+groupoption "PDF" g "pair distribution function (PDF)" group="mode"
+groupoption "rPDF" G "reduced PDF" group="mode"
 
+section " Output range (for example -f20 -t100 -s0.1)"
 option "from" f "start of calculated pattern" float optional
 option "to" t "end of calculated pattern" float optional
 option "step" s "step of calculated pattern" float optional
-text ""
 
-option "lambda" l "wavelength for I(2T) diffractogram. Omit for I(Q)." float optional
+section " Options for real space patterns"
+option "weight" w "weighting by x-ray f(0) or neutron b" values="x","n","1" default="1" optional
+option "partials" p "include partials as extra columns" optional
+
+section " Options for reciprocal space patterns"
+option "lambda" l "wavelength (omit for a pattern in Q)" float optional
+option  "sinc" - "use sinc as damping function (requires cut-off)" optional
+
+section " Options valid for both real and reciprocal space patterns"
 option "ro" - "numeric density, required for (r)PDF and diffractogram with cutoff" float optional
-option "weight" w "RDF/(r)PDF weights: x-ray f(0), neutron b or 1" values="x","n","1" default="1" optional
-option "partials" p "include partials in RDF/PDF/rPDF" optional
 text ""
 option "output" o "output filename. If not given, will be auto-generated." string typestr="FILENAME" optional
 

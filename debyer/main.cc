@@ -175,7 +175,7 @@ void write_atoms_to_file(dbr_aconf const& aconf,
                          : default_fn(args, "xyza"));
 
     // is that all to do?
-    if (args.output_group_counter == 0 && !args.save_id_given)
+    if (args.mode_group_counter == 0 && !args.save_id_given)
         dbr_abort(EXIT_SUCCESS);
 }
 
@@ -323,7 +323,7 @@ int main(int argc, char **argv)
             || args.write_dlpoly_given
             || args.write_lammps_data_given || args.write_pdb_given
             || args.write_xyza_given);
-    if (args.output_group_counter == 0 && !args.save_id_given && !output_atoms){
+    if (args.mode_group_counter == 0 && !args.save_id_given && !output_atoms){
         mcerr << "No output format specified, nothing to do." << endl;
         dbr_abort(EXIT_SUCCESS);
     }
@@ -336,6 +336,15 @@ int main(int argc, char **argv)
 
     OutputKind kind = get_output_from_args(args);
     string ofname = get_output_filename(args);
+
+    if (args.sinc_given && !dbr_is_inverse(kind)) {
+        mcerr << "damping (--sinc) works only in reciprocal space" << endl;
+        dbr_abort(EXIT_FAILURE);
+    }
+    if (args.sinc_given && !args.cutoff_given) {
+        mcerr << "damping (--sinc) requires cut-off" << endl;
+        dbr_abort(EXIT_FAILURE);
+    }
 
     const char *id_magic = "debyer-id ";
     bool input_with_id = !strncmp(in.get_buffer(), id_magic, strlen(id_magic));
@@ -447,6 +456,7 @@ int main(int argc, char **argv)
         dargs.lambda = args.lambda_given ? args.lambda_arg : 0.;
         dargs.ro = args.ro_given ? args.ro_arg : -1.;
         dargs.cutoff = args.cutoff_given ? args.cutoff_arg : 0.;
+        dargs.sinc_damp = args.sinc_given;
         r = write_diffraction_to_file(&dargs, rdfs, ofname.c_str());
     }
     free_irdfs(&rdfs);
