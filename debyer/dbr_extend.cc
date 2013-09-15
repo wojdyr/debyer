@@ -1307,6 +1307,7 @@ int main(int argc, char **argv)
             case bound_arg_X: slab.dim = 0; upper = true; break;
             case bound_arg_Y: slab.dim = 1; upper = true; break;
             case bound_arg_Z: slab.dim = 2; upper = true; break;
+            default: assert(0);
         }
         slab.x0 = find_extreme_coord(aconf, slab.dim, upper);
         if (verbosity > 0)
