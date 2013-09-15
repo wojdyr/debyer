@@ -96,7 +96,7 @@ int main(int argc, char **argv)
 {
     dbr_atom *coords = 0, *coords2 = 0;
     dbr_pbc pbc;
-    int old_n;
+    int old_n = -1;
     int f_start = 1;
     bool append = false;
     vector<string> old_lines;

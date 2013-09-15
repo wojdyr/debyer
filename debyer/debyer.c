@@ -779,7 +779,7 @@ irdfs read_irdfs_from_file(const char *filename)
                 if (!strncmp(p->at2, rdfs.atom_symbols[i], 8))
                     p->c2 = rdfs.atom_counts[i];
             }
-            sn = fscanf(f, " sample %i", &p->sample); /* optional "sample" */
+            fscanf(f, " sample %i", &p->sample); /* optional "sample" */
         }
         else if (r == '#') {
             skip_to_next_line(f);

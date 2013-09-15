@@ -31,6 +31,8 @@ using namespace std;
     if (dbr_nid == 0) \
         cerr
 
+namespace {
+
 OutputKind get_output_from_args (gengetopt_args_info const& args)
 {
     if (args.RDF_given)
@@ -257,8 +259,7 @@ int do_benchmark1(int count)
     delete [] coords;
     if (dbr_verbosity > 0)
         mcerr << "SiC pseudo-grain (cube a=" << a << ") was generated." << endl;
-    dbr_pbc pbc;
-    pbc.v00 = pbc.v11 = pbc.v22 = 0.;
+    dbr_pbc pbc = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     dbr_picker picker;
     picker.all = 1;
     picker.cut = 0;
@@ -295,6 +296,8 @@ string get_output_filename(gengetopt_args_info const& args)
         assert(0);
     return default_fn(args, ext);
 }
+
+} // anonymous namespace
 
 int main(int argc, char **argv)
 {

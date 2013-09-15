@@ -21,6 +21,8 @@
 
 using namespace std;
 
+namespace {
+
 const char* usage[] = {
 "Usage: dbr_conv [OPTIONS]... INPUT_FILE OUTPUT_FILE",
 "       dbr_conv [OPTIONS...] -t TO_FORMAT -m INPUT_FILE1 [INPUT_FILE2]...",
@@ -108,6 +110,8 @@ void sort_atoms(dbr_aconf& aconf)
     }
     delete [] orig_atoms;
 }
+
+} // anonymous namespace
 
 int main(int argc, char *argv[])
 {

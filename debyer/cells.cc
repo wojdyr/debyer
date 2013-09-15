@@ -209,7 +209,7 @@ void CellMethod::find_all_bonds(double min_dist, vector<Bond> &bonds) const
                         if (*p > a) {
                             double d2 = get_sq_dist(x, aconf_.atoms[*p].xyz);
                             if (d2 < min_dist * min_dist) {
-                                Bond bond = { a, *p, sqrt(d2) };
+                                Bond bond = { a, *p, (float)sqrt(d2) };
                                 bonds.push_back(bond);
                             }
                         }
@@ -245,9 +245,12 @@ CellMethod::get_atom_at(dbr_real const* xyz, double epsilon) const
     //        return &aconf_.atoms[*p];
     //    ++p;
     //}
-    dbr_atom const* ret = find_one_in_cell(idx, xyz, epsilon);
-    if (ret != NULL)
-        return ret;
+
+    {
+        dbr_atom const* ret = find_one_in_cell(idx, xyz, epsilon);
+        if (ret != NULL)
+            return ret;
+    }
 
     int nb[3] = { 0, 0, 0 };
     for (int i = 0; i < 3; ++i) {
