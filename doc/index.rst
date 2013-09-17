@@ -2,9 +2,8 @@
 Draft of new Debyer's documentation
 ###################################
 
-I just started writting down some missing pieces of docs here.
+I just started writting down pieces of docs here.
 It's not organized yet. Some points are just notes to myself.
-It's meant for the next version of Debyer, if this ever happens.
 
 **For now, visit**: http://code.google.com/p/debyer
 
@@ -19,6 +18,13 @@ It's meant for the next version of Debyer, if this ever happens.
 Introduction
 ============
 
+You can find here a collection of C/C++ tools that analyze and manipulate
+atomistic models.
+While the main tool, a program called *debyer*, is well-documented
+and used by several groups, other programs were written for very specific
+tasks and are unlikely to be ever re-used -- but just in case,
+they are briefly described in the last section.
+
 Debyer takes as an input a file with positions of all the atoms in the
 virtual sample (up to tens of millions of atoms, perhaps even more) and can
 output x-ray and neutron powder diffraction pattern, total scattering structure
@@ -26,10 +32,55 @@ function, pair distribution function (PDF) and related functions (RDF, reduced
 PDF).
 
 A few use cases for debyer can be found `in papers citing its website`__.
-Note that Debyer is not designed to calculate a diffraction pattern
-of a perfect crystal.
+Usually, the analyzed model
+
+ * is a result of molecular dynamics simulation,
+ * or is constructed using simple geometrical rules,
+   with no interatomic potentials and no forces.
 
 __ http://scholar.google.com/scholar?q=unipress.waw.pl%2Fdebyer+OR+code.google.com%2Fp%2Fdebyer
+
+Debyer is **not** designed to calculate a diffraction pattern of a perfect
+crystal. It does not make sense to employ the Debye's formula for a unit cell,
+you can easily get indexed pattern using other programs, such as PowderCell_
+(sadly it's not maintained since 1990s;
+no idea what should be recommended nowadays).
+
+.. _PowderCell: http://www.iucr.org/resources/other-directories/software/powder-cell
+
+Direct-space patterns
+=====================
+
+Unlike in experiments, the pair distribution function
+(pair correlation function)
+is obtained directly from the atomic coordinates,
+not through diffraction pattern.
+In other words, we do not emulate errors of experimental PDFs.
+
+The definitions of PDF/RDF/PCF vary. Here, we stick to names
+and symbols from the *Underneath the Bragg Peaks* book
+(`ISBN 0-08-042698-0 <http://books.google.pl/books?id=ek2ymu7_NfgC>`_):
+
+* *g(r)* -- atomic pair distribution function, PDF
+  (a.k.a pair correlation function, converges to 1 as *r* increases)
+* *G(r)* -- reduced PDF, rPDF (oscillates around 0)
+* *R(r)* -- radial distribution function, RDF (goes up like parabola)
+* *ρ(r)* -- atomic pair density function (scaled *g(r)*, listed here
+  just for completeness)
+
+.. math::
+
+ R(r)    &= \frac{1}{N}\sum_{\nu}\sum_{\mu} \frac{b_{\nu}b_{\mu}}
+              {\left\langle b\right\rangle ^2} \delta(r-r_{\nu\mu}) \\
+ \rho(r) &= \frac{1}{4\pi r^{2}} R(r) \\
+ g(r)    &= \rho(r) / \rho_0 = \frac{R(r)}{4\pi\rho_0 r^2} \\
+ G(r)    &= 4\pi r\rho_0 \left[ g(r)-1 \right]
+
+The average density `\rho_0` is either defined by the user or determined
+automatically.
+
+Weights *b* can be set as neutron scattering lengths, x-ray *f*\ (0)
+or equal 1 (see section xx).
 
 Debye scattering formula
 ========================
@@ -40,14 +91,15 @@ the Debye scattering equation:
 .. math:: I(Q)=\sum_i \sum_j f_i f_j \frac{\sin(Qr_{ij})}{Qr_{ij}}
  
 where
- * `Q` is the scattering vector, called also momentum transfer vector
-   (`Q = \left|\boldsymbol{Q}\right| = 4 \pi \sin \theta / \lambda` , where
-   `\theta` is diffraction half-angle and `\lambda` is the wavelength),
- * `r_{ij}=\left|\boldsymbol{r}_i - \boldsymbol{r}_j\right|` is the distance
-   between atoms *i* and *j*,
- * and `f_i` is the atomic scattering factor of *i*-th atom;
-   in general it depends on `Q` and we should write it as `f(Q)` ,
-   but we don't, to keep the notation simple.
+
+* `Q` is the scattering vector, called also momentum transfer vector
+  (`Q = \left|\boldsymbol{Q}\right| = 4 \pi \sin \theta / \lambda` , where
+  `\theta` is diffraction half-angle and `\lambda` is the wavelength),
+* `r_{ij}=\left|\boldsymbol{r}_i - \boldsymbol{r}_j\right|` is the distance
+  between atoms *i* and *j*,
+* and `f_i` is the atomic scattering factor of *i*-th atom;
+  in general it depends on `Q` and we should write it as `f(Q)` ,
+  but we don't, to keep the notation simple.
 
 .. note::
 
@@ -286,5 +338,44 @@ TBC
 Computational approach
 ----------------------
 
-TODO: histogram approximation, spherical harmonics approx., ...
+Scattering factors
+^^^^^^^^^^^^^^^^^^
 
+Atomic scattering factor are assigned automatically, by searching atom names in
+`built-in tables <https://raw.github.com/wojdyr/fityk/master/wxgui/atomtables.c>`_.
+These tables are based on
+
+* International Tables for Crystallography, Volume C 1992,
+  Table 6.1.1.4 (pp. 500-502),
+  *Coefficients for analytical approximation to the scattering factors*
+  (for x-rays)
+* `Neutron scattering lengths and cross-sections`__ (for neutrons)
+
+__ http://www.ncnr.nist.gov/resources/n-lengths/list.html
+
+Histogram approximation
+^^^^^^^^^^^^^^^^^^^^^^^
+
+histogram
+
+cell method
+
+TODO
+
+(not used: spherical harmonics approx., ...)
+
+Parallel computations
+^^^^^^^^^^^^^^^^^^^^^
+
+If you are working with large configurations (millions of atoms),
+you may build the parallel version of the program. It uses the MPI library.
+Also note that compiler options related to floating point arithmetics
+may notably improve performance.
+
+Only calculation of atomic distances is parallelized and optimized.
+
+Usage
+=====
+
+Other tools
+===========
