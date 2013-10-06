@@ -1,5 +1,5 @@
-
 Debyer and companion programs analyze and manipulate atomistic models.
+In particular, debyer can calculate powder diffraction pattern of virtual sample using the Debye scattering formula.
 This project used to be hosted at google code.
 
 |travis-status|_
