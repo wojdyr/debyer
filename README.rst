@@ -1,16 +1,40 @@
 
-The primary source code repository is now at GitHub.
+Debyer and companion programs analyze and manipulate atomistic models.
+This project used to be hosted at google code.
 
 |travis-status|_
 
 .. _travis-status: https://travis-ci.org/wojdyr/debyer/
 .. |travis-status| image:: https://api.travis-ci.org/wojdyr/debyer.png
 
-Old documentation is at: http://code.google.com/p/debyer/
+Documentation
+=============
 
-New documentation is drafted in doc/,
-see http://debyer.readthedocs.org/en/latest/
+is kept in doc/ and can be read at http://debyer.readthedocs.org/
 
-For installation instructions see:
-http://code.google.com/p/debyer/wiki/Installation
+Installation
+============
 
+When installing from git, you must have ``autoconf``, ``automake`` and ``gengetopt``, and run first::
+
+    autoreconf -i
+ 
+zlib and bzlib libraries are optional prerequisites.
+Building is typical::
+
+    ./configure [OPTIONS]
+    make
+    sudo make install
+
+If you don't have zlib or bzlib libraries installed, use ``--without-zlib`` or ``--without-bzlib`` options,
+respectively -- the programs will work fine, just won't be able to read ``.gz`` and ``.bz2`` files.
+
+The ``make`` command builds debyer and a few programs with the prefix ``dbr_``.
+
+The ``make install`` command installs the programs, except for a couple of undocumented and unfinished ones.
+
+A few configure options have been introduced to speed up the debyer program:
+
+* ``--enable-mpi`` builds parallel (MPI) version of debyer
+* ``--enable-single`` uses single precision (double precision is default)
+* ``CFLAGS`` - the debyer program can be safely compiled with GCC ``-ffast-math`` option.
