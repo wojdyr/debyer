@@ -14,3 +14,8 @@ div.sphinxsidebar {
 div.bodywrapper {
     margin-right: 280px !important;
 }
+
+div.body p { margin-bottom: 0; }
+ul.simple { padding-top: 0; padding-bottom: 0; margin-top: 0; }
+div.body h1 { margin-top: 20px; }
+div.body { padding-top: 20px; }
