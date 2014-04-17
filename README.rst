@@ -42,7 +42,7 @@ A few configure options have been introduced to speed up the debyer program:
 Installation using CMake
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-As an alternative to autotools, compilation can be done using ``cmake``. For example,::
+As an alternative to autotools, compilation can be done using ``cmake``. For example::
 
     cmake . -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_SINGLE=on
     make
@@ -50,8 +50,11 @@ As an alternative to autotools, compilation can be done using ``cmake``. For exa
 
 where the available options are:
 
-* ``ENABLE_MPI`` - enable Message Parsing Inteface (MPI). Default: off
-* ``ENABLE_SINGLE`` - use single precision floats. Default: off
-* ``ENABLE_ZLIB`` - enable zlib decompression. Default: on
-* ``ENABLE_BZLIB`` - enable bzip2 decompression. Default: on
-
+================== ======================================================
+Option             Descriptiopn
+================== ======================================================
+``ENABLE_MPI``     Builds parallel (MPI) version of debyer. Default: off
+``ENABLE_SINGLE``  Use single precision math. Default: off
+``ENABLE_ZLIB``    Enable zlib decompression. Default: on
+``ENABLE_BZLIB``   Enable bzip2 decompression. Default: on
+================== ======================================================
