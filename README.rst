@@ -41,9 +41,9 @@ A few configure options have been introduced to speed up the debyer program:
 
 ## Installation using CMake ##
 
-As an alternative autotools, compilation can be done using ``cmake``. For example,
+As an alternative to autotools, compilation can be done using ``cmake``. For example,
 
-    cmake . -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_MPI=on
+    cmake . -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_SINGLE=on
     make
     sudo make install
 
