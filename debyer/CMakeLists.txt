@@ -33,3 +33,6 @@ target_link_libraries(dbr_conv libdebyer)
 
 add_executable(dbr_sic sic.cc)
 target_link_libraries(dbr_sic libdebyer)
+
+# Install target
+install(PROGRAMS debyer dbr_symmetry dbr_extend dbr_bonds dbr_conv dbr_sic DESTINATION "bin")
