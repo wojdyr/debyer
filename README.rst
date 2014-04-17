@@ -39,13 +39,19 @@ A few configure options have been introduced to speed up the debyer program:
 * ``--enable-single`` uses single precision (double precision is default)
 * ``CFLAGS`` - the debyer program can be safely compiled with GCC ``-ffast-math`` option.
 
-Installation using CMake
-========================
+## Installation using CMake ##
 
-As an alternative to the autotools procedure described above, Debyer can be compiled using ``cmake``::
+As an alternative autotools, compilation can be done using ``cmake``. For example,
 
-    cmake . -D[OPTION]=on|off
+    cmake . -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_MPI=on
     make
+    sudo make install
+                                                                                  
+where available options are:
 
-where option can be ``ENABLE_MPI``, ``ENABLE_SINGLE``, ``ENABLE_ZLIB``, ``ENABLE_BZLIB``.
-
+      Option          | Description
+    :---------------- | :---------------------------------------------------
+    ``ENABLE_MPI``    | Enable Message Parsing Inteface (MPI). Default: off
+    ``ENABLE_SINGLE`` | Use single precision floats. Default: off
+    ``ENABLE_ZLIB``   | Enable zlib compressing support. Default: on
+    ``ENABLE_BZLIB``  | Enable bzip2 compressing support. Default: on
