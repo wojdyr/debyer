@@ -51,7 +51,7 @@ As an alternative to autotools, compilation can be done using ``cmake``. For exa
 where the available options are:
 
 ================== ======================================================
-Option             Descriptiopn
+Option             Description
 ================== ======================================================
 ``ENABLE_MPI``     Builds parallel (MPI) version of debyer. Default: off
 ``ENABLE_SINGLE``  Use single precision math. Default: off
