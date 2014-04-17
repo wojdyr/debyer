@@ -38,3 +38,14 @@ A few configure options have been introduced to speed up the debyer program:
 * ``--enable-mpi`` builds parallel (MPI) version of debyer
 * ``--enable-single`` uses single precision (double precision is default)
 * ``CFLAGS`` - the debyer program can be safely compiled with GCC ``-ffast-math`` option.
+
+Installation using CMake
+========================
+
+As an alternative to the autotools procedure described above, Debyer can be compiled using ``cmake``::
+
+    cmake . -D[OPTION]=on|off
+    make
+
+where option can be ``ENABLE_MPI``, ``ENABLE_SINGLE``, ``ENABLE_ZLIB``, ``ENABLE_BZLIB``.
+
