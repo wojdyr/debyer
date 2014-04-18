@@ -110,7 +110,6 @@ struct irdfs
 struct dbr_pbc
 {
     double v00, v01, v02, v10, v11, v12, v20, v21, v22;
-    //double v[3][3];
 };
 
 /* properties of PBC (or other) box */
@@ -269,7 +268,7 @@ dbr_real dbr_get_angle(const dbr_real *xyz1,
         b[i] = xyz3[i] - xyz2[i];
     }
     t = dbr_dot3(a,b) / sqrt(dbr_dot3(a,a) * dbr_dot3(b,b));
-    // it happens (very rarely) that due to rounding errors |t| > 1
+    /* it happens (very rarely) that due to rounding errors |t| > 1 */
     return fabs(t) < 1 ? acos(t) : 0.;
 }
 #endif /* __cplusplus */

@@ -134,10 +134,10 @@ void dbr_init(int *argc, char ***argv)
     MPI_Comm_size(MPI_COMM_WORLD, &dbr_noprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &dbr_nid);
 #else /* serial version */
+    (void) argc;
+    (void) argv;
     dbr_nid = 0;
     dbr_noprocs = 1;
-    // suppress warning about unused vars
-    assert(argv || argc);
 #endif /*USE_MPI*/
     dbr_verbosity = 0;
     time(&dbr_starttime);
@@ -413,7 +413,7 @@ int calculate_irdf_cm(const dbr_picker* picker,
         }
         free(picked);
     }
-    if (same && !picker->all) // removing distance 0
+    if (same && !picker->all) /* removing distance 0 */
         t[0] -= sampled;
     return sampled;
 }
@@ -523,8 +523,8 @@ irdfs calculate_irdfs(int n, dbr_atoms* xa, dbr_real rcut, dbr_real rquanta,
         if (dbr_verbosity > 0)
             dbr_mesg("ID will be written to file: %s.\n", id_filename);
         id = write_header_of_id_file(rdfs, id_filename);
-        //if (id && dbr_nid == 0)
-        //    write_comments(id, );
+        /*if (id && dbr_nid == 0)
+              write_comments(id, ); */
         if (id && dbr_nid == 0 && rdfs.density > 0)
             fprintf(id, "# numeric-density %g\n", rdfs.density);
     }
@@ -570,8 +570,9 @@ irdfs calculate_irdfs(int n, dbr_atoms* xa, dbr_real rcut, dbr_real rquanta,
                 if (i != j)
                     p->sample /= 2;
                 for (k = 0; k < rdfs.rdf_bins; ++k) {
-                    // rounding errors may change the bin
-                    // if p->nn[k] is odd, round either up or down
+                    /* rounding errors may change the bin
+                     * if p->nn[k] is odd, round either up or down
+                     */
                     if (p->nn[k] % 2 != 0 && k % 2)
                         p->nn[k]++;
                     p->nn[k] /= 2;
@@ -920,7 +921,7 @@ void add_cutoff_correction(const irdfs* rdfs,
                            int n_pattern, dbr_real *pattern)
 {
     int j;
-    char weight = '1'; // '1' is for output_sf
+    char weight = '1'; /* '1' is for output_sf */
 
     if (dargs->c == output_xray)
         weight = 'x';
@@ -989,9 +990,10 @@ dbr_real* get_pattern(const irdfs* rdfs, struct dbr_diffract_args* dargs)
                     }
                 }
             } else {
-                // shell_volume = 4 pi r^2 * rdfs->step
-                // n_cont = shell_volume * ro * c1 * c2 / all_count
-                dbr_real t = 4*M_PI * rdfs->step * // r^2 is below
+                /* shell_volume = 4 pi r^2 * rdfs->step
+                 * n_cont = shell_volume * ro * c1 * c2 / all_count
+                 */
+                dbr_real t = 4*M_PI * rdfs->step *  /* r^2 is below */
                              dargs->ro * p->c1 * p->c2 / all_count;
                 for (k = 0; k < rdfs->rdf_bins; ++k) {
                     dbr_real r = (k+0.5) * rdfs->step;
@@ -1115,7 +1117,7 @@ dbr_real scale_rdf(dbr_real y, OutputKind c, dbr_real r, dbr_real ro)
         return y / (4 * M_PI * r * r * ro);
     else if (c == output_rpdf)
         return y / r - (4 * M_PI * r * ro);
-    else // output_rdf
+    else /* output_rdf */
         return y;
 }
 

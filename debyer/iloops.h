@@ -29,6 +29,7 @@
 # define SQRT sqrtf
 #endif
 
+static
 dbr_real get_sq_dist(const dbr_real *xyz1, const dbr_real *xyz2)
 {
     dbr_real dx = xyz1[0] - xyz2[0];
@@ -37,6 +38,7 @@ dbr_real get_sq_dist(const dbr_real *xyz1, const dbr_real *xyz2)
     return dx*dx + dy*dy + dz*dz;
 }
 
+static
 void calculate_irdf_innerloop(int n, int nbins, dbr_real rquanta,
                               const dbr_real *xyz1, const dbr_cell* c2, int *t)
 {
@@ -52,6 +54,7 @@ void calculate_irdf_innerloop(int n, int nbins, dbr_real rquanta,
     }
 }
 
+static
 void calculate_irdf_innerloop2(int n, int nbins, dbr_real rquanta,
                                const dbr_real *xyz1, const dbr_cell* c2, int *t,
                                dbr_real rcut2)
@@ -68,4 +71,4 @@ void calculate_irdf_innerloop2(int n, int nbins, dbr_real rquanta,
 }
 
 
-#endif // DEBYER_ILOOPS_H_
+#endif /* DEBYER_ILOOPS_H_ */
