@@ -62,7 +62,7 @@ static void* xrealloc (void *ptr, size_t size)
 }
 
 /* printf-like function which outputs message to stderr (only from node 0) */
-void dbr_mesg(char *fmt, ...)
+void dbr_mesg(const char *fmt, ...)
 {
     va_list args;
 

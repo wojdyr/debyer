@@ -192,7 +192,7 @@ void dbr_print_version();
 void dbr_init(int *argc, char ***argv);
 void dbr_finalize();
 void dbr_abort(int err_code);
-void dbr_mesg(char *fmt, ...);
+void dbr_mesg(const char *fmt, ...);
 int dbr_get_elapsed();
 
 int dbr_get_atoms(int n, dbr_atom* coords, dbr_atoms** result,
