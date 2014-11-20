@@ -333,7 +333,7 @@ is used for this purpose:
   -- the "damping function", eq. (8) there.
 
 The continuous density approximation from the previous section,
-in histogram approximation, was replacing *n(r)* in eq. :eq:`debye-integral`
+in histogram approximation, replaced *n(r)* in eq. :eq:`debye-integral`
 with
 
 .. math:: [n(r) - n_{cont}(r)]
@@ -415,6 +415,8 @@ Only calculation of atomic distances is parallelized and optimized.
 Usage
 =====
 
+``debyer --help`` shows this summary:
+
 .. highlight:: none
 
 ::
@@ -488,9 +490,17 @@ To discard PBC use options ``-a0``, ``-b0``, ``-c0``.
 PBC in only one or two dimensions are not supported.
 
 **Sampling** large systems: when the ``--sample=N`` option
-is specified, *N* atoms is randomly chosen and only atomic distance
-between these *N* atoms and all other atoms are calculated
-(faster than full histogram).
+is specified, *N* atoms are randomly chosen and only atomic distance
+between these *N* atoms and all other atoms are calculated.
+The only point of this option is to make computations faster (but less exact).
+
+**Units of length** should be used consistently. The program is unit agnostic.
+If the coordinates in the input file are in Angstroms,
+the ``--lambda`` option should be also in Å,
+the values of `Q` will be in Å\ :sup:`-1`, and so on.
+
+**Other units**: diffraction angle in the output is in degrees of `2\theta`.
+(anything else?)
 
 Examples
 ========

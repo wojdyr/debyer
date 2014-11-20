@@ -1,4 +1,10 @@
 
+a better handling of empty input file
+
+read http://dx.doi.org/10.1107/S0021889800019993
+
+SSE/AVX intrinsics for better performance?
+
 header comments in generated patterns:
  - put more information (from/to/step) in the first line:
    #debyer-pattern reduced-PDF [0 : 6 : 0.001] ro=0.0255427 weight=1
