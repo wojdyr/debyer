@@ -30,7 +30,7 @@ Usually, the analyzed model
 * or is constructed using simple geometrical rules,
   with no interatomic potentials and no forces.
 
-__ http://scholar.google.com/scholar?q=unipress.waw.pl%2Fdebyer+OR+code.google.com%2Fp%2Fdebyer
+__ http://scholar.google.com/scholar?q=unipress.waw.pl%2Fdebyer+OR+code.google.com%2Fp%2Fdebyer+OR+github.com%2Fwojdyr%2Fdebyer
 
 Debyer is **not** designed to calculate a diffraction pattern of a perfect
 crystal. It does not make sense to employ the Debye's formula for a unit cell:
@@ -643,7 +643,7 @@ dbr_conv converts between atomistic model file formats. It supports:
 
 * AtomEye extended CFG,
 * DL_POLY CONFIG/REVCON,
-* LAMMPS input file,
+* LAMMPS data format,
 * XMOL XYZ,
 * PDB (write only)
 * plain format (xyza): each line contains either x y z symbol or symbol x y z.
@@ -655,10 +655,16 @@ positions of both atoms and shells. Debyer relies on the convention that shells
 have names ending with one of the following strings: _sh, _shl, _shel, _shell,
 -sh, -shl, -shel, -shell. The shells are ignored when reading files.
 
-Another program for converting atomistic file formats is
-`mdfile.py from gosam`__ (Python).
+LAMMPS data file format does not contain contain atom types, only numbers
+that are associated to types in an input script to LAMMPS.
+Here we use a convention (both when writing and reading the file)
+that atom types are given in a comment after the "atom types" line, e.g.
+``2 atom types # C Si``.
 
-__ http://code.google.com/p/gosam/wiki/Examples
+Another program for converting atomistic file formats is
+mdfile.py from `gosam`__ (Python).
+
+__ https://github.com/wojdyr/gosam/
 
 ::
 
@@ -700,7 +706,7 @@ gosam
 =====
 
 It is actually a separate set of programs, available at
-http://code.google.com/p/gosam/ .
+https://github.com/wojdyr/gosam/ .
 
 Gosam is a bunch of Python scripts that can:
 
