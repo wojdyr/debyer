@@ -659,7 +659,7 @@ LAMMPS data file format does not contain contain atom types, only numbers
 that are associated to types in an input script to LAMMPS.
 Here we use a convention (both when writing and reading the file)
 that atom types are given in a comment after the "atom types" line, e.g.
-``2 atom types # C Si``.
+``2 atom types # C Si`` means that type 1 is C and type 2 is Si.
 
 Another program for converting atomistic file formats is
 mdfile.py from `gosam`__ (Python).
