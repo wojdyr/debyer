@@ -684,6 +684,7 @@ __ https://github.com/wojdyr/gosam/
  
  Supported format names: atomeye, dlpoly, lammps, pdb, xyz, xyza.
  Compressed files (.gz, .bz2) can be read, but not written.
+ PDB format can only be written.
 
 others
 ======

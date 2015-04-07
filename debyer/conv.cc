@@ -38,7 +38,8 @@ const char* usage[] = {
 "              changed.",
 "",
 "Supported format names: atomeye, dlpoly, lammps, pdb, xyz, xyza.",
-"Compressed files (.gz, .bz2) can be read, but not written."
+"Compressed files (.gz, .bz2) can be read, but not written.",
+"PDB format can only be written."
 };
 
 void print_usage()
