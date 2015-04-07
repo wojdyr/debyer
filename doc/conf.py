@@ -39,7 +39,7 @@ html_style = 'debyer.css'
 
 # Apr 2015: the default value on RTD is http://... and doesn't work with https
 if os.getenv('READTHEDOCS'):
-    mathjax_path = '//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'
+    mathjax_path = 'https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'
 
 latex_elements = { 'papersize': 'a4paper', 'pointsize': '11pt',
                     #'preamble': '',
