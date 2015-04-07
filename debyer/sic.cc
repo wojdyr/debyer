@@ -15,10 +15,18 @@
 
 #include "debyer.h"
 #include "fileio.h"
-#include "iloops.h" //get_sq_dist
 #include "utils.h"
 
 using namespace std;
+
+static
+dbr_real get_sq_dist(const dbr_real *xyz1, const dbr_real *xyz2)
+{
+    dbr_real dx = xyz1[0] - xyz2[0];
+    dbr_real dy = xyz1[1] - xyz2[1];
+    dbr_real dz = xyz1[2] - xyz2[2];
+    return dx*dx + dy*dy + dz*dz;
+}
 
 static
 string do_format_stats(vector<int> const& v)
