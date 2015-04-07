@@ -23,7 +23,10 @@ a file with positions of all the atoms in the virtual sample
 * pair distribution/correlation function (PDF/PCF)
   and related functions (RDF, reduced PDF).
 
-A few use cases for debyer can be found `in the papers citing its website`__.
+Diffraction patterns are calculated using the Debye scattering equation,
+hence the name.
+
+A few use cases for Debyer can be found `in the papers citing its website`__.
 Usually, the analyzed model
 
 * is a result of molecular dynamics simulation,
@@ -31,6 +34,12 @@ Usually, the analyzed model
   with no interatomic potentials and no forces.
 
 __ http://scholar.google.com/scholar?q=unipress.waw.pl%2Fdebyer+OR+code.google.com%2Fp%2Fdebyer+OR+github.com%2Fwojdyr%2Fdebyer
+
+Debyer has two working modes:
+with and without periodic boundary conditions (PBCs).
+PBCs approximate a large (infinite) system.
+Otherwise, you have a finite atomic cluster or maybe a nano-grain
+in the (infinite) vacuum.
 
 Debyer is **not** designed to calculate a diffraction pattern of a perfect
 crystal. It does not make sense to employ the Debye's formula for a unit cell:
@@ -44,8 +53,6 @@ no idea what program should be recommended nowadays).
 
     If the math below doesn't render properly, right-click on it and change
     ``Math Renderer`` in ``Math Settings``.
-    If the math is not displayed at all and there is ``https://`` in the
-    address bar, change it to ``http://`` (no ``s``).
 
 Direct-space patterns
 =====================
@@ -162,7 +169,7 @@ Therefore, with the assumption that atomic form factors are real and `f^{*}=f` ,
     \left( \boldsymbol{r}_i-\boldsymbol{r}_j \right) \right]
 
 
-The Debye scattering equation gives spherically avaraged intensity.
+The Debye scattering equation gives spherically averaged intensity.
 The averaging is similar to calculating the surface area of sphere.
 It is more elegant to use double integral,
 but knowing the circumference formula
@@ -481,13 +488,15 @@ The saved ID can be then used as an input file.
 AtomEye extended CFG, DL_POLY CONFIG/REVCON,
 LAMMPS input file, XMOL XYZ,
 and plain text with *x y z symbol* or *symbol x y z* in each line.
+See :ref:`dbr_conv` for details.
 
 **PBC**:
 if the input file contains the box size (e.g., in AtomEye CFG, LAMMPS and
 DL_POLY file formats) and the options ``-a``, ``-b``, ``-c`` are not given,
-the size from the file is used.
+the size from the file is used. This is really handy -- if you have PBCs
+it is better to avoid the xyz format which does not store the PBC cell.
 To discard PBC use options ``-a0``, ``-b0``, ``-c0``.
-PBC in only one or two dimensions are not supported.
+Only orthorhombic PBCs and only PBCs in all 3 dimensions are supported.
 
 **Sampling** large systems: when the ``--sample=N`` option
 is specified, *N* atoms are randomly chosen and only atomic distance
@@ -499,8 +508,8 @@ If the coordinates in the input file are in Angstroms,
 the ``--lambda`` option should be also in Å,
 the values of `Q` will be in Å\ :sup:`-1`, and so on.
 
-**Other units**: diffraction angle in the output is in degrees of `2\theta`.
-(anything else?)
+**Other units**: If the wavelength is specified, diffraction angle
+in the output is in degrees of `2\theta` (otherwise it is `Q`).
 
 Examples
 ========
@@ -636,6 +645,8 @@ Options ``--help`` and ``--show-examples`` display basic documentation.
    Atomic positions are scaled with the box.
 
 
+.. _dbr_conv:
+
 dbr_conv
 ========
 
@@ -696,12 +707,6 @@ others
 * dbr_sic -- utility to calculate coordination numbers of atoms, so-called
   ring distribution and other features of zinc-blende structure.
   Named 'sic' because it was used to study SiC structure.
-
-* dbr_symmetry -- obsolete
-
-* dbr_volume -- undocumented
-
-* dbr_diffus -- undocumented
 
 gosam
 =====
