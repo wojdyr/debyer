@@ -93,9 +93,42 @@ bool is_xyz_format(char const* buffer)
     return true;
 }
 
-bool is_plain_format(char const* /*buffer*/)
+// returns the number of atoms read (0 or 1) or -1 on error
+static int read_plain_line(const char* line, dbr_atom *atom)
 {
-    return true;  //TODO
+    const char *ptr = line;
+    while (isspace(*ptr))
+        ++ptr;
+    int r = 0;
+    if (*ptr == '\0')
+        return 0;
+    // %7s - "The input string stops at white space or at the maximum field
+    // width, whichever occurs first."
+    if (isalpha(*ptr))  // name, x, y, z
+        r = sscanf(line, "%7s "DBR_F" "DBR_F" "DBR_F,
+                   atom->name, &atom->xyz[0], &atom->xyz[1], &atom->xyz[2]);
+    else  // x, y, z, name
+        r = sscanf(line, DBR_F" "DBR_F" "DBR_F" %7s",
+                   &atom->xyz[0], &atom->xyz[1], &atom->xyz[2], atom->name);
+    return r == 4 ? 1 : -1;
+}
+
+bool is_plain_format(char const* buffer)
+{
+    dbr_atom atom;
+    int atoms_read = 0;
+    const char* start = buffer;
+    while (atoms_read < 4) {
+        const char* end = strchr(start, '\n');
+        if (end == NULL)
+            return false;
+        int r = read_plain_line(string(start, end).c_str(), &atom);
+        if (r < 0)
+            return false;
+        atoms_read += r;
+        start = end + 1;
+    }
+    return true;
 }
 
 void read_xyz(LineInput& in, dbr_aconf *aconf)
@@ -148,33 +181,22 @@ void read_plain(LineInput& in, dbr_aconf *aconf)
 {
     size_t atoms_size = 1024;
 
-    size_t counter = 0;
+    size_t atom_counter = 0;
+    size_t line_counter = 0;
     aconf->atoms = new dbr_atom[atoms_size];
     const char *line;
     while ((line = in.get_line())) {
-        if (counter == atoms_size)
+        ++line_counter;
+        if (atom_counter == atoms_size)
             resize_atoms(atoms_size, &aconf->atoms);
-        dbr_atom& atom = aconf->atoms[counter];
-        ++counter;
-        const char *ptr = line;
-        while (isspace(*ptr))
-            ++ptr;
-        string name;
-        int r = 0;
-        if (isalpha(*ptr)) { //name, x, y, z
-            r = sscanf(line, "%7s "DBR_F" "DBR_F" "DBR_F,
-                        atom.name, &atom.xyz[0], &atom.xyz[1], &atom.xyz[2]);
-        }
-        else if (*ptr) {//x, y, z, name
-            r = sscanf(line, DBR_F" "DBR_F" "DBR_F" %7s",
-                        &atom.xyz[0], &atom.xyz[1], &atom.xyz[2], atom.name);
-        }
-        if (!r) {
-            mcerr << "Error in line " << counter << endl;
+        int r = read_plain_line(line, &aconf->atoms[atom_counter]);
+        if (r < 0) {
+            mcerr << "Error in line " << line_counter << endl;
             dbr_abort(EXIT_FAILURE);
         }
+        atom_counter += r;
     }
-    aconf->n = counter;
+    aconf->n = atom_counter;
 }
 
 void write_atoms_to_xyz_file(dbr_aconf const& aconf, string const& filename)
@@ -204,10 +226,25 @@ static bool endswith(string const& s, char const* e)
     return slen >= elen && strcmp(s.c_str() + slen - elen, e) == 0;
 }
 
-string detect_input_format(LineInput &in)
+// case insensitive ascii-only comparison of at most n characters
+static bool ci_same(const char* a, const char* b, int n)
+{
+    for (int i = 0; i < n; ++i) {
+        if (tolower(a[i]) != tolower(b[i]))
+            return false;
+        if (a[i] == '\0')
+            return true;
+    }
+    return true;
+}
+
+
+static
+string detect_input_format(const LineInput &in)
 {
     char const* cfg_magic = "Number of particles =";
-    if (!strncmp(in.get_buffer(), cfg_magic, strlen(cfg_magic))) {
+    const char* buffer = in.get_buffer();
+    if (!strncmp(buffer, cfg_magic, strlen(cfg_magic))) {
         if (dbr_verbosity > 0)
             mcerr << "Detected AtomEye CFG format" << endl;
         return "atomeye";
@@ -219,23 +256,29 @@ string detect_input_format(LineInput &in)
         return "dlpoly";
     }
     else if (endswith(in.get_orig_filename(), ".lammps")
-             || endswith(in.get_orig_filename(), ".lmps")) {
+             || endswith(in.get_orig_filename(), ".lmps")
+             || ci_same(buffer, "lammps", 6)) {
         if (dbr_verbosity > 0)
             mcerr << "LAMMPS data input format" << endl;
         return "lammps";
     }
-    else if (is_xyz_format(in.get_buffer())) {
+    else if (endswith(in.get_orig_filename(), ".pdb")) {
+        if (dbr_verbosity > 0)
+            mcerr << "Protein Data Bank format" << endl;
+        return "pdb";
+    }
+    else if (is_xyz_format(buffer)) {
         if (dbr_verbosity > 0)
             mcerr << "Detected XMol XYZ format" << endl;
         return "xyz";
     }
-    else if (is_plain_format(in.get_buffer())) {
+    else if (is_plain_format(buffer)) {
         if (dbr_verbosity > 0)
             mcerr << "Detected plain format with atom coordinates" << endl;
         return "xyza";
     }
     else {
-        mcerr << "Error. Unknown format of input file" << endl;
+        mcerr << "Error. Unknown format of the input file" << endl;
         dbr_abort(EXIT_FAILURE);
         return ""; // suppress warning
     }
@@ -265,6 +308,10 @@ dbr_aconf read_atoms_from_file(LineInput &in, bool reduced_coords,
         read_xyz(in, &aconf);
     else if (fmt == "xyza")
         read_plain(in, &aconf);
+    else {
+        mcerr << "Unexpected input file format: " << fmt << endl;
+        dbr_abort(EXIT_FAILURE);
+    }
 
     if (reduced_coords && !aconf.reduced_coordinates && aconf.pbc.v00 != 0) {
         double H_1[3][3]; // inverse of pbc matrix
@@ -771,6 +818,12 @@ void read_lammps_data(LineInput& in, dbr_aconf* aconf, bool reduced_coords)
                         symbols.size() << ".\n" << trailing_comment+1 << endl;
                         dbr_abort(EXIT_FAILURE);
                 }
+                if (dbr_verbosity >= 0) {
+                    mcerr << "Atom symbols:";
+                    for (int i = 0; i < ntypes; ++i)
+                        mcerr << " " << i+1 << ":" << symbols[i];
+                    mcerr << endl;
+                }
             }
             else {
                 mcerr << "Warning: No atomic symbols. "
@@ -811,8 +864,8 @@ void read_lammps_data(LineInput& in, dbr_aconf* aconf, bool reduced_coords)
             break;
         }
         else {
-            mcerr << "Warning: ignoring line " << counter << ":\n" << line
-                << endl;
+            if (dbr_verbosity >= 1)
+                mcerr << "Ignoring line " << counter << ":\n" << line << endl;
         }
     }
 
@@ -844,7 +897,8 @@ void read_lammps_data(LineInput& in, dbr_aconf* aconf, bool reduced_coords)
             dbr_abort(EXIT_FAILURE);
         }
         if (symbol_nr < 1 || symbol_nr > (int) symbols.size()) {
-            mcerr << "Wrong type number in line:\n" << line << endl;
+            mcerr << "Wrong type number (" << symbol_nr << ") in line:\n"
+                  << line << endl;
             dbr_abort(EXIT_FAILURE);
         }
         dbr_atom *a = &aconf->atoms[number-1];

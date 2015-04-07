@@ -77,7 +77,7 @@ inline double get_pbc(dbr_aconf const& aconf, int dim)
 
 
 bool is_xyz_format(char const* buffer);
-bool is_plain_format(char const* /*buffer*/);
+bool is_plain_format(char const* buffer);
 
 void read_xyz(LineInput& in, dbr_aconf *aconf);
 void read_atomeye(LineInput& in, dbr_aconf *aconf, bool reduced_coords);

@@ -51,7 +51,7 @@ public:
     bool init(const char* filename_);
 
     // after the first get_line() call, get_buffer() can't be called
-    const char* get_buffer() { assert(line_number == 0); return buffer; }
+    const char* get_buffer() const { assert(line_number == 0); return buffer; }
 
     const char* get_error() { return buffer; }
 
