@@ -1116,7 +1116,7 @@ void multiply_pbc(dbr_aconf& aconf, int x, int y, int z)
             for (int iz = 0; iz < z; ++iz) {
                 int img_start = (ix * y * z + iy * z + iz) * aconf.n;
                 dbr_real r[3];
-                dbr_real img[3] = {ix, iy, iz};
+                dbr_real img[3] = {(dbr_real)ix,  (dbr_real)iy,  (dbr_real)iz};
                 dbr_vec3_mult_pbc(img, aconf.pbc, r);
                 for (int i = 0; i < aconf.n; ++i) {
                     dbr_atom const& source = aconf.atoms[i];
