@@ -21,6 +21,9 @@
 #include <math.h>
 #include <ctype.h>
 #include <stdarg.h>
+#if defined(_OPENMP)
+#include <omp.h>
+#endif
 
 #include "atomtables.h"
 #include "iloops.h"
@@ -34,9 +37,13 @@
 # define M_PI    3.1415926535897932384626433832795029
 #endif
 
+#if defined(USE_MPI) || defined(_OPENMP)
 int dbr_nid; /* rank of process (0 if serial) */
-int dbr_noprocs; /* number of processes (1 if serial) */
-time_t dbr_starttime;
+static int dbr_noprocs; /* number of processes (1 if serial) */
+#else
+static const int dbr_noprocs = 1;
+#endif
+static time_t dbr_starttime; /* initialization time */
 int dbr_verbosity;
 
 static void* xmalloc (size_t size)
@@ -124,7 +131,7 @@ dbr_real get_neutron_scattering_factor(const char* at)
 
 void dbr_init(int *argc, char ***argv)
 {
-#ifdef USE_MPI
+#if defined(USE_MPI)
     int rc = MPI_Init(argc, argv);
     if (rc != MPI_SUCCESS) {
         printf ("Error starting MPI program. Terminating.\n");
@@ -133,12 +140,14 @@ void dbr_init(int *argc, char ***argv)
 
     MPI_Comm_size(MPI_COMM_WORLD, &dbr_noprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &dbr_nid);
-#else /* serial version */
+#else /* serial or OpenMP version */
     (void) argc;
     (void) argv;
+# if defined(_OPENMP)
+    dbr_noprocs = omp_get_max_threads();
     dbr_nid = 0;
-    dbr_noprocs = 1;
-#endif /*USE_MPI*/
+# endif
+#endif
     dbr_verbosity = 0;
     time(&dbr_starttime);
 }
@@ -488,9 +497,9 @@ irdfs calculate_irdfs(int n, dbr_atoms* xa, dbr_real rcut, dbr_real rquanta,
     irdfs rdfs;
     dbr_cells *cells = NULL;
     FILE *id = 0;
-#ifdef USE_MPI
+#if defined(USE_MPI) || defined(_OPENMP)
     int *tmp_nn = NULL;
-#endif /*USE_MPI*/
+#endif
     dbr_pbc_prop pbc_prop = get_pbc_properties(pbc);
     if (pbc.v00 != 0. || pbc.v11 != 0. || pbc.v22 != 0.) {
         if (rcut <= 0) {
@@ -531,9 +540,13 @@ irdfs calculate_irdfs(int n, dbr_atoms* xa, dbr_real rcut, dbr_real rquanta,
 
     cells = prepare_cells_all(pbc, max_r, xa, n);
 
-#ifdef USE_MPI
+#if defined(USE_MPI)
     tmp_nn = (int*) xmalloc(rdfs.rdf_bins * sizeof(int));
-#endif /*USE_MPI*/
+#elif defined(_OPENMP)
+    if (dbr_verbosity > 1)
+        dbr_mesg("Number of OpenMP threads: %d\n", dbr_noprocs);
+    tmp_nn = (int*) xmalloc(rdfs.rdf_bins*dbr_noprocs*sizeof(int));
+#endif
     if (picker->probab > 0) {
         srand(time(NULL)+133*dbr_nid);
         if (dbr_verbosity > 0)
@@ -549,23 +562,50 @@ irdfs calculate_irdfs(int n, dbr_atoms* xa, dbr_real rcut, dbr_real rquanta,
             p->nn = (int*) xmalloc(rdfs.rdf_bins * sizeof(int));
             for (k = 0; k < rdfs.rdf_bins; ++k)
                 p->nn[k] = 0;
-            p->sample = calculate_irdf_cm(picker, cells[i], cells[j],
-                                          rcut, rquanta, rdfs.rdf_bins, p->nn);
+#if !defined(USE_MPI) && defined(_OPENMP)
+            p->sample = 0;
+            #pragma omp parallel private(k)
+#endif
+            {
+            int sample;
+            int *nn;
+#if defined(USE_MPI)
+            nn = tmp_nn;
+            for (k = 0; k < rdfs.rdf_bins; ++k)
+                nn[k] = 0;
+#elif defined(_OPENMP)
+            dbr_nid = omp_get_thread_num();
+            nn = tmp_nn + dbr_nid * rdfs.rdf_bins;
+            for (k = 0; k < rdfs.rdf_bins; ++k)
+                nn[k] = 0;
+#else
+            nn = p->nn;
+#endif
+            sample = calculate_irdf_cm(picker, cells[i], cells[j],
+                                       rcut, rquanta, rdfs.rdf_bins, nn);
 
             /* if we are only sampling, we also need to swap i and j */
             if (i != j && !picker->all) {
-                p->sample += calculate_irdf_cm(picker, cells[j], cells[i],
-                                          rcut, rquanta, rdfs.rdf_bins, p->nn);
+                sample += calculate_irdf_cm(picker, cells[j], cells[i],
+                                            rcut, rquanta, rdfs.rdf_bins, nn);
             }
-
-#ifdef USE_MPI
-            MPI_Reduce(p->nn, tmp_nn, rdfs.rdf_bins, MPI_INT, MPI_SUM,
+#if defined(USE_MPI)
+            MPI_Reduce(nn, p->nn, rdfs.rdf_bins, MPI_INT, MPI_SUM,
                        0, MPI_COMM_WORLD);
-            MPI_Reduce(&p->sample, &k, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-            if (dbr_nid == 0)
-                memcpy(p->nn, tmp_nn, rdfs.rdf_bins * sizeof(int));
-            p->sample = k;
-#endif /*USE_MPI*/
+            MPI_Reduce(&sample, &p->sample, 1, MPI_INT, MPI_SUM,
+                       0, MPI_COMM_WORLD);
+#elif defined(_OPENMP)
+            dbr_nid = 0;
+            #pragma omp critical
+            {
+                for (k=0; k < rdfs.rdf_bins; ++k)
+                    p->nn[k] += nn[k];
+                p->sample += sample;
+            }
+#else
+            p->sample = sample;
+#endif
+            }
             if (!picker->all) {
                 if (i != j)
                     p->sample /= 2;
@@ -592,9 +632,9 @@ irdfs calculate_irdfs(int n, dbr_atoms* xa, dbr_real rcut, dbr_real rquanta,
             }
         }
     }
-#ifdef USE_MPI
+#if defined(USE_MPI) || defined(_OPENMP)
     free(tmp_nn);
-#endif /*USE_MPI*/
+#endif
 
     free_cells_all(cells, n);
 
@@ -1498,8 +1538,10 @@ void dbr_print_version()
         return;
     printf("debyer %s (%s, %s precision%s%s)\n",
            VERSION,
-#ifdef USE_MPI
+#if defined(USE_MPI)
           "MPI",
+#elif defined(_OPENMP)
+          "OpenMP",
 #else
           "serial",
 #endif

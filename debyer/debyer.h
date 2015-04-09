@@ -182,9 +182,14 @@ struct dbr_diffract_args
     int sinc_damp;
 };
 
+#if defined(USE_MPI)
 extern int dbr_nid; /* rank of process (0 if serial) */
-extern int dbr_noprocs; /* number of processes (1 if serial) */
-extern time_t dbr_starttime; /* initialization time */
+#elif defined(_OPENMP)
+extern int dbr_nid;
+#pragma omp threadprivate(dbr_nid)
+#else
+static const int dbr_nid = 0;
+#endif
 extern int dbr_verbosity; /* 0 = normal, 1 = verbose */
 
 void dbr_print_version();
