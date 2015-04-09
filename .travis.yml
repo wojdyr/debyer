@@ -6,7 +6,9 @@ before_install:
   - sudo apt-get install -qq libz-dev libbz2-dev gengetopt
 before_script:
   - autoreconf -i
-script: ./configure && make
+script:
+    - ./configure && make && ./debyer/debyer --bench=5000 && make clean
+    - if [ "$CC" = gcc ]; then ./configure --without-zlib --without-bzlib --enable-single CFLAGS="-fopenmp -O3" LDFLAGS=-fopenmp && make && ./debyer/debyer --bench=5000; fi
 branches:
   only:
     - master
