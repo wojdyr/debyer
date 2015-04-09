@@ -42,7 +42,7 @@ int dbr_verbosity;
 static void* xmalloc (size_t size)
 {
     void *value = malloc(size);
-    if (value == 0) {
+    if (value == NULL) {
         dbr_mesg("Error: virtual memory exhausted (%i bytes requested).\n",
                  size);
         dbr_abort(2);
@@ -53,7 +53,7 @@ static void* xmalloc (size_t size)
 static void* xrealloc (void *ptr, size_t size)
 {
     void *value = realloc(ptr, size);
-    if (value == 0) {
+    if (value == NULL) {
         dbr_mesg("Error: virtual memory exhausted  (%i bytes requested).\n",
                  size);
         dbr_abort(2);
@@ -357,7 +357,7 @@ int calculate_irdf_cm(const dbr_picker* picker,
     assert(rcut >= 0.);
 
     for (i = 0; i < cc1.count; ++i) {
-        char *picked = 0;
+        char *picked = NULL;
         const dbr_cell *c1 = &cc1.data[i];
         if (!c1->real)
             continue;
@@ -1126,7 +1126,7 @@ int write_pdfkind_to_file(struct dbr_pdf_args* pargs, irdfs rdfs,
                           const char *ofname)
 {
     FILE *f;
-    int i, j, n, pc;
+    int i, j, n, pc=0;
     dbr_real *result = NULL;
     dbr_real **partial_results = NULL;
     dbr_real irdf_max = rdfs.rdf_bins * rdfs.step;
