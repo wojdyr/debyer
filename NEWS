@@ -1,9 +1,0 @@
-0.3 (unreleased)
-- see git log for changes
-0.2 (2008-07-21)
-- added support for new file formats (both reading and writing) 
-- if output filename is not specified, it is generated (as input filename 
-  with changed extension)
-- bug fixes and other changes
-0.1 (2006-09-23)
-Initial public release
