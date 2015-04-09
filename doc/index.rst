@@ -411,13 +411,32 @@ __ http://en.wikipedia.org/wiki/Cell_lists
 Parallelization
 ^^^^^^^^^^^^^^^
 
-If you are working with large configurations (millions of atoms),
-you may build the parallel version of the program. It uses the MPI library.
-Also note that compiler options related to floating point arithmetics
-may notably improve performance.
+For large systems, almost all the processor time is spent calculating
+atomic distances. Only this part is parallelized and optimized.
+The program can be built either as serial or parallel for running on a single
+computer (with OpenMP) or parallel for running on a cluster (with MPI).
+See the README file for details how to build it.
 
-Only calculation of atomic distances is parallelized and optimized.
+Note that compiler options related to floating point arithmetics
+may notably improve performance. Debyer is safe to compile with
+the ``-ffast-math`` (or equivalent) compiler option.
 
+Computing all the distances between atoms scales with N^2 (N=number of atoms).
+It scales linearly when using constant cut-off for interatomic distances.
+
+To give a feeling how it scales with the system size,
+here are rough estimates for calculating all distances in a SiC grain,
+on two cores of a 2013 computer:
+
+* grain size 5nm -- 10,000 atoms -- it's quick
+
+* 10nm -- 100,000 atoms -- under a minute
+
+* 20nm -- 1M atoms -- an hour
+
+* 50nm -- 10M atoms -- days, better to run it in parallel on a cluster
+
+* 100nm -- 100M atoms -- probably not worth it
 
 Usage
 =====
