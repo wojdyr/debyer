@@ -26,8 +26,6 @@
 #endif
 
 #include "atomtables.h"
-#include "iloops.h"
-
 
 #ifndef VERSION
 #   define VERSION "unknown"
@@ -35,6 +33,12 @@
 
 #ifndef M_PI
 # define M_PI    3.1415926535897932384626433832795029
+#endif
+
+#ifdef __STRICT_ANSI__
+# define SQRT sqrt
+#else
+# define SQRT sqrtf
 #endif
 
 #if defined(USE_MPI) || defined(_OPENMP)
@@ -45,6 +49,49 @@ static const int dbr_noprocs = 1;
 #endif
 static time_t dbr_starttime; /* initialization time */
 int dbr_verbosity;
+
+
+static
+dbr_real get_sq_dist(const dbr_real *xyz1, const dbr_real *xyz2)
+{
+    dbr_real dx = xyz1[0] - xyz2[0];
+    dbr_real dy = xyz1[1] - xyz2[1];
+    dbr_real dz = xyz1[2] - xyz2[2];
+    return dx*dx + dy*dy + dz*dz;
+}
+
+static
+void calculate_irdf_innerloop(int n, int nbins, dbr_real rquanta,
+                              const dbr_real *xyz1, const dbr_cell* c2, int *t)
+{
+    int j, bin;
+    for (j = 0; j != n; ++j) {
+        bin = (int) (SQRT(get_sq_dist(xyz1, c2->atoms[j])) / rquanta);
+        if (bin < nbins)
+            ++t[bin];
+        /*
+        else
+            fprintf(stderr, "Out: %i>=%i\n", bin, nbins);
+        */
+    }
+}
+
+static
+void calculate_irdf_innerloop2(int n, int nbins, dbr_real rquanta,
+                               const dbr_real *xyz1, const dbr_cell* c2, int *t,
+                               dbr_real rcut2)
+{
+    int j, bin;
+    for (j = 0; j != n; ++j) {
+        dbr_real d2 = get_sq_dist(xyz1, c2->atoms[j]);
+        if (d2 > rcut2)
+            continue;
+        bin = (int) (SQRT(d2) / rquanta);
+        if (bin < nbins) /* TODO this check should not be neccessary */
+            ++t[bin];
+    }
+}
+
 
 static void* xmalloc (size_t size)
 {

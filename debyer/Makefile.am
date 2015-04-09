@@ -11,7 +11,7 @@ bin_PROGRAMS = debyer dbr_conv dbr_extend dbr_bonds dbr_sic dbr_symmetry
 #noinst_PROGRAMS = dbr_volume dbr_diffus
 
 libdebyer_a_SOURCES = debyer.c lineio.cc fileio.cc atomtables.c \
- 		      debyer.h lineio.h fileio.h  iloops.h atomtables.h
+		      debyer.h lineio.h fileio.h atomtables.h
 
 debyer_SOURCES = cmdline.c cmdline.h main.cc
 
