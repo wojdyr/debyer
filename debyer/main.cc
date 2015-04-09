@@ -20,6 +20,7 @@
 #include <cmath>
 #include <cfloat>
 #include <cstring>
+#include <ctime>
 #include "cmdline.h"
 #include "debyer.h"
 #include "fileio.h"
@@ -123,7 +124,7 @@ const char* get_id_out_fn(gengetopt_args_info const& args)
         }
     }
     else
-        return 0;
+        return NULL;
 }
 
 dbr_picker prepare_picker(gengetopt_args_info const& args, int n_atoms)
@@ -240,6 +241,24 @@ irdfs calculate_id_from_datafile(dbr_aconf &aconf, dbr_picker const& picker,
     return rdfs;
 }
 
+void subbenchmark1(int count, dbr_atom* coords, const dbr_pbc& pbc,
+                   dbr_real rcut, const char* title)
+{
+    clock_t start_time = clock();
+    dbr_picker picker;
+    picker.all = 1;
+    picker.cut = 0;
+    picker.probab = 0.;
+    dbr_atoms *xa = NULL;
+    int tc = dbr_get_atoms(count, coords, &xa, /*store_indices=*/0);
+    irdfs rdfs = calculate_irdfs(tc, xa, rcut, 0.001, pbc, &picker, NULL);
+    print_irdfs_statistics(rdfs);
+    free_irdfs(&rdfs);
+    if (dbr_verbosity >= 0) {
+        double cpu_time = (clock() - start_time) / (double) CLOCKS_PER_SEC;
+        mcerr << "--- " << title << ": " << cpu_time << " s. ---" << endl;
+    }
+}
 
 int do_benchmark1(int count)
 {
@@ -254,20 +273,14 @@ int do_benchmark1(int count)
         for (int j = 0; j < 3; ++j)
         coords[i].xyz[j] = a * rand() / RAND_MAX;
     }
-    dbr_atoms *xa = 0;
-    int tc = dbr_get_atoms(count, coords, &xa, 0);
-    delete [] coords;
-    if (dbr_verbosity > 0)
-        mcerr << "SiC pseudo-grain (cube a=" << a << ") was generated." << endl;
+    if (dbr_verbosity >= 1)
+        mcerr << "setup finished: SiC cube a=" << a << endl;
     dbr_pbc pbc = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-    dbr_picker picker;
-    picker.all = 1;
-    picker.cut = 0;
-    picker.probab = 0.;
-    irdfs rdfs = calculate_irdfs(tc, xa, 0., 0.001, pbc, &picker, 0);
-    print_irdfs_statistics(rdfs);
-    if (dbr_verbosity > 0)
-        mcerr << "Benchmark finished." << endl;
+    subbenchmark1(count, coords, pbc, 0., "non-PBC");
+    pbc.v00 = pbc.v11 = pbc.v22 = a;
+    subbenchmark1(count, coords, pbc, 0.15*a, "PBC, short cut-off");
+    subbenchmark1(count, coords, pbc, 0.49*a, "PBC, long cut-off");
+    delete [] coords;
     return 0;
 }
 
