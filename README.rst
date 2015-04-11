@@ -23,7 +23,7 @@ When installing from git, you must have ``autoconf``, ``automake`` and
 
 The rest of the build procedure is::
 
-    ./configure CFLAGS="-O3 -ffast-math" [--prefix=...] [MORE OPTIONS]
+    ./configure CFLAGS="-O3 -ffast-math" [MORE OPTIONS]
     make
     sudo make install
 
@@ -36,16 +36,25 @@ The ``make`` command builds ``debyer`` and a few programs with
 names staring with ``dbr_``.
 
 ``make install`` copies the programs to *PREFIX*/bin
-(*PREFIX* is ``/usr/local`` unless set explicitly with ``--prefix``).
+(*PREFIX* is ``/usr/local`` unless set explicitly with
+``configure --prefix=...``)
 
-A few configure options have been introduced to speed up Debyer:
+A few configure options have been introduced to speed up Debyer.
+Defaults are: OpenMP, double precision and ``-O2 -g`` compiler flags.
+If your compiler has option ``-ffast-math``, adding it to ``CFLAGS``
+is safe and makes the program notably faster.
 
-* ``--enable-mpi`` builds parallel (MPI) version
-* ``-fopenmp`` flag (or equivalent for your compiler) added to CFLAGS
+* ``--disable-openmp`` builds serial version
+* ``--enable-mpi`` builds parallel version using MPI (not OpenMP)
   and LDFLAGS turns on OpenMP-based parallelization
 * ``--enable-single`` uses single precision (double precision is default)
-* ``CFLAGS`` - the debyer program can be safely compiled with the GCC/Clang
-  ``-ffast-math`` option. You may also use ``-O3 -march=native``.
+* ``CFLAGS`` -- Debyer includes both C++ and C code. The computationally
+  intensive part happens to be written in C, so ``CFLAGS`` matters more than
+  ``CXXFLAGS``. ``CFLAGS="-O3 -ffast-math -march=native"`` should give
+  good results.
+
+If Debyer is compiled with OpenMP, environment variable ``OMP_NUM_THREADS``
+can be used to control the number of threads.
 
 
 Alternatively,

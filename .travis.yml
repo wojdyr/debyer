@@ -7,8 +7,8 @@ before_install:
 before_script:
   - autoreconf -i
 script:
-    - ./configure && make && ./debyer/debyer --bench=5000 && make clean
-    - if [ "$CC" = gcc ]; then ./configure --without-zlib --without-bzlib --enable-single CFLAGS="-fopenmp -O3" LDFLAGS=-fopenmp && make && ./debyer/debyer --bench=5000; fi
+  # non-default options because distcheck checks default ones later on
+  - ./configure --without-zlib --without-bzlib --enable-single --disable-openmp && make && ./debyer/debyer --bench=5000 && make distcheck
 branches:
   only:
     - master

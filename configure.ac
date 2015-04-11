@@ -37,7 +37,7 @@ AC_PROG_CXX
 AC_PROG_RANLIB
 AM_PROG_AR
 
-if test x$enable_mpi = xyes; then
+AS_IF(test x$enable_mpi = xyes, [
   AC_CHECK_PROGS(MPICC, mpicc hcc mpcc mpcc_r mpxlc cmpicc, $CC)
   AC_CHECK_PROGS(MPICXX, mpic++ mpiCC mpicxx mpCC hcp mpxlC mpxlC_r cmpic++, $CXX)
   # now change the normal cc to the MPI one - see the comment above.
@@ -49,7 +49,9 @@ if test x$enable_mpi = xyes; then
 	      AC_MSG_RESULT([yes]),
 	      AC_MSG_ERROR([Cannot compile and link MPI code with $CC]))
   AC_DEFINE(USE_MPI, 1, [Make a parallel version of Debyer using MPI])
-fi
+],[
+  AC_OPENMP
+])
 
 if test x$enable_single = xyes; then
   AC_DEFINE(USE_SINGLE, 1, [Use single precision for atom coordinates])
