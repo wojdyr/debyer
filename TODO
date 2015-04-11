@@ -1,5 +1,6 @@
 
-a better handling of empty input file
+does it make sense to have both calculate_irdf_inner() and
+calculate_irdf_inner_chk()?
 
 read http://dx.doi.org/10.1107/S0021889800019993
 

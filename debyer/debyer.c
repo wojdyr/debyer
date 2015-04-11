@@ -61,8 +61,8 @@ dbr_real get_sq_dist(const dbr_real *xyz1, const dbr_real *xyz2)
 }
 
 static
-void calculate_irdf_innerloop(int n, int nbins, dbr_real rquanta,
-                              const dbr_real *xyz1, const dbr_cell* c2, int *t)
+void calculate_irdf_inner(int n, int nbins, dbr_real rquanta,
+                          const dbr_real *xyz1, const dbr_cell* c2, int *t)
 {
     int j, bin;
     for (j = 0; j != n; ++j) {
@@ -77,9 +77,9 @@ void calculate_irdf_innerloop(int n, int nbins, dbr_real rquanta,
 }
 
 static
-void calculate_irdf_innerloop2(int n, int nbins, dbr_real rquanta,
-                               const dbr_real *xyz1, const dbr_cell* c2, int *t,
-                               dbr_real rcut2)
+void calculate_irdf_inner_chk(int n, int nbins, dbr_real rquanta,
+                              const dbr_real *xyz1, const dbr_cell* c2, int *t,
+                              dbr_real rcut2)
 {
     int j, bin;
     for (j = 0; j != n; ++j) {
@@ -374,10 +374,10 @@ char* pick_items(const dbr_picker* picker, const dbr_cell *c1)
     int limit = c1->count / dbr_noprocs;
     char *t = (char*) xmalloc(c1->count);
     for (i = 0; i < c1->count; ++i)
-        t[i] = (picker->probab == 0. ? 1. : 0.);
-    if (picker->probab == 0. || limit == 0)
-        ;
-    else if (picker->probab < 0.5) { /*small sample*/
+        t[i] = (picker->probab == 0. ? 1 : 0);
+    if (picker->probab == 0. || limit == 0) {
+        /* nothing to do */
+    } else if (picker->probab < 0.5) { /*small sample*/
         for (i = 0; i < n; ) {
             int k = dbr_noprocs * (rand() % limit) + dbr_nid;
             if (t[k] == 0) {
@@ -385,8 +385,7 @@ char* pick_items(const dbr_picker* picker, const dbr_cell *c1)
                 ++i;
             }
         }
-    }
-    else { /*large sample*/
+    } else { /*large sample*/
         for (i = dbr_nid; i < c1->count; i += dbr_noprocs) {
             t[i] = (rand() < picker->probab * RAND_MAX);
         }
@@ -438,17 +437,17 @@ int calculate_irdf_cm(const dbr_picker* picker,
                     if (rcut2 != 0.)
                         /* We check (r2 < rcut2) before calculating sqrt.
                          */
-                        calculate_irdf_innerloop2(c1 == c2 ? k : c2->count,
-                                                  nbins, rquanta,
-                                                  c1->atoms[k], c2, t, rcut2);
+                        calculate_irdf_inner_chk(c1 == c2 ? k : c2->count,
+                                                 nbins, rquanta,
+                                                 c1->atoms[k], c2, t, rcut2);
                     else
                         /* We don't check (r2 < rcut2) before calculating sqrt.
                          * It's optimized for the case when most of
                          * the distances are <rcut
                          */
-                        calculate_irdf_innerloop(c1 == c2 ? k : c2->count,
-                                                 nbins, rquanta,
-                                                 c1->atoms[k], c2, t);
+                        calculate_irdf_inner(c1 == c2 ? k : c2->count,
+                                             nbins, rquanta,
+                                             c1->atoms[k], c2, t);
                 }
             }
 
@@ -458,11 +457,11 @@ int calculate_irdf_cm(const dbr_picker* picker,
                     if (!picked[k])
                         continue;
                     if (rcut2 != 0.)
-                        calculate_irdf_innerloop2(c2->count, nbins, rquanta,
-                                                  c1->atoms[k], c2, t, rcut2);
+                        calculate_irdf_inner_chk(c2->count, nbins, rquanta,
+                                                 c1->atoms[k], c2, t, rcut2);
                     else
-                        calculate_irdf_innerloop(c2->count, nbins, rquanta,
-                                                 c1->atoms[k], c2, t);
+                        calculate_irdf_inner(c2->count, nbins, rquanta,
+                                             c1->atoms[k], c2, t);
                 }
             }
 
@@ -791,8 +790,7 @@ irdfs read_irdfs_from_file(const char *filename)
     if (r != 1) {
         dbr_mesg("Error: debyer id header not found in file: %s\n", filename);
         return rdfs;
-    }
-    else if (version != 1) {
+    } else if (version != 1) {
         dbr_mesg("Error: debyer id version %i is not supported by debyer "
                         VERSION "\n", version);
         return rdfs;
@@ -868,14 +866,11 @@ irdfs read_irdfs_from_file(const char *filename)
                     p->c2 = rdfs.atom_counts[i];
             }
             fscanf(f, " sample %i", &p->sample); /* optional "sample" */
-        }
-        else if (r == '#') {
+        } else if (r == '#') {
             skip_to_next_line(f);
-        }
-        else if (r == EOF) {
+        } else if (r == EOF) {
             break;
-        }
-        else {
+        } else {
             if (p == 0) {
                 dbr_mesg("Error: unexpected format of id file "
                          "(\"atoms\" line expected): %s\n", filename);
@@ -1040,8 +1035,7 @@ dbr_real* get_pattern(const irdfs* rdfs, struct dbr_diffract_args* dargs)
         if (dargs->c == output_xray && find_in_it92(at) == NULL) {
             dbr_mesg("Error: No x-ray scattering factor for atom: %s\n", at);
             return NULL;
-        }
-        else if (dargs->c == output_neutron && find_in_nn92(at) == NULL) {
+        } else if (dargs->c == output_neutron && find_in_nn92(at) == NULL) {
             dbr_mesg("Error: No neutron scattering factor for atom: %s\n", at);
             return NULL;
         }
@@ -1115,9 +1109,9 @@ static
 FILE* start_pattern_output(const char *ofname)
 {
     FILE *f;
-    if (!ofname || !*ofname || !strcmp(ofname, "-"))
+    if (!ofname || !*ofname || !strcmp(ofname, "-")) {
         f = stdout;
-    else {
+    } else {
         f = fopen(ofname, "w");
         if (!f) {
             dbr_mesg("Error: can not open file: %s\n", ofname);
@@ -1167,8 +1161,7 @@ int write_diffraction_to_file(struct dbr_diffract_args* dargs, irdfs rdfs,
         int nb = get_number_of_bins(dargs->cutoff, rdfs.step);
         if (nb < rdfs.rdf_bins) {
             rdfs.rdf_bins = nb;
-        }
-        else if (nb > rdfs.rdf_bins) {
+        } else if (nb > rdfs.rdf_bins) {
             dargs->cutoff = rdfs.rdf_bins * rdfs.step;
             dbr_mesg("WARNING: can't set cut-off larger than %g\n",
                      dargs->cutoff);
@@ -1242,9 +1235,9 @@ int write_pdfkind_to_file(struct dbr_pdf_args* pargs, irdfs rdfs,
 
     if (pargs->pattern_from <= 0.)
         pargs->pattern_from = 0.;
-    if (pargs->pattern_to <= 0.)
+    if (pargs->pattern_to <= 0.) {
         pargs->pattern_to = irdf_max;
-    else if (pargs->pattern_to > irdf_max) {
+    } else if (pargs->pattern_to > irdf_max) {
         dbr_mesg("WARNING: ID is calculated only to: %g\n", irdf_max);
         pargs->pattern_to = irdf_max;
     }
@@ -1400,9 +1393,9 @@ dbr_cells prepare_cells(dbr_pbc pbc, dbr_real rcut, dbr_atoms* xa)
 
     /* calculate number of cells */
     for (i = 0; i < 3; ++i) {
-        if (cells.v[i] == 0)  /* no pbc, put all in one cell */
+        if (cells.v[i] == 0) {  /* no pbc, put all in one cell */
             cells.n[i] = 1;
-        else { /* cell dimension must be smaller than rcut */
+        } else { /* cell dimension must be smaller than rcut */
             int t = (int) floor(pbc_prop.widths[i] / rcut);
             cells.n[i] = t > 0 ? t : 1;
         }

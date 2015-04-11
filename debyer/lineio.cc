@@ -79,8 +79,7 @@ bool LineInput::init(const char* filename_)
         failure("Program is compiled with disabled zlib support.");
         return false;
 #endif //HAVE_ZLIB
-    }
-    else if (bz2ed) {
+    } else if (bz2ed) {
 #ifdef HAVE_BZLIB
         bz_stream = BZ2_bzopen(filename_, "rb");
         if (!bz_stream) {
@@ -91,11 +90,9 @@ bool LineInput::init(const char* filename_)
         failure("Program is compiled with disabled bzlib support.");
         return false;
 #endif //HAVE_BZLIB
-    }
-    else if (len == 0 || strcmp(filename_, "-") == 0) {
+    } else if (len == 0 || strcmp(filename_, "-") == 0) {
         stream = stdin;
-    }
-    else {
+    } else {
         stream = fopen(filename_, "rb");
         if (!stream) {
             failure("Can not open file: ", filename_);
@@ -176,12 +173,10 @@ char* LineInput::get_line()
     if (p) {
         *p = 0;
         next_line = p+1;
-    }
-    else if (strlen(buffer) == buffer_size - 1) {
+    } else if (strlen(buffer) == buffer_size - 1) {
         sprintf(buffer, "Line in the file is too long (>%d)\n", buffer_size-1);
         return NULL;
-    }
-    else {
+    } else {
         // it's EOF now
         buffer[0] = 0;
         next_line = NULL;

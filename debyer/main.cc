@@ -114,17 +114,17 @@ void print_min_dist_info(irdfs const& rdfs)
 const char* get_id_out_fn(gengetopt_args_info const& args)
 {
     if (args.save_id_given) {
-        if (args.save_id_arg)
+        if (args.save_id_arg) {
             return args.save_id_arg;
-        else {
+        } else {
             string default_id_file = default_fn(args, "id");
             char *allocated = new char[default_id_file.size() + 1];
             strcpy(allocated, default_id_file.c_str());
             return allocated;
         }
-    }
-    else
+    } else {
         return NULL;
+    }
 }
 
 dbr_picker prepare_picker(gengetopt_args_info const& args, int n_atoms)
@@ -390,8 +390,7 @@ int main(int argc, char **argv)
                      "Just copy the file." << endl;
             //write_irdfs_to_file(rdfs, get_id_out_fn(args));
         }
-    }
-    else { //need to calculate id
+    } else { //need to calculate id
         dbr_aconf aconf = prepare_aconf(in, args);
         dbr_picker picker = prepare_picker(args, aconf.n);
 
@@ -415,8 +414,7 @@ int main(int argc, char **argv)
                 aconf.atoms = all;
                 aconf.n = n_all;
                 delete [] sel;
-            }
-            else
+            } else
                 write_atoms_to_file(aconf, args);
         }
 
@@ -462,8 +460,7 @@ int main(int argc, char **argv)
         pargs.ro = args.ro_given ? args.ro_arg : -1.;
         pargs.weight = args.weight_arg[0];
         r = write_pdfkind_to_file(&pargs, rdfs, ofname.c_str());
-    }
-    else {
+    } else {
         dbr_diffract_args dargs;
         dargs.c = kind;
         dargs.pattern_from = args.from_given ? args.from_arg : 0.;

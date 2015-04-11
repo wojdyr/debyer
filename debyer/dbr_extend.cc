@@ -126,11 +126,11 @@ double* get_pbc_ptr(dbr_aconf& aconf, int dim)
 
 void wrap_to_pbc(dbr_aconf& aconf)
 {
-    if (aconf.reduced_coordinates)
+    if (aconf.reduced_coordinates) {
         for (int i = 0; i != aconf.n; ++i)
             for (int j = 0; j < 3; ++j)
                 aconf.atoms[i].xyz[j] -= floor(aconf.atoms[i].xyz[j]);
-    else {
+    } else {
         // works only for orthorhombic PBC
         double pbc[3] = { aconf.pbc.v00, aconf.pbc.v11, aconf.pbc.v22 };
         for (int i = 0; i != aconf.n; ++i)
@@ -143,10 +143,10 @@ void wrap_to_pbc(dbr_aconf& aconf)
 
 void wrap_one(dbr_aconf const& aconf, dbr_real *xyz)
 {
-    if (aconf.reduced_coordinates)
+    if (aconf.reduced_coordinates) {
         for (int j = 0; j < 3; ++j)
             xyz[j] -= floor(xyz[j]);
-    else {
+    } else {
         // works only for orthorhombic PBC
         double pbc[3] = { aconf.pbc.v00, aconf.pbc.v11, aconf.pbc.v22 };
         for (int j = 0; j < 3; ++j)
@@ -385,8 +385,7 @@ double check_symmetry_in_distance(CellMethod const& cm, Slab const& slab,
             x[slab.dim] += slab.delta;
             if (x[slab.dim] >= pbcd)
                 x[slab.dim] -= pbcd;
-        }
-        else {
+        } else {
             x[slab.dim] -= slab.delta;
             if (x[slab.dim] < 0)
                 x[slab.dim] += pbcd;
@@ -661,8 +660,7 @@ void make_cubic(dbr_aconf& aconf, Slab const& slab,
     double cell_param = 0.;
     double a[3][3];
 
-    if (args.make_cubic_arg == NULL)
-    {
+    if (args.make_cubic_arg == NULL) {
         CellMethod cm(aconf, args.min_cell_arg);
         vector<Trans> tt = get_basic_trans(cm, pslab, args);
         const double* v[3];
@@ -671,10 +669,8 @@ void make_cubic(dbr_aconf& aconf, Slab const& slab,
             printf("Cubic cell not found.\n");
             return;
         }
-
         change_order_and_sign_of_vectors(v, a);
-    }
-    else {
+    } else {
         bool r = parse_n_numbers(args.make_cubic_arg, 9, (double*) a);
         if (!r) {
             printf("Wrong argument to --make-cubic option.\n");
@@ -846,12 +842,12 @@ vector<int> bookmark_slab_atoms(dbr_aconf const& aconf, Slab const& slab,
     for (int i = 0; i != aconf.n; ++i) {
         dbr_real* xyz = aconf.atoms[i].xyz;
         double dist = dist_forward(slab.x0, xyz[slab.dim], pbcd);
-        if (dist < slab.delta - epsilon)
+        if (dist < slab.delta - epsilon) {
             orig.push_back(i);
         // to avoid overlapping atoms or gaps, we must ensure that all images
         // of bookmarked atoms are moved, and atoms which images are not to be
         // moved are not copied.
-        else if (dist < slab.delta + epsilon) {
+        } else if (dist < slab.delta + epsilon) {
             dbr_real x[3] = { xyz[0], xyz[1], xyz[2] };
             x[slab.dim] += slab.delta;
             dbr_atom const* img = cm.get_atom_at(x, epsilon);
@@ -874,11 +870,11 @@ vector<int> bookmark_one_shift_group(dbr_aconf const& aconf, double const* r,
         dbr_real* xyz = aconf.atoms[i].xyz;
         double dist = (rd >= 0 ? dist_forward(x0, xyz[dim], pbcd)
                                : dist_forward(xyz[dim], x0, pbcd));
-        if (dist < fabs(rd) - epsilon)
+        if (dist < fabs(rd) - epsilon) {
             orig.push_back(i);
         // we must ensure that of every pair original-image in this area,
         // exactly one atom is bookmarked
-        else if (dist < fabs(rd) + epsilon) {
+        } else if (dist < fabs(rd) + epsilon) {
             dbr_real x[3] = { xyz[0]+r[0], xyz[1]+r[1], xyz[2]+r[2] };
             dbr_atom const* img = cm.get_atom_at(x, epsilon);
             if (!img)
@@ -1125,8 +1121,7 @@ void multiply_pbc(dbr_aconf& aconf, int x, int y, int z)
                     if (aconf.reduced_coordinates) {
                         for (int i = 0; i < 3; ++i)
                             dest.xyz[i] = (source.xyz[i] + img[i]) / mult[i];
-                    }
-                    else {
+                    } else {
                         for (int i = 0; i < 3; ++i)
                             dest.xyz[i] = source.xyz[i] + r[i];
                     }
@@ -1289,16 +1284,13 @@ int main(int argc, char **argv)
     if (args.x_given) {
         slab.dim = 0;
         slab.x0 = args.x_arg;
-    }
-    else if (args.y_given) {
+    } else if (args.y_given) {
         slab.dim = 1;
         slab.x0 = args.y_arg;
-    }
-    else if (args.z_given) {
+    } else if (args.z_given) {
         slab.dim = 2;
         slab.x0 = args.z_arg;
-    }
-    else if (args.bound_given) {
+    } else if (args.bound_given) {
         bool upper;
         switch (args.bound_arg) {
             case bound_arg_x: slab.dim = 0; upper = false; break;
@@ -1346,15 +1338,15 @@ int main(int argc, char **argv)
             return EXIT_FAILURE;
         }
 
-        if (args.width_given)
+        if (args.width_given) {
             slab.delta = args.width_arg;
-        else {
+        } else {
             slab.delta = search_for_translation(aconf, cm, args,
                                                 slab.dim, slab.x0);
             if (verbosity > -1) {
-                if (slab.delta != 0.)
+                if (slab.delta != 0.) {
                     printf("translation length: %g\n", slab.delta);
-                else {
+                } else {
                     printf("translation not found\n");
                     return EXIT_FAILURE;
                 }

@@ -248,36 +248,30 @@ string detect_input_format(const LineInput &in)
         if (dbr_verbosity > 0)
             mcerr << "Detected AtomEye CFG format" << endl;
         return "atomeye";
-    }
-    else if (endswith(in.get_orig_filename(), "CONFIG")
+    } else if (endswith(in.get_orig_filename(), "CONFIG")
              || endswith(in.get_orig_filename(), "REVCON")) {
         if (dbr_verbosity > 0)
             mcerr << "DL_POLY CONFIG format" << endl;
         return "dlpoly";
-    }
-    else if (endswith(in.get_orig_filename(), ".lammps")
+    } else if (endswith(in.get_orig_filename(), ".lammps")
              || endswith(in.get_orig_filename(), ".lmps")
              || ci_same(buffer, "lammps", 6)) {
         if (dbr_verbosity > 0)
             mcerr << "LAMMPS data input format" << endl;
         return "lammps";
-    }
-    else if (endswith(in.get_orig_filename(), ".pdb")) {
+    } else if (endswith(in.get_orig_filename(), ".pdb")) {
         if (dbr_verbosity > 0)
             mcerr << "Protein Data Bank format" << endl;
         return "pdb";
-    }
-    else if (is_xyz_format(buffer)) {
+    } else if (is_xyz_format(buffer)) {
         if (dbr_verbosity > 0)
             mcerr << "Detected XMol XYZ format" << endl;
         return "xyz";
-    }
-    else if (is_plain_format(buffer)) {
+    } else if (is_plain_format(buffer)) {
         if (dbr_verbosity > 0)
             mcerr << "Detected plain format with atom coordinates" << endl;
         return "xyza";
-    }
-    else {
+    } else {
         mcerr << "Error. Unknown format of the input file" << endl;
         dbr_abort(EXIT_FAILURE);
         return ""; // suppress warning
@@ -458,8 +452,7 @@ void read_atomeye(LineInput& in, dbr_aconf *aconf, bool reduced_coords)
                 strcpy(atom.name, ext_name);
                 if (!aconf->auxiliary.empty())
                     aconf->auxiliary[counter] = nonblank + char_count;
-            }
-            else {
+            } else {
                 dbr_real mass;
                 int r = sscanf(nonblank, DBR_F" %7s "DBR_F" "DBR_F" "DBR_F,
                                          &mass, atom.name, &x, &y, &z);
@@ -473,8 +466,7 @@ void read_atomeye(LineInput& in, dbr_aconf *aconf, bool reduced_coords)
                 atom.xyz[0] = x;
                 atom.xyz[1] = y;
                 atom.xyz[2] = z;
-            }
-            else {
+            } else {
                 atom.xyz[0] = x * H[0][0]  +  y * H[1][0]  +  z * H[2][0];
                 atom.xyz[1] = x * H[0][1]  +  y * H[1][1]  +  z * H[2][1];
                 atom.xyz[2] = x * H[0][2]  +  y * H[1][2]  +  z * H[2][2];
@@ -582,8 +574,7 @@ void write_atoms_to_atomeye_file(dbr_aconf const& aconf, string const& filename)
         if (aconf.reduced_coordinates) {
             f << atom.xyz[0] << " " << atom.xyz[1]
                 << " " << atom.xyz[2];
-        }
-        else {
+        } else {
             dbr_xyz r;
             dbr_vec3_mult_mat3x3(atom.xyz, H_1, r);
             f << r[0] << " " << r[1] << " " << r[2];
@@ -638,9 +629,9 @@ void read_dlpoly_config(LineInput& in, dbr_aconf *aconf)
     //                            2 - coordinates, velocities and forces
 
     // read boundary conditions
-    if (imcon == 0)
-        ; //no PBC
-    else if (imcon == 1 || imcon == 2 || imcon == 3) {
+    if (imcon == 0) {
+        // no PBC
+    } else if (imcon == 1 || imcon == 2 || imcon == 3) {
         dbr_pbc &p = aconf->pbc;
 
         int r = sscanf(in.get_line(), " %lf %lf %lf", &p.v00, &p.v01, &p.v02);
@@ -651,8 +642,7 @@ void read_dlpoly_config(LineInput& in, dbr_aconf *aconf)
 
         r = sscanf(in.get_line(), " %lf %lf %lf", &p.v20, &p.v21, &p.v22);
         ASSERT_FORMAT(r == 3);
-    }
-    else {
+    } else {
         mcerr << "Error. imcon=" << imcon << " is not supported." << endl;
         dbr_abort(EXIT_FAILURE);
     }
@@ -807,8 +797,7 @@ void read_lammps_data(LineInput& in, dbr_aconf* aconf, bool reduced_coords)
 
         if (strstr(nonblank, "atoms")) {
             aconf->n = strtol(nonblank, NULL, 10);
-        }
-        else if (strstr(nonblank, "atom types")) {
+        } else if (strstr(nonblank, "atom types")) {
             int ntypes = strtol(nonblank, NULL, 10);
             if (trailing_comment) {
                 symbols = split_string(trailing_comment+1);
@@ -824,8 +813,7 @@ void read_lammps_data(LineInput& in, dbr_aconf* aconf, bool reduced_coords)
                         mcerr << " " << i+1 << ":" << symbols[i];
                     mcerr << endl;
                 }
-            }
-            else {
+            } else {
                 mcerr << "Warning: No atomic symbols. "
                          "You may add the symbols as a comment after "
                          "the `atom types' line (e.g. '# Si C')" << endl;
@@ -835,35 +823,30 @@ void read_lammps_data(LineInput& in, dbr_aconf* aconf, bool reduced_coords)
                     symbols.push_back(sym);
                 }
             }
-        }
-        else if (strstr(nonblank, "xlo xhi")) {
+        } else if (strstr(nonblank, "xlo xhi")) {
             double hi, lo;
             if (sscanf(nonblank, "%lf %lf", &lo, &hi) != 2) {
                 mcerr << "Error in line:\n" << line << endl;
                 dbr_abort(EXIT_FAILURE);
             }
             aconf->pbc.v00 = hi - lo;
-        }
-        else if (strstr(nonblank, "ylo yhi")) {
+        } else if (strstr(nonblank, "ylo yhi")) {
             double hi, lo;
             if (sscanf(nonblank, "%lf %lf", &lo, &hi) != 2) {
                 mcerr << "Error in line:\n" << line << endl;
                 dbr_abort(EXIT_FAILURE);
             }
             aconf->pbc.v11 = hi - lo;
-        }
-        else if (strstr(nonblank, "zlo zhi")) {
+        } else if (strstr(nonblank, "zlo zhi")) {
             double hi, lo;
             if (sscanf(nonblank, "%lf %lf", &lo, &hi) != 2) {
                 mcerr << "Error in line:\n" << line << endl;
                 dbr_abort(EXIT_FAILURE);
             }
             aconf->pbc.v22 = hi - lo;
-        }
-        else if (strstr(nonblank, "Atoms") == nonblank) {
+        } else if (strstr(nonblank, "Atoms") == nonblank) {
             break;
-        }
-        else {
+        } else {
             if (dbr_verbosity >= 1)
                 mcerr << "Ignoring line " << counter << ":\n" << line << endl;
         }
