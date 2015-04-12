@@ -1,6 +1,5 @@
 
-does it make sense to have both calculate_irdf_inner() and
-calculate_irdf_inner_chk()?
+automatic cut-off in PBC - the minimum-image convention
 
 read http://dx.doi.org/10.1107/S0021889800019993
 

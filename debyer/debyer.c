@@ -548,15 +548,22 @@ irdfs calculate_irdfs(int n, dbr_atoms* xa, dbr_real rcut, dbr_real rquanta,
 #endif
     dbr_pbc_prop pbc_prop = get_pbc_properties(pbc);
     if (pbc.v00 != 0. || pbc.v11 != 0. || pbc.v22 != 0.) {
+        dbr_real min_size = pbc_prop.widths[0];
+        for (i = 1; i < 3; ++i)
+            if (pbc_prop.widths[i] < min_size)
+                min_size = pbc_prop.widths[i];
         if (rcut <= 0) {
             dbr_mesg("Error: cut-off must be specified for PBC system\n");
             dbr_abort(1);
         }
-        if (rcut >= pbc_prop.widths[0]/2 || rcut >= pbc_prop.widths[1]/2
-                                         || rcut >= pbc_prop.widths[2]/2) {
-            dbr_mesg("Error: cut-off must be smaller than half of PBC box\n");
+        if (rcut >= min_size) {
+            dbr_mesg("Error: cut-off must be smaller than min. PBC size: %g\n",
+                     min_size);
             dbr_abort(1);
         }
+        if (rcut >= min_size/2)
+            dbr_mesg("Warning: cut-off is larger than half of min. PBC size,\n"
+                     "         it is against the minimum-image convention.");
     }
     max_r = rcut > 0 ? rcut : find_largest_distance(n, xa);
     rdfs.step = rquanta;
