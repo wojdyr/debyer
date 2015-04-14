@@ -875,7 +875,9 @@ vector<int> bookmark_one_shift_group(dbr_aconf const& aconf, double const* r,
         // we must ensure that of every pair original-image in this area,
         // exactly one atom is bookmarked
         } else if (dist < fabs(rd) + epsilon) {
-            dbr_real x[3] = { xyz[0]+r[0], xyz[1]+r[1], xyz[2]+r[2] };
+            dbr_real x[3] = { xyz[0] + dbr_real(r[0]),
+                              xyz[1] + dbr_real(r[1]),
+                              xyz[2] + dbr_real(r[2]) };
             dbr_atom const* img = cm.get_atom_at(x, epsilon);
             if (!img)
                 continue;
