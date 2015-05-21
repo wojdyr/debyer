@@ -39,6 +39,7 @@ html_show_copyright = False
 #html_style = 'debyer.css'
 html_theme_options = {
         'analytics_id': 'UA-17365358-2',
+        'font_family': 'Georgia,serif',
         }
 
 # Apr 2015: the default value on RTD is http://... and doesn't work with https
