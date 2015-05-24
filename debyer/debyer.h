@@ -217,7 +217,6 @@ int write_pdfkind_to_file(struct dbr_pdf_args* pdf_args, irdfs rdfs,
 irdfs read_irdfs_from_file(const char *filename);
 
 dbr_cells prepare_cells(dbr_pbc pbc, dbr_real rcut, dbr_atoms* xa);
-void free_cells(dbr_cells cells);
 
 dbr_cells* prepare_cells_all(dbr_pbc pbc, dbr_real rcut, dbr_atoms* xa, int n);
 void free_cells_all(dbr_cells *cells, int n);

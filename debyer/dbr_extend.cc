@@ -288,8 +288,8 @@ void transform1(dbr_aconf& aconf, gengetopt_args_info const& args)
 // select the last atom that in direction `dim' has position lesser than `x0'.
 int select_atom(dbr_aconf const& aconf, int dim, double x0)
 {
-    int a0 = -1;
-    double min_diff = 1e9;
+    int a0 = 0;
+    double min_diff = HUGE_VAL;
     double pbcd = get_pbc(aconf, dim);
     for (int i = 0; i != aconf.n; ++i) {
         double x = aconf.atoms[i].xyz[dim];
@@ -827,7 +827,7 @@ void find_translation_vector(CellMethod const& cm,
     for (int i = 0; i < 3; ++i)
         r[i] = (sign == tr_sign ? t->r[i] : -t->r[i]);
 
-    if (t && verbosity > 0)
+    if (verbosity > 0)
         printf("T = (% f % f % f) +/- (%g %g %g)\n",
                r[0], r[1], r[2],
                t->stddev[0], t->stddev[1], t->stddev[2]);

@@ -382,7 +382,11 @@ void read_atomeye(LineInput& in, dbr_aconf *aconf, bool reduced_coords)
     const char* line = in.get_line();
     aconf->reduced_coordinates = reduced_coords;
     assert(!strncmp(line, cfg_magic, magic_len));
-    sscanf(line + magic_len, "%i", &aconf->n);
+    int sn = sscanf(line + magic_len, "%i", &aconf->n);
+    if (sn != 1) {
+        mcerr << "Error. Failed to read Number of particles." << endl;
+        dbr_abort(EXIT_FAILURE);
+    }
     if (dbr_verbosity > 0)
         mcerr << aconf->n << " atoms." << endl;
     aconf->atoms = new dbr_atom[aconf->n];

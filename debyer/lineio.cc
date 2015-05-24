@@ -17,7 +17,7 @@
 using namespace std;
 
 LineInput::LineInput()
-    : line_number(0), stream(NULL)
+    : line_number(0), next_line(NULL), stream(NULL)
 #ifdef HAVE_ZLIB
       , gz_stream(NULL)
 #endif

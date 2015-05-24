@@ -29,6 +29,7 @@ void print_stoichiometry_info(map<string,int> const& st)
     int sum = 0;
     for (map<string,int>::const_iterator i = st.begin(); i != st.end(); ++i)
         sum += i->second;
+    assert(sum != 0);
     for (map<string,int>::const_iterator i = st.begin(); i != st.end(); ++i)
         cout << "   " << i->first << ":" << i->second
              << " (" << 100. * i->second / sum << "%)";
@@ -721,7 +722,8 @@ void find_lowest_energy(char axis, int nparts,
     // check if the primitive cell can be PBCed -- part 1 (prepare)
     int scale[3] = { 1, 1, 1 };
     scale[dir] = nparts;
-    scale[dir2] = nparts2;
+    if (dir2 >= 0)
+        scale[dir2] = nparts2;
     dbr_real pbc[3];
     dbr_real prim_box[3];
     for (int i = 0; i < 3; ++i) {
@@ -815,8 +817,9 @@ void find_lowest_energy(char axis, int nparts,
                     dbr_copy_atom(aprim[k], copy);
                     copy.xyz[dir]
                         = wrapped_sum(copy.xyz[dir], double(i) / nparts);
-                    copy.xyz[dir2]
-                        = wrapped_sum(copy.xyz[dir2], double(j) / nparts2);
+                    if (dir2 >= 0)
+                        copy.xyz[dir2]
+                            = wrapped_sum(copy.xyz[dir2], double(j) / nparts2);
                     counter++;
                 }
         assert (counter == (int) sel.size());
@@ -842,6 +845,10 @@ int main(int argc, char **argv)
             nparts2 = strtol(argv[4], NULL, 10);
         }
         int file0 = (argc >= 7 ? 5 : 3);
+        if (nparts == 0 || nparts2 == 0) {
+            cerr << "N should not be 0.\n";
+            return 2;
+        }
         const char *output_file = (argc > file0 + 2 ? argv[file0 + 2] : NULL);
         find_lowest_energy(axis, nparts, axis2, nparts2,
                            argv[file0], argv[file0+1], output_file);

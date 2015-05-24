@@ -111,19 +111,15 @@ void print_min_dist_info(irdfs const& rdfs)
 }
 
 // get name of file to write ID in
-const char* get_id_out_fn(gengetopt_args_info const& args)
+string get_id_out_filename(gengetopt_args_info const& args)
 {
     if (args.save_id_given) {
-        if (args.save_id_arg) {
+        if (args.save_id_arg)
             return args.save_id_arg;
-        } else {
-            string default_id_file = default_fn(args, "id");
-            char *allocated = new char[default_id_file.size() + 1];
-            strcpy(allocated, default_id_file.c_str());
-            return allocated;
-        }
+        else
+            return default_fn(args, "id");
     } else {
-        return NULL;
+        return string();
     }
 }
 
@@ -234,9 +230,10 @@ irdfs calculate_id_from_datafile(dbr_aconf &aconf, dbr_picker const& picker,
             mcerr << "Option `cutoff' set to " << cutoff << endl;
     }
 
+    string id_filename = get_id_out_filename(args);
     //calculate IDs - most of computer time is spent here
-    rdfs = calculate_irdfs(tc, xa, cutoff,
-                           quanta, aconf.pbc, &picker, get_id_out_fn(args));
+    rdfs = calculate_irdfs(tc, xa, cutoff, quanta, aconf.pbc, &picker,
+                           id_filename.empty() ? NULL : id_filename.c_str());
     print_irdfs_statistics(rdfs);
     return rdfs;
 }

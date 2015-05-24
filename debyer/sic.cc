@@ -58,7 +58,7 @@ public:
     vector<vector<double> > angles;
 
     NeighbourStats(dbr_cells *cells_)
-        : cells(cells_), coord_array(0)
+        : cells(cells_), find_neigh_other(NULL), ring2_count(0), coord_array(0)
         { initialize(); }
 
     void find_neigbours(NeighbourStats &other, dbr_real rcut,
@@ -124,6 +124,7 @@ string print_n1_stats(NeighbourStats const& a, NeighbourStats const& b)
     int sumb = accumulate(vb.begin(), vb.end(), 0);
     ostringstream s;
     assert(va.size() == vb.size());
+    assert(suma != 0 && sumb != 0);
     for (size_t i = 0; i < va.size(); ++i)
         if (va[i] || vb[i]) {
             // CN#2 | Si 2382 1.35% | C 5682 3.2% | all 8064 2.1%
