@@ -1,4 +1,6 @@
 
+#pragma GCC optimize ("string"...)
+
 automatic cut-off in PBC - the minimum-image convention
 
 read http://dx.doi.org/10.1107/S0021889800019993
