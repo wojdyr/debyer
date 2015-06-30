@@ -63,15 +63,10 @@ directly calling your compiler:
 
     cd debyer
 
-    gengetopt -i debyer.ggo
     c++ -O3 -ffast-math -fopenmp -o debyer cmdline.c debyer.c atomtables.c \
         main.cc lineio.cc fileio.cc -lm
 
-and the same for other utilities:
+Other programs can also be compiled this way, for instance:
 
     c++ -O3 -o dbr_conv conv.cc debyer.c lineio.cc fileio.cc atomtables.c -lm
-
-    gengetopt -i extend_cmd.ggo
-    c++ -O3 -DVERSION='"0.4"' -o dbr_extend dbr_extend.cc extend_cmd.c \
-        cells.cc debyer.c lineio.cc fileio.cc atomtables.c -lm
 
