@@ -13,7 +13,8 @@
 
 #gengetopt 2.22
 package "debyer"
-args "-uFILE --no-handle-version"
+version "0.4"
+args "-uFILE --no-handle-version --include-getopt"
 
 option  "quiet" q "silent mode" optional
 option  "verbose" v "increase verbosity level (can be used twice)" optional multiple

@@ -51,9 +51,6 @@ void print_usage()
 
 void print_version()
 {
-#ifndef VERSION
-# define VERSION "unknown"
-#endif
     printf("dbr_conv version %s\n", VERSION);
 }
 

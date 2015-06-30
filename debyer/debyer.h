@@ -22,6 +22,8 @@
 
 #if HAVE_CONFIG_H
 #  include <config.h>
+#else
+#  define VERSION "0.4" /* keep the same as in configure.ac */
 #endif
 
 #ifdef USE_MPI

@@ -1,5 +1,6 @@
 
 AC_PREREQ(2.59)
+# keep version the same in debyer/debyer.ggo and debyer/version.h
 AC_INIT([debyer], [0.4], [])
 AC_CONFIG_AUX_DIR(build-aux)
 AC_CONFIG_SRCDIR([debyer/debyer.c])

@@ -64,14 +64,14 @@ directly calling your compiler:
     cd debyer
 
     gengetopt -i debyer.ggo
-    c++ -O3 -ffast-math -fopenmp -DVERSION='"0.3"' -o debyer cmdline.c \
-        main.cc debyer.c lineio.cc fileio.cc atomtables.c -lm
+    c++ -O3 -ffast-math -fopenmp -o debyer cmdline.c debyer.c atomtables.c \
+        main.cc lineio.cc fileio.cc -lm
 
 and the same for other utilities:
 
     c++ -O3 -o dbr_conv conv.cc debyer.c lineio.cc fileio.cc atomtables.c -lm
 
     gengetopt -i extend_cmd.ggo
-    c++ -O3 -DVERSION='"0.3"' -o dbr_extend dbr_extend.cc extend_cmd.c \
+    c++ -O3 -DVERSION='"0.4"' -o dbr_extend dbr_extend.cc extend_cmd.c \
         cells.cc debyer.c lineio.cc fileio.cc atomtables.c -lm
 
