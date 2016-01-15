@@ -3,9 +3,11 @@ compiler:
   - gcc
   - clang
 addons:
-    apt:
-      packages:
-        - libz-dev libbz2-dev gengetopt
+  apt:
+    packages:
+      - libz-dev
+      - libbz2-dev
+      - gengetopt
 before_script:
   - autoreconf -i
 script:
@@ -15,8 +17,5 @@ branches:
   only:
     - master
 notifications:
-  recipients:
-    - wojdyr@gmail.com
   email:
-    on_success: change
-    on_failure: always
+    - wojdyr@gmail.com
