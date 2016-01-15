@@ -329,7 +329,8 @@ int main(int argc, char **argv)
     //if (args.inputs_num > 1) {
     //    mcerr << "Only one input file can be given.";
     if (args.inputs_num != 1) {
-        mcerr << "Exactly one input file should be given." << endl;
+        mcerr << "Exactly one input file expected. See docs or 'debyer -h'."
+              << endl;
         dbr_abort(EXIT_FAILURE);
     }
     bool output_atoms = (args.write_xyz_given || args.write_cfg_given
