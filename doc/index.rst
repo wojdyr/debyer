@@ -43,8 +43,7 @@ in the (infinite) vacuum.
 Debyer is **not** designed to calculate a diffraction pattern of a perfect
 crystal. It does not make sense to employ the Debye's formula for a unit cell:
 you can easily get indexed pattern using other programs, such as PowderCell_
-(sadly it's not maintained since 1990s;
-no idea what program should be recommended nowadays).
+(not maintained since 1990s) or CCDC Mercury (any others?).
 
 .. _PowderCell: http://www.iucr.org/resources/other-directories/software/powder-cell
 
