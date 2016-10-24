@@ -71,7 +71,7 @@ const char *gengetopt_args_info_full_help[] = {
   "  -p, --partials                include partials as extra columns",
   "\n Options for reciprocal space patterns:",
   "  -l, --lambda=FLOAT            wavelength (omit for a pattern in Q)",
-  "      --sinc                    use sinc as damping function (requires cut-off)",
+  "      --sinc                    apply sinc damping (requires cut-off)",
   "\n Options valid for both real and reciprocal space patterns:",
   "      --ro=FLOAT                numeric density, required for (r)PDF and\n                                  diffractogram with cutoff",
   "",
@@ -2006,7 +2006,7 @@ cmdline_parser_internal (
               goto failure;
           
           }
-          /* use sinc as damping function (requires cut-off).  */
+          /* apply sinc damping (requires cut-off).  */
           else if (strcmp (long_options[option_index].name, "sinc") == 0)
           {
           

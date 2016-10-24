@@ -108,7 +108,7 @@ struct gengetopt_args_info
   float lambda_arg;	/**< @brief wavelength (omit for a pattern in Q).  */
   char * lambda_orig;	/**< @brief wavelength (omit for a pattern in Q) original value given at command line.  */
   const char *lambda_help; /**< @brief wavelength (omit for a pattern in Q) help description.  */
-  const char *sinc_help; /**< @brief use sinc as damping function (requires cut-off) help description.  */
+  const char *sinc_help; /**< @brief apply sinc damping (requires cut-off) help description.  */
   float ro_arg;	/**< @brief numeric density, required for (r)PDF and diffractogram with cutoff.  */
   char * ro_orig;	/**< @brief numeric density, required for (r)PDF and diffractogram with cutoff original value given at command line.  */
   const char *ro_help; /**< @brief numeric density, required for (r)PDF and diffractogram with cutoff help description.  */

@@ -80,14 +80,15 @@ and symbols from the *Underneath the Bragg Peaks* book
  g(r)    &= \rho(r) / \rho_0 = \frac{R(r)}{4\pi\rho_0 r^2} \\
  G(r)    &= 4\pi r\rho_0 \left[ g(r)-1 \right]
 
-The average density `\rho_0` is either defined by the user or determined
-automatically.
+The average density `\rho_0` is either defined by the user
+(``--ro``, as #atoms / volume)
+or determined automatically.
 
 Average density is well-defined for a continuous system in the PBC (periodic
 boundary conditions), but not for a single grain in the vacuum.
 In the latter case *G(r)* will be distored.
-Although corrections for particular grain shapes has been proposed
-in the literature, they are implemented in this program.
+Although corrections for particular grain shapes have been proposed
+in the literature, they are not implemented in this program.
 
 Weights *b* can be set as neutron scattering lengths, x-ray *f*\ (0)
 or equal 1 (see the section :ref:`scat`).
@@ -316,7 +317,7 @@ The correction above works well enough for polycrystalline systems,
 but may not work for a single crystal.
 It should work fine if the pair correlation function is flat at the cut-off
 distance. If it is not flat, it is necessary to smooth it
-using damping function.
+using a damping function.
 
 In a few papers
 the `sinc function <http://en.wikipedia.org/wiki/Sinc_function>`_
@@ -343,7 +344,7 @@ with
 
 .. math:: [n(r) - n_{cont}(r)]
 
-With the sinc damping, *n(r)* is replaced by:
+With the sinc damping (option ``--sinc`` in Debyer) *n(r)* is replaced by:
 
 .. math:: [n(r) - n_{cont}(r)] \frac{\sin(\pi r / r_c)}{\pi r / r_c}
 
@@ -488,7 +489,7 @@ Usage
  
   Options for reciprocal space patterns:
    -l, --lambda=FLOAT            wavelength (omit for a pattern in Q)
-       --sinc                    use sinc as damping function (requires cut-off)
+       --sinc                    apply sinc damping (requires cut-off)
  
   Options valid for both real and reciprocal space patterns:
        --ro=FLOAT                numeric density, required for (r)PDF and

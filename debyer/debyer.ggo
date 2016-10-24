@@ -59,7 +59,7 @@ option "partials" p "include partials as extra columns" optional
 
 section " Options for reciprocal space patterns"
 option "lambda" l "wavelength (omit for a pattern in Q)" float optional
-option  "sinc" - "use sinc as damping function (requires cut-off)" optional
+option  "sinc" - "apply sinc damping (requires cut-off)" optional
 
 section " Options valid for both real and reciprocal space patterns"
 option "ro" - "numeric density, required for (r)PDF and diffractogram with cutoff" float optional
