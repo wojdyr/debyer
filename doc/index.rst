@@ -1,8 +1,7 @@
 
-You will find here a few programs that analyze and manipulate atomistic models:
-Debyer is well-documented and employed in several labs,
-others were written for very specific tasks and may not be ever re-used --
-but just in case, they are briefly described in the :ref:`companions` section.
+Debyer is probably the most popular program for calculating Debye's
+scattering equation, pair distribution function (PDF) and a few other
+statistics for atomistic models.
 
 The `source code (C/C++) and installation instructions are on GitHub`__.
 
@@ -543,6 +542,10 @@ TBC
 
 Companions
 ##########
+
+Debyer is distributed with a few other tools
+that were written for very specific tasks and may not be ever re-used --
+but just in case, I describe them briefly here.
 
 dbr_extend
 ==========
