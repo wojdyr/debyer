@@ -1,16 +1,16 @@
 
-Debyer is probably the most popular program for calculating Debye's
-scattering equation, pair distribution function (PDF) and a few other
-statistics for atomistic models.
-
-The `source code (C/C++) and installation instructions are on GitHub`__.
-
-__ https://github.com/wojdyr/debyer
-
 .. _debyer:
 
 Debyer
 ######
+
+In short:
+Debyer can calculate diffraction pattern (from Debye's scattering equation),
+pair distribution function and a few other statistics of an atomistic model.
+
+The `source code (C/C++) and installation instructions are on GitHub`__.
+
+__ https://github.com/wojdyr/debyer
 
 Debyer takes as an **input**
 a file with positions of all the atoms in the virtual sample
