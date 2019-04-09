@@ -105,10 +105,10 @@ static int read_plain_line(const char* line, dbr_atom *atom)
     // %7s - "The input string stops at white space or at the maximum field
     // width, whichever occurs first."
     if (isalpha(*ptr))  // name, x, y, z
-        r = sscanf(line, "%7s "DBR_F" "DBR_F" "DBR_F,
+        r = sscanf(line, "%7s " DBR_F " " DBR_F " " DBR_F,
                    atom->name, &atom->xyz[0], &atom->xyz[1], &atom->xyz[2]);
     else  // x, y, z, name
-        r = sscanf(line, DBR_F" "DBR_F" "DBR_F" %7s",
+        r = sscanf(line, DBR_F " " DBR_F " " DBR_F " %7s",
                    &atom->xyz[0], &atom->xyz[1], &atom->xyz[2], atom->name);
     return r == 4 ? 1 : -1;
 }
@@ -149,8 +149,8 @@ void read_xyz(LineInput& in, dbr_aconf *aconf)
             mcerr << in.get_error() << endl;
             dbr_abort(EXIT_FAILURE);
         }
-        if (sscanf(line, "%7s "DBR_F" "DBR_F" "DBR_F, atom.name, &atom.xyz[0],
-                    &atom.xyz[1], &atom.xyz[2]) != 4) {
+        if (sscanf(line, "%7s " DBR_F " " DBR_F " " DBR_F, atom.name,
+                    &atom.xyz[0], &atom.xyz[1], &atom.xyz[2]) != 4) {
             mcerr << "Format error in line " << i+3 << ":" << endl
                   << line << endl;
             dbr_abort(EXIT_FAILURE);
@@ -458,8 +458,9 @@ void read_atomeye(LineInput& in, dbr_aconf *aconf, bool reduced_coords)
                     aconf->auxiliary[counter] = nonblank + char_count;
             } else {
                 dbr_real mass;
-                int r = sscanf(nonblank, DBR_F" %7s "DBR_F" "DBR_F" "DBR_F,
-                                         &mass, atom.name, &x, &y, &z);
+                int r = sscanf(nonblank,
+                               DBR_F " %7s " DBR_F " " DBR_F " " DBR_F,
+                               &mass, atom.name, &x, &y, &z);
                 assert(r == 5);
             }
             // wrap to <0,1)
