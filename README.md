@@ -40,11 +40,11 @@ names staring with `dbr_`.
 A few configure options have been introduced to speed up Debyer.
 Defaults are: OpenMP, double precision and `-O2 -g` compiler flags.
 If your compiler has option `-ffast-math`, adding it to `CFLAGS`
-is safe and makes the program notably faster.
+is safe and can make the program faster.
 
 * `--disable-openmp` builds serial version
-* `--enable-mpi` builds parallel version using MPI (not OpenMP)
-  and LDFLAGS turns on OpenMP-based parallelization
+* `--enable-mpi` builds parallel version using MPI;
+  it turns off OpenMP-based parallelization as a side effect
 * `--enable-single` uses single precision (double precision is default)
 * `CFLAGS` -- Debyer includes both C++ and C code. The computationally
   intensive part happens to be written in C, so `CFLAGS` matters more than
