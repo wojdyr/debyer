@@ -849,7 +849,7 @@ irdfs read_irdfs_from_file(const char *filename)
         return rdfs;
     }
     /* read optional numeric density */
-    sn = fscanf(f, " # numeric-density "DBR_F, &rdfs.density);
+    sn = fscanf(f, " # numeric-density " DBR_F, &rdfs.density);
     if (sn == 1 && dbr_verbosity > 1) /* very verbose */
         dbr_mesg("Numeric density read from id file: %g\n", rdfs.density);
 

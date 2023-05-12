@@ -25,7 +25,9 @@
 /// S() converts to string
 template <typename T>
 inline std::string S(T k) {
-    return static_cast<std::ostringstream&>(std::ostringstream() << k).str();
+    std::ostringstream os;
+    os << k;
+    return os.str();
 }
 
 // popular single-pass algorithm for calculation of variance and mean
