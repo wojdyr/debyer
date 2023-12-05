@@ -433,7 +433,8 @@ void read_atomeye(LineInput& in, dbr_aconf *aconf, bool reduced_coords)
         }
 
         // either atom mass or coordinates line
-        else if (nonblank[0] == '-' || isdigit(nonblank[0])) {
+        else if (nonblank[0] == '-' || isdigit(nonblank[0]) ||
+                 (nonblank[0] == '.' && isdigit(nonblank[1]))) {
             dbr_atom& atom = aconf->atoms[counter];
             dbr_real x=0, y=0, z=0;
             if (extended) {
