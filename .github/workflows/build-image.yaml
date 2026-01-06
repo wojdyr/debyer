@@ -1,0 +1,40 @@
+name: Tagged Releases
+
+on:
+  push:
+    tags:
+      - '*'
+    branches:
+      - 'main'
+
+jobs:
+  publish-container-image:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Log into registry ghcr.io
+      uses: docker/login-action@v1
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and push "latest" Debyer image for main branch
+      if: ${{ github.ref == 'refs/heads/main' }}
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        tags: ghcr.io/${{ github.repository}}:latest
+        push: true
+
+    - name: Push tagged images
+      if: startsWith(github.ref, 'refs/tags')
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        tags: |
+          ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+        push: true
