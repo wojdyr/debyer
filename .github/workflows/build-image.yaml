@@ -5,7 +5,7 @@ on:
     tags:
       - '*'
     branches:
-      - 'main'
+      - 'master'
 
 jobs:
   publish-container-image:
@@ -22,8 +22,8 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Build and push "latest" Debyer image for main branch
-      if: ${{ github.ref == 'refs/heads/main' }}
+    - name: Build and push "latest" Debyer image for master branch
+      if: ${{ github.ref == 'refs/heads/master' }}
       uses: docker/build-push-action@v2
       with:
         context: .
