@@ -1,0 +1,21 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Build Debyer image via docker
+      run: docker build -t debyer .
+
+    - name: Run argon XYZ smoke test inside Debyer container
+      run: |
+        docker run -v ${PWD}/examples:/xyz -v ${PWD}/out:/out debyer debyer --sf --from=0.0 --to=20.0 --step=0.05 --out=/out/argon.sq /xyz/argon.xyz

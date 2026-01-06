@@ -10,8 +10,9 @@ RUN apt update \
     && apt clean \
     && rm -rf /var/lib/apt/lists/*
 
+# TODO: restrict what we copy into the image
 WORKDIR /app
-COPY . . 
+COPY . .
 
 RUN autoreconf -i \
     && ./configure CFLAGS="-O3 -ffast-math" \
