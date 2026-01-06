@@ -2,7 +2,7 @@ FROM ubuntu:26.04 AS builder
 
 # --- Development / Build Stage ---
 # Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y \
     autoconf \
     build-essential \
     gengetopt \
@@ -21,10 +21,11 @@ RUN autoreconf -i \
     && make install
 
 # --- Production Stage ---
-FROM ubuntu:26.04 as production
+FROM ubuntu:26.04 AS production
 
 # Install only runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
     libbz2-1.0 \
     zlib1g \
     && rm -rf /var/lib/apt/lists/*
