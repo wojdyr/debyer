@@ -82,6 +82,6 @@ docker build -t debyer .
 
 To run an example using argon to calculate structure factor (i.e. S(Q) ), use:
 ```
-docker run -v ${PWD}/examples:/xyz -v ${PWD}/out:/out debyer debyer --sf --from=0.0 --to=20.0 --step=0.05 --out=/out/argon.sq /xyz/argon.xyz
+docker run -v $(pwd)/examples:/xyz -v $(pwd)/out:/out debyer debyer --sf --from=0.0 --to=20.0 --step=0.05 --out=/out/argon.sq /xyz/argon.xyz
 ```
 
