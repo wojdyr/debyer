@@ -1,17 +1,18 @@
-FROM ubuntu:26.04
+FROM ubuntu:26.04 AS builder
 
-RUN apt update \
-    && apt install -y \
-        autoconf \
-        build-essential \
-        gengetopt \
-        libbz2-dev \
-        libz-dev \
-    && apt clean \
+# --- Development / Build Stage ---
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    autoconf \
+    build-essential \
+    gengetopt \
+    libbz2-dev \
+    libz-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# TODO: restrict what we copy into the image
 WORKDIR /app
+
+# A .dockerignore file is recommended to exclude unnecessary files
 COPY . .
 
 RUN autoreconf -i \
@@ -19,4 +20,17 @@ RUN autoreconf -i \
     && make \
     && make install
 
-CMD [ "debyer", "--help"]
+# --- Production Stage ---
+FROM ubuntu:26.04 as production
+
+# Install only runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libbz2-1.0 \
+    zlib1g \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the built binaries from the builder stage
+COPY --from=builder /usr/local/bin/debyer /usr/local/bin/
+COPY --from=builder /usr/local/bin/dbr_* /usr/local/bin/
+
+CMD ["debyer", "--help"]
