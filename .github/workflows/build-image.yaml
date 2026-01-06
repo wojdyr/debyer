@@ -6,7 +6,6 @@ on:
       - '*'
     branches:
       - 'master'
-      - 'add-docker-and-gh-actions'  # DEBUG: testing for feature branch
 
 jobs:
   publish-container-image:
@@ -24,7 +23,7 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build and push "latest" Debyer image for master branch
-      #if: ${{ github.ref == 'refs/heads/master' }} # DEBUG: testing for feature branch
+      if: ${{ github.ref == 'refs/heads/master' }}
       uses: docker/build-push-action@v2
       with:
         context: .
