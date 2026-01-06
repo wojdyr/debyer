@@ -6,6 +6,7 @@ on:
       - '*'
     branches:
       - 'master'
+      - 'add-docker-and-gh-actions'  # DEBUG: testing for feature branch
 
 jobs:
   publish-container-image:
