@@ -78,7 +78,6 @@ dkms.conf
 
 # Original Debyer .gitignore content
 *~
-*.o
 cscope.out
 tags
 
