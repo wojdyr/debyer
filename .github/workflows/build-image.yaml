@@ -24,7 +24,7 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build and push "latest" Debyer image for master branch
-      if: ${{ github.ref == 'refs/heads/master' }}
+      #if: ${{ github.ref == 'refs/heads/master' }} # DEBUG: testing for feature branch
       uses: docker/build-push-action@v2
       with:
         context: .
