@@ -1,10 +1,10 @@
 
-AC_PREREQ(2.59)
+AC_PREREQ([2.71])
 # keep version the same in debyer/debyer.ggo and debyer/version.h
-AC_INIT([debyer], [0.4], [])
+AC_INIT([debyer],[0.4],[])
 AC_CONFIG_AUX_DIR(build-aux)
 AC_CONFIG_SRCDIR([debyer/debyer.c])
-AC_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 
 AM_INIT_AUTOMAKE([1.11 foreign subdir-objects silent-rules -Wall])
 
@@ -45,10 +45,7 @@ AS_IF(test x$enable_mpi = xyes, [
   CC=$MPICC
   CXX=$MPICXX
   AC_MSG_CHECKING([whether the MPI cc command works]) # be paranoid
-  AC_TRY_LINK([#include <mpi.h>],
-	      [int argc; char **argv; MPI_Init(&argc,&argv);],
-	      AC_MSG_RESULT([yes]),
-	      AC_MSG_ERROR([Cannot compile and link MPI code with $CC]))
+  AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <mpi.h>]], [[int argc; char **argv; MPI_Init(&argc,&argv);]])],[AC_MSG_RESULT(yes)],[AC_MSG_ERROR(Cannot compile and link MPI code with $CC)])
   AC_DEFINE(USE_MPI, 1, [Make a parallel version of Debyer using MPI])
 ],[
   AC_OPENMP
@@ -78,4 +75,5 @@ if test x$with_bzlib != xno; then
    bzlib library including header files.]))
 fi
 
-AC_OUTPUT(Makefile debyer/Makefile)
+AC_CONFIG_FILES([Makefile debyer/Makefile])
+AC_OUTPUT
